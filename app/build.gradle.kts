@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
-
+    id ("kotlin-parcelize")
+    id("androidx.navigation.safeargs.kotlin") version "2.5.0"
 }
 
 android {
@@ -51,6 +52,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.google.code.gson:gson:2.8.8")
+
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation(libs.androidx.constraintlayout)

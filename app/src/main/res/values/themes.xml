@@ -19,6 +19,12 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="FormEditText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+
     <style name="Theme.Relab.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.Relab.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />

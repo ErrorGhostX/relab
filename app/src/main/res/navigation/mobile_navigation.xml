@@ -30,15 +30,18 @@
         tools:layout="@layout/fragment_orders">
 
         <action
-            android:id="@+id/action_nav_orders_to_createOrderFragment"
+            android:id="@+id/action_orderListFragment_to_createOrderFragment"
             app:destination="@id/createOrderFragment" />
 
+
         <action
-            android:id="@+id/action_nav_orders_to_orderDetailFragment"
+            android:id="@+id/action_orderListFragment_to_orderDetailFragment"
             app:destination="@id/orderDetailFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
+
     </fragment>
+
 
     <fragment
         android:id="@+id/createOrderFragment"
@@ -50,6 +53,12 @@
         android:id="@+id/orderDetailFragment"
         android:name="egx.relab_app.ui.orders.OrderDetailFragment"
         android:label="Детали заказа"
-        tools:layout="@layout/fragment_order_detail" />
+        tools:layout="@layout/fragment_order_detail">
+
+        <argument
+            android:name="order"
+            app:argType="egx.relab_app.models.Order" />
+    </fragment>
+
 
 </navigation>

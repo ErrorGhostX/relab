@@ -1,29 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutCreateOrder"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <EditText
-        android:id="@+id/editTextCustomerName"
-        android:hint="Имя заказчика"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <EditText
-        android:id="@+id/editTextDeviceName"
-        android:hint="Название устройства"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:orientation="vertical">
 
-    <Button
-        android:id="@+id/buttonSave"
-        android:text="Создать заказ"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"/>
+        <!-- Основные поля -->
+        <EditText android:id="@+id/editTextOrderNumber" android:hint="Номер заказа" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextCustomerName" android:hint="Имя клиента" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextContactInfo" android:hint="Контактная информация" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextExtraInfo" android:hint="Дополнительная информация" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextTelegram" android:hint="Telegram" style="@style/FormEditText"/>
 
-</LinearLayout>
+        <!-- Устройство -->
+        <EditText android:id="@+id/editTextDeviceName" android:hint="Название устройства" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextDeviceType" android:hint="Тип устройства" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextManufacturer" android:hint="Производитель" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextModel" android:hint="Модель устройства" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextKit" android:hint="Комплектация" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextDescription" android:hint="Описание" style="@style/FormEditText"/>
+        <EditText android:id="@+id/editTextDate" android:hint="Дата (например, 2025-05-11)" style="@style/FormEditText"/>
+
+        <!-- Тип заказа (Spinner) -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Тип заказа" />
+        <Spinner
+            android:id="@+id/orderTypeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Статус заказа (Spinner) -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Статус заказа" />
+        <Spinner
+            android:id="@+id/statusSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Фото -->
+        <Button
+            android:id="@+id/buttonChoosePhoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Выбрать фото" />
+
+        <TextView
+            android:id="@+id/textPhotoChosen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Фото не выбрано"
+            android:textStyle="italic"
+            android:textColor="#888888"
+            android:padding="8dp" />
+
+        <!-- Кнопка сохранения -->
+        <Button
+            android:id="@+id/buttonSave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сохранить" />
+    </LinearLayout>
+</ScrollView>

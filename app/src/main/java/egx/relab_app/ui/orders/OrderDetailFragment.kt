@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
+import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrderDetailBinding
 
 class OrderDetailFragment : Fragment() {
@@ -21,14 +23,33 @@ class OrderDetailFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val args = arguments
-        val orderId = args?.getInt("orderId")
-        val deviceName = args?.getString("deviceName")
-        val status = args?.getString("status")
+        super.onViewCreated(view, savedInstanceState)
 
-        binding.textOrderId.text = "ID: $orderId"
-        binding.textDeviceName.text = "Устройство: $deviceName"
-        binding.textStatus.text = "Статус: $status"
+        // Получаем объект Order через Safe Args
+        val order = arguments?.let {
+            OrderDetailFragmentArgs.fromBundle(it).order
+        } ?: return
+
+        // Заполняем данные в элементы UI
+        binding.orderId.text = "ID: ${order.id}"
+        binding.orderNumber.text = "Номер заказа: ${order.orderNumber}"
+        binding.customer.text = "Клиент: ${order.customer}"
+        binding.contactInfo.text = "Контакты: ${order.contactInfo}"
+        binding.extraInfo.text = "Доп. инфо: ${order.extraInfo}"
+        binding.telegram.text = "Телеграм: ${order.telegram}"
+        binding.deviceName.text = "Устройство: ${order.deviceName}"
+        binding.deviceType.text = "Тип: ${order.deviceType}"
+        binding.manufacturer.text = "Производитель: ${order.manufacturer}"
+        binding.model.text = "Модель: ${order.model}"
+        binding.kit.text = "Комплектация: ${order.kit}"
+        binding.description.text = "Описание: ${order.description}"
+        binding.date.text = "Дата: ${order.date}"
+        binding.orderType.text = "Тип: ${order.orderType}"
+        binding.status.text = "Статус: ${order.status}"
+
+        Glide.with(this)
+            .load(order.photoUrl ?: R.drawable.placeholder_image)
+            .into(binding.orderImage)
     }
 
     override fun onDestroyView() {

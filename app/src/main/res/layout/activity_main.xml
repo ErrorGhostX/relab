@@ -28,14 +28,12 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/ordersRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/ordersRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_anchor="@+id/ordersLayout"
-            app:layout_anchorGravity="end|center" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Navigation View for Drawer -->

@@ -1,7 +1,9 @@
 package egx.relab_app.orders
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import egx.relab_app.R
@@ -40,7 +42,13 @@ class OrderAdapter(
                 .load(order.photoUrl ?: R.drawable.placeholder_image)
                 .into(binding.orderImage)
 
-            binding.root.setOnClickListener { onClick(order) }
+            binding.root.setOnClickListener {
+                val bundle = Bundle().apply {
+                    putParcelable("order", order)
+                }
+                it.findNavController().navigate(R.id.action_orderListFragment_to_orderDetailFragment, bundle)
+            }
+
         }
     }
 }
