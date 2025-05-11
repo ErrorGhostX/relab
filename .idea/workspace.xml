@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Beta v0.1">
+    <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Beta v0.2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend_relab_app/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/views.py" afterDir="false" />
@@ -122,7 +121,7 @@
       <workItem from="1746293441884" duration="2924000" />
       <workItem from="1746562048089" duration="884000" />
       <workItem from="1746899205028" duration="23000" />
-      <workItem from="1746918918299" duration="7174000" />
+      <workItem from="1746918918299" duration="15418000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />
@@ -140,7 +139,23 @@
       <option name="project" value="LOCAL" />
       <updated>1746296891932</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Beta v0.1">
+      <option name="closed" value="true" />
+      <created>1746968371372</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1746968371372</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Beta v0.2">
+      <option name="closed" value="true" />
+      <created>1746968376569</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1746968376569</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -148,6 +163,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Beta v0.1" />
-    <option name="LAST_COMMIT_MESSAGE" value="Beta v0.1" />
+    <MESSAGE value="Beta v0.2" />
+    <option name="LAST_COMMIT_MESSAGE" value="Beta v0.2" />
   </component>
 </project>
