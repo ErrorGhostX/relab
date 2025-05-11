@@ -7,7 +7,9 @@ import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
+import retrofit2.http.Path
 
 /**
  * Интерфейс ApiService определяет все HTTP-запросы к REST API сервера.
@@ -54,9 +56,28 @@ interface ApiService {
         @Part("date")           date: RequestBody,
         @Part("status")         status: RequestBody,
         @Part("order_type")     orderType: RequestBody,
-        @Part                   photo: MultipartBody.Part?  // Фото (опционально)
+        @Part                   photo: MultipartBody.Part?
     ): Call<Order>
-
+    @Multipart
+    @PUT("orders/{id}/")
+    fun updateOrder(
+        @Path("id") id: RequestBody,
+        @Part("order_number") orderNumber: RequestBody,
+        @Part("customer") customer: RequestBody,
+        @Part("contact_info") contactInfo: RequestBody,
+        @Part("extra_info") extraInfo: RequestBody,
+        @Part("telegram") telegram: RequestBody,
+        @Part("device_name") deviceName: RequestBody,
+        @Part("device_type") deviceType: RequestBody,
+        @Part("manufacturer") manufacturer: RequestBody,
+        @Part("model") model: RequestBody,
+        @Part("kit") kit: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("date") date: RequestBody,
+        @Part("status") status: RequestBody,
+        @Part("order_type") orderType: RequestBody,
+        @Part photo: MultipartBody.Part?
+    ): Call<Order>
     /**
      * Отправляет GET-запрос для получения списка всех заказов.
      *

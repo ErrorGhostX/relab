@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrderDetailBinding
@@ -54,13 +55,20 @@ class OrderDetailFragment : Fragment() {
         binding.status.text = "Статус: ${order.status}"
 
         // Формируем URL для картинки (локальный IP эмулятора или устройства)
-        val imageUrl = "http://192.168.0.102:8000/media/${order.photo}"
+        val imageUrl = order.photo
 
         // Загружаем изображение при помощи Glide
         Glide.with(this)
             .load(imageUrl)                      // URL изображения
             .placeholder(R.drawable.placeholder_image)  // пока грузится
             .into(binding.orderImage)                  // целевой ImageView
+
+        binding.buttonEdit.setOnClickListener {
+            val action = OrderDetailFragmentDirections
+                .actionOrderDetailFragmentToOrderFormFragment(order)
+            findNavController().navigate(action)
+
+        }
     }
 
     // Очистка биндинга при уничтожении view
@@ -68,4 +76,6 @@ class OrderDetailFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
+
+
 }
