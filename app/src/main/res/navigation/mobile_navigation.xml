@@ -45,7 +45,7 @@
 
     <fragment
         android:id="@+id/createOrderFragment"
-        android:name="egx.relab_app.ui.orders.CreateOrderFragment"
+        android:name="egx.relab_app.ui.orders.OrderCreateFragment"
         android:label="Создать заказ"
         tools:layout="@layout/fragment_create_order" />
 

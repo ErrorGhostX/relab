@@ -1,23 +1,18 @@
 package egx.relab_app.ui.orders
 
-import android.app.Activity
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
+import androidx.activity.result.contract.ActivityResultContracts
 import egx.relab_app.databinding.FragmentCreateOrderBinding
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
-class CreateOrderFragment : Fragment() {
+class OrderCreateFragment : Fragment() {
 
     private var _binding: FragmentCreateOrderBinding? = null
     private val binding get() = _binding!!
@@ -27,7 +22,6 @@ class CreateOrderFragment : Fragment() {
         private const val PICK_IMAGE_REQUEST = 1
     }
 
-    // Карты для соответствия отображаемых строк и кодов
     private val statusMap = mapOf(
         "Новый" to "new",
         "В процессе" to "in_progress",
@@ -64,11 +58,17 @@ class CreateOrderFragment : Fragment() {
 
     // Настройка слушателей
     private fun setupListeners() {
-        binding.buttonChoosePhoto.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            startActivityForResult(intent, PICK_IMAGE_REQUEST)
+        // Настройка выбора фото
+        val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            selectedPhotoUri = uri
+            binding.textPhotoChosen.text = "Фото выбрано"
         }
 
+        binding.buttonChoosePhoto.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
+
+        // Сохранение заказа
         binding.buttonSave.setOnClickListener {
             saveOrder()
         }
@@ -86,8 +86,8 @@ class CreateOrderFragment : Fragment() {
         }
 
         // Преобразование выбранных значений в коды
-        val statusCode = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new" // код по умолчанию
-        val orderTypeCode = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair" // код по умолчанию
+        val statusCode = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new"
+        val orderTypeCode = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair"
 
         val order = Order(
             orderNumber = binding.editTextOrderNumber.text.toString(),
@@ -102,33 +102,18 @@ class CreateOrderFragment : Fragment() {
             kit = binding.editTextKit.text.toString(),
             description = binding.editTextDescription.text.toString(),
             date = binding.editTextDate.text.toString(),
-            orderType = orderTypeCode, // отправляем код
-            status = statusCode, // отправляем код
-            photoUrl = selectedPhotoUri?.toString() ?: ""
+            orderType = orderTypeCode,
+            status = statusCode
         )
 
         // Отправка данных через Retrofit
-        RetrofitClient.apiService.createOrder(order).enqueue(object : Callback<Order> {
-            override fun onResponse(call: Call<Order>, response: Response<Order>) {
-                if (response.isSuccessful) {
-                    Toast.makeText(requireContext(), "Заказ сохранён", Toast.LENGTH_SHORT).show()
-                    // Навигация назад или к списку заказов
-                } else {
-                    Toast.makeText(requireContext(), "Ошибка сохранения", Toast.LENGTH_SHORT).show()
-                }
+        RetrofitClient.createOrder(requireContext(), order, selectedPhotoUri) { isSuccess ->
+            if (isSuccess) {
+                Toast.makeText(requireContext(), "Заказ сохранён", Toast.LENGTH_SHORT).show()
+                // Навигация назад или к списку заказов
+            } else {
+                Toast.makeText(requireContext(), "Ошибка сохранения", Toast.LENGTH_SHORT).show()
             }
-
-            override fun onFailure(call: Call<Order>, t: Throwable) {
-                Toast.makeText(requireContext(), "Ошибка сети: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    // Обработка результата выбора фото
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK) {
-            selectedPhotoUri = data?.data
-            binding.textPhotoChosen.text = "Фото выбрано"
         }
     }
 

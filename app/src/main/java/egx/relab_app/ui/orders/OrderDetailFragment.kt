@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrderDetailBinding
+import egx.relab_app.models.Order
 
 class OrderDetailFragment : Fragment() {
 
@@ -47,8 +48,12 @@ class OrderDetailFragment : Fragment() {
         binding.orderType.text = "Тип: ${order.orderType}"
         binding.status.text = "Статус: ${order.status}"
 
+        // Загрузка изображения с сервером, используя поле `photo`
+        val imageUrl = "http://192.168.0.102:8000/media/${order.photo}" // Используйте локальный IP
+
         Glide.with(this)
-            .load(order.photoUrl ?: R.drawable.placeholder_image)
+            .load(imageUrl)  // Загружаем изображение с сервера
+            .placeholder(R.drawable.placeholder_image)  // Заполнитель изображения
             .into(binding.orderImage)
     }
 

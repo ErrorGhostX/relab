@@ -41,8 +41,8 @@ data class Order(
     @SerializedName("kit")
     val kit: String? = "", // Комплектация устройства
 
-    @SerializedName("photo_url")
-    val photoUrl: String? = null, // Ссылка на фото
+    @SerializedName("photo")
+    val photo: String? = null,
 
     @SerializedName("description")
     val description: String? = "", // Описание
