@@ -1,8 +1,9 @@
-from django.urls import path
-from .views import OrderListCreate, OrderDetail, OrderCreateView
+# urls.py
+from rest_framework.routers import DefaultRouter
+from .views import OrderViewSet
 
-urlpatterns = [
-    path('orders/', OrderListCreate.as_view(), name='order-list-create'),
-    path('orders/<int:pk>/', OrderDetail.as_view(), name='order-detail'),
-    path('create-order/', OrderCreateView.as_view(), name='create-order'),
-]
+router = DefaultRouter()
+# теперь все CRUD-эндпоинты и дополнительный create-with-photo под /api/orders/
+router.register('orders', OrderViewSet, basename='order')
+
+urlpatterns = router.urls

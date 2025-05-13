@@ -30,6 +30,20 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
 
 # Application definition
 
@@ -42,6 +56,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'orders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'djoser',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [

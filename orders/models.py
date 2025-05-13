@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.auth.models import User
 class Order(models.Model):
     # Номер заказа задаёт сам пользователь (например, «12345»)
     order_number = models.CharField(max_length=255, default='')
@@ -59,6 +59,11 @@ class Order(models.Model):
         choices=STATUS_CHOICES,
         default='new'           # здесь обязательно «new», а не «Новый»
     )
-
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name='orders'
+    )
     def __str__(self):
         return f"{self.order_number} — {self.device_name}"

@@ -1,27 +1,46 @@
-from rest_framework import generics, status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Order
 from .serializers import OrderSerializer
 
+# views.py
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from .models import Order
+from .serializers import OrderSerializer
 
-# -------------------------------
-# 1) Список и создание заказов
-# -------------------------------
-class OrderListCreate(generics.ListCreateAPIView):
-    """
-    GET  /api/orders/       — вернуть список всех заказов
-    POST /api/orders/       — создать новый заказ (JSON-данные, без фото)
-    """
-    queryset = Order.objects.all()          # все объекты Order
-    serializer_class = OrderSerializer      # сериализатор, который превратит модели в JSON и обратно
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(
+        detail=False,
+        methods=['post'],
+        url_path='create-with-photo',
+        parser_classes=[MultiPartParser, FormParser]
+    )
+    def create_with_photo(self, request, *args, **kwargs):
+        """
+        POST /api/orders/create-with-photo/
+        тот же сериализатор, но принимает multipart/form-data
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(
+            {'message': 'Заказ с фото создан', 'order_id': serializer.instance.id},
+            status=status.HTTP_201_CREATED
+        )
 
 
-# ------------------------------------------------
 # 2) Детали, обновление и удаление конкретного заказа
-# ------------------------------------------------
 class OrderDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     GET    /api/orders/{pk}/   — получить один заказ
@@ -30,28 +49,5 @@ class OrderDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-
-# ---------------------------------------
-# 3) Создание заказа с картинкой (multipart)
-# ---------------------------------------
-class OrderCreateView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
-
-    def post(self, request):
-        data = request.data.copy()
-        # Если есть файл — кладём его в data под ключ 'photo'
-        if 'photo' in request.FILES:
-            data['photo'] = request.FILES['photo']
-
-        serializer = OrderSerializer(data=data)
-        if not serializer.is_valid():
-            # Здесь вы сразу увидите, по каким полям что не прошло
-            print(serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        order = serializer.save()
-        return Response(
-            {'message': 'Заказ успешно создан', 'order_id': order.id},
-            status=status.HTTP_201_CREATED
-        )
