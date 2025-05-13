@@ -1,4 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,99 +11,172 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <ImageView
-            android:id="@+id/orderImage"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/placeholder_image" />
-
-        <TextView android:id="@+id/orderId"
+        <!-- Карточка с изображением -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ID"
-            android:textSize="16sp"
-            android:paddingTop="8dp" />
+            card_view:cardCornerRadius="8dp"
+            card_view:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
 
-        <TextView android:id="@+id/orderNumber"
+            <ImageView
+                android:id="@+id/orderImage"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/placeholder_image" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Блок с ID и кнопкой редактирования -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Номер заказа" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-        <TextView android:id="@+id/customer"
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="16dp">
+
+            <!-- Текст “ID: 123” займёт всё доступное пространство слева -->
+            <TextView
+                android:id="@+id/orderId"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ID: 123"
+                android:textStyle="bold"
+                android:textSize="16sp"/>
+
+            <!-- Кнопка Тест -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/buttontest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@android:drawable/ic_menu_help"
+                app:backgroundTint="@color/purple_200"
+                android:tint="@android:color/white"
+                android:layout_marginStart="12dp"/>
+
+            <!-- Кнопка Печать -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonPrint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:src="@android:drawable/ic_menu_set_as"
+                    android:tint="@android:color/white"
+                    app:backgroundTint="@color/purple_200" />
+
+            <!-- Кнопка Редактировать -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/buttonEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@android:drawable/ic_menu_edit"
+                app:backgroundTint="@color/purple_200"
+                android:tint="@android:color/white"
+                android:layout_marginStart="12dp"/>
+
+        </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- Поля заказа -->
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/orderNumber"
+            android:text="Номер заказа: 12345" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/customer"
+            android:text="Клиент: Иван Иванов" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/contactInfo"
+            android:text="Контакты: 888-123-45-67" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/extraInfo"
+            android:text="Доп. инфо: Срочно" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/telegram"
+            android:text="Telegram: @ivan_telegram" />
+
+        <View
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Клиент" />
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginVertical="12dp" />
 
-        <TextView android:id="@+id/contactInfo"
+        <!-- Блок устройства -->
+        <TextView
+            style="@style/DetailTextStyle"
+            android:textStyle="bold"
+            android:text="Устройство" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/deviceName"
+            android:text="Название: iPhone 12" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/deviceType"
+            android:text="Тип: Смартфон" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/manufacturer"
+            android:text="Производитель: Apple" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/model"
+            android:text="Модель: 12 Pro" />
+
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/kit"
+            android:text="Комплектация: Зарядка, наушники" />
+
+        <View
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Контакты" />
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginVertical="12dp" />
 
-        <TextView android:id="@+id/extraInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Доп. информация" />
+        <!-- Описание и статус -->
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/description"
+            android:text="Описание: Не включается" />
 
-        <TextView android:id="@+id/telegram"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Telegram" />
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/date"
+            android:text="Дата: 2025-05-11" />
 
-        <TextView android:id="@+id/deviceName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Название устройства" />
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/orderType"
+            android:text="Тип заказа: Ремонт" />
 
-        <TextView android:id="@+id/deviceType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Тип устройства" />
+        <TextView
+            style="@style/DetailTextStyle"
+            android:id="@+id/status"
+            android:text="Статус: В процессе" />
 
-        <TextView android:id="@+id/manufacturer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Производитель" />
-
-        <TextView android:id="@+id/model"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Модель" />
-
-        <TextView android:id="@+id/kit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Комплектация" />
-
-        <TextView android:id="@+id/description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Описание" />
-
-        <TextView android:id="@+id/date"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Дата" />
-
-        <TextView android:id="@+id/orderType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Тип" />
-
-        <TextView android:id="@+id/status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Статус" />
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/buttonEdit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|right|end"
-            android:layout_margin="16dp"
-            app:backgroundTint="@color/purple_200"
-            app:srcCompat="@android:drawable/ic_menu_edit" />
     </LinearLayout>
-
 </ScrollView>

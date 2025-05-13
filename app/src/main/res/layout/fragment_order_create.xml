@@ -8,33 +8,183 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:spacing="16dp">
 
-        <!-- Основные поля -->
-        <EditText android:id="@+id/editTextOrderNumber" android:hint="Номер заказа" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextCustomerName" android:hint="Имя клиента" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextContactInfo" android:hint="Контактная информация" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextExtraInfo" android:hint="Дополнительная информация" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextTelegram" android:hint="Telegram" style="@style/FormEditText"/>
+        <!-- Поле для Номера заказа -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Номер заказа"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextOrderNumber"
+            android:hint="Введите номер заказа"
+            style="@style/FormEditText"/>
 
-        <!-- Устройство -->
-        <EditText android:id="@+id/editTextDeviceName" android:hint="Название устройства" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextDeviceType" android:hint="Тип устройства" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextManufacturer" android:hint="Производитель" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextModel" android:hint="Модель устройства" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextKit" android:hint="Комплектация" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextDescription" android:hint="Описание" style="@style/FormEditText"/>
-        <EditText android:id="@+id/editTextDate" android:hint="Дата (например, 2025-05-11)" style="@style/FormEditText"/>
+        <!-- Поле для Имени клиента -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Имя клиента"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextCustomerName"
+            android:hint="Введите имя клиента"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Контактной информации -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Контактная информация"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextContactInfo"
+            android:hint="Введите контактные данные"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Дополнительной информации -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Дополнительная информация"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextExtraInfo"
+            android:hint="Введите дополнительную информацию"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Телеграма -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Телеграм"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextTelegram"
+            android:hint="Введите свой Телеграм"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Названия устройства -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Название устройства"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+
+        <!-- Поле для Типа устройства -->
+        <EditText
+            android:id="@+id/editTextDeviceName"
+            style="@style/FormEditText"
+            android:hint="Введите название устройства" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Тип устройства"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextDeviceType"
+            android:hint="Введите тип устройства"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Производителя -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Производитель"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextManufacturer"
+            android:hint="Введите производителя"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Модели устройства -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Модель устройства"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextModel"
+            android:hint="Введите модель устройства"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Комплектации -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Комплектация"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextKit"
+            android:hint="Введите комплектацию"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Описания -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Описание"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/editTextDescription"
+            android:hint="Введите описание устройства"
+            style="@style/FormEditText"/>
+
+        <!-- Поле для Даты -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Дата (например, 2025-05-11)"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
+        <Button
+            android:id="@+id/buttonSelectDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Выбрать дату" />
+
+        <TextView
+            android:id="@+id/textViewSelectedDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Дата не выбрана"
+            android:paddingBottom="16dp"
+            android:textStyle="italic"/>
+
 
         <!-- Тип заказа (Spinner) -->
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Тип заказа" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Тип заказа"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
         <Spinner
             android:id="@+id/orderTypeSpinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <!-- Статус заказа (Spinner) -->
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Статус заказа" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Статус заказа"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"/>
         <Spinner
             android:id="@+id/statusSpinner"
             android:layout_width="match_parent"

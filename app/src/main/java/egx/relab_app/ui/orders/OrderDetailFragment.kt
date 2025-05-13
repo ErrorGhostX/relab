@@ -11,71 +11,72 @@ import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrderDetailBinding
 import egx.relab_app.models.Order
 
-// Фрагмент для отображения подробностей выбранного заказа
 class OrderDetailFragment : Fragment() {
 
-    // Биндинг для доступа к видам макета
     private var _binding: FragmentOrderDetailBinding? = null
     private val binding get() = _binding!!
 
-    // Создание представления фрагмента
+    // будем хранить текущий заказ
+    private lateinit var currentOrder: Order
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentOrderDetailBinding.inflate(inflater, container, false)
-        return binding.root  // возвращаем корневой view
+        return binding.root
     }
 
-    // Вызывается после того, как view создано
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Получаем объект Order из аргументов навигации Safe Args
-        val order = arguments?.let {
-            OrderDetailFragmentArgs.fromBundle(it).order
-        } ?: return  // если нет аргументов — выходим
+        // 1) получаем из Safe Args при первом заходе
+        currentOrder = OrderDetailFragmentArgs.fromBundle(requireArguments()).order
+        bindOrderToUI(currentOrder)
 
-        // Заполнение текстовых полей данными заказа
-        binding.orderId.text = "ID: ${order.id}"
-        binding.orderNumber.text = "Номер заказа: ${order.orderNumber}"
-        binding.customer.text = "Клиент: ${order.customer}"
-        binding.contactInfo.text = "Контакты: ${order.contactInfo}"
-        binding.extraInfo.text = "Доп. инфо: ${order.extraInfo}"
-        binding.telegram.text = "Телеграм: ${order.telegram}"
-        binding.deviceName.text = "Устройство: ${order.deviceName}"
-        binding.deviceType.text = "Тип: ${order.deviceType}"
-        binding.manufacturer.text = "Производитель: ${order.manufacturer}"
-        binding.model.text = "Модель: ${order.model}"
-        binding.kit.text = "Комплектация: ${order.kit}"
-        binding.description.text = "Описание: ${order.description}"
-        binding.date.text = "Дата: ${order.date}"
-        binding.orderType.text = "Тип: ${order.orderType}"
-        binding.status.text = "Статус: ${order.status}"
-
-        // Формируем URL для картинки (локальный IP эмулятора или устройства)
-        val imageUrl = order.photo
-
-        // Загружаем изображение при помощи Glide
-        Glide.with(this)
-            .load(imageUrl)                      // URL изображения
-            .placeholder(R.drawable.placeholder_image)  // пока грузится
-            .into(binding.orderImage)                  // целевой ImageView
+        // 2) подписываемся на “живую” передачу из SavedStateHandle
+        findNavController().currentBackStackEntry
+            ?.savedStateHandle
+            ?.getLiveData<Order>("updatedOrder")
+            ?.observe(viewLifecycleOwner) { updated ->
+                // получили обновлённый заказ — применяем в UI
+                currentOrder = updated
+                bindOrderToUI(updated)
+            }
 
         binding.buttonEdit.setOnClickListener {
             val action = OrderDetailFragmentDirections
-                .actionOrderDetailFragmentToOrderFormFragment(order)
+                .actionOrderDetailFragmentToOrderFormFragment(currentOrder)
             findNavController().navigate(action)
-
         }
     }
 
-    // Очистка биндинга при уничтожении view
+    private fun bindOrderToUI(order: Order) {
+        binding.orderId.text        = "ID: ${order.id}"
+        binding.orderNumber.text    = "Номер заказа: ${order.orderNumber}"
+        binding.customer.text       = "Клиент: ${order.customer}"
+        binding.contactInfo.text    = "Контакты: ${order.contactInfo}"
+        binding.extraInfo.text      = "Доп. инфо: ${order.extraInfo}"
+        binding.telegram.text       = "Телеграм: ${order.telegram}"
+        binding.deviceName.text     = "Устройство: ${order.deviceName}"
+        binding.deviceType.text     = "Тип: ${order.deviceType}"
+        binding.manufacturer.text   = "Производитель: ${order.manufacturer}"
+        binding.model.text          = "Модель: ${order.model}"
+        binding.kit.text            = "Комплектация: ${order.kit}"
+        binding.description.text    = "Описание: ${order.description}"
+        binding.date.text           = "Дата: ${order.date}"
+        binding.orderType.text      = "Тип: ${order.orderType}"
+        binding.status.text         = "Статус: ${order.status}"
+
+        Glide.with(this)
+            .load(order.photo)
+            .placeholder(R.drawable.placeholder_image)
+            .into(binding.orderImage)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
-
-
 }

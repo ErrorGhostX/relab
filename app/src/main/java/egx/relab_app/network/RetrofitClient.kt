@@ -1,3 +1,4 @@
+// RetrofitClient.kt
 package egx.relab_app.network
 
 import android.content.Context
@@ -7,6 +8,7 @@ import egx.relab_app.models.Order
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
@@ -15,139 +17,140 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.*
 import java.io.File
+import egx.relab_app.storage.TokenManager
+import okhttp3.Interceptor
+
 
 object RetrofitClient {
-
     private const val BASE_URL = "http://10.0.2.2:8000/api/"
 
+    lateinit var tokenManager: TokenManager
+
+    // Интерсептор, который добавляет заголовок Authorization
+    private val authInterceptor = Interceptor { chain ->
+        val reqBuilder = chain.request().newBuilder()
+        tokenManager.accessToken?.let { token ->
+            reqBuilder.addHeader("Authorization", "Bearer $token")
+        }
+        chain.proceed(reqBuilder.build())
+    }
+
+    // Теперь клиент включает и authInterceptor, и логирование
     private val client = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
+        .addInterceptor(authInterceptor)
+        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
         .build()
 
-    private val retrofit: Retrofit by lazy {
+    private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(client)
+            .client(client)  // <- здесь
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
-
-    val apiService: ApiService by lazy {
-        retrofit.create(ApiService::class.java)
+    // Инициализация токен-менеджера на старте приложения
+    fun init(context: Context) {
+        tokenManager = TokenManager(context)
     }
+
+    val apiService: ApiService by lazy { retrofit.create(ApiService::class.java) }
 
     fun createOrder(
         context: Context,
         order: Order,
         selectedPhotoUri: Uri?,
-        onResponseCallback: (Boolean) -> Unit
+        callback: (success: Boolean, code: Int, errorBody: String?)->Unit
     ) {
-        val photoPart = preparePhotoPart(context, selectedPhotoUri)
-        val parts = prepareOrderParts(order)
-
+        val photoPart = selectedPhotoUri?.let { uri ->
+            val f = File(getRealPath(context, uri))
+            val rb = f.asRequestBody("image/*".toMediaType())
+            MultipartBody.Part.createFormData("photo", f.name, rb)
+        }
+        val parts = makeParts(order)
         apiService.createOrder(
-            parts["orderNumber"]!!,
-            parts["customer"]!!,
-            parts["contactInfo"]!!,
-            parts["extraInfo"]!!,
-            parts["telegram"]!!,
-            parts["deviceName"]!!,
-            parts["deviceType"]!!,
-            parts["manufacturer"]!!,
-            parts["model"]!!,
-            parts["kit"]!!,
-            parts["description"]!!,
-            parts["date"]!!,
-            parts["status"]!!,
-            parts["orderType"]!!,
-            photoPart
-        ).enqueue(object : Callback<Order> {
-            override fun onResponse(call: Call<Order>, response: Response<Order>) {
-                onResponseCallback(response.isSuccessful)
+            parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
+            parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
+            parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
+            parts["kit"]!!, parts["description"]!!, parts["date"]!!,
+            parts["status"]!!, parts["order_type"]!!, photoPart
+        ).enqueue(object: Callback<Order> {
+            override fun onResponse(call: Call<Order>, resp: Response<Order>) {
+                val body = resp.errorBody()?.string()
+                callback(resp.isSuccessful, resp.code(), body)
             }
-
             override fun onFailure(call: Call<Order>, t: Throwable) {
-                onResponseCallback(false)
+                callback(false, -1, t.localizedMessage)
             }
         })
     }
 
     fun updateOrder(
         context: Context,
-        orderId: String?,
         order: Order,
         selectedPhotoUri: Uri?,
-        onResponseCallback: (Boolean) -> Unit
+        callback: (success: Boolean, code: Int, errorBody: String?) -> Unit
     ) {
-        val photoPart = preparePhotoPart(context, selectedPhotoUri)
-        val parts = prepareOrderParts(order)
-
+        val id = order.id ?: run {
+            callback(false, -1, "Order ID is null")
+            return@updateOrder
+        }
+        val photoPart = selectedPhotoUri?.let { uri ->
+            val f = File(getRealPath(context, uri))
+            val rb = f.asRequestBody("image/*".toMediaType())
+            MultipartBody.Part.createFormData("photo", f.name, rb)
+        }
+        val parts = makeParts(order)
         apiService.updateOrder(
-            parts["id"]!!,
-            parts["orderNumber"]!!,
-            parts["customer"]!!,
-            parts["contactInfo"]!!,
-            parts["extraInfo"]!!,
-            parts["telegram"]!!,
-            parts["deviceName"]!!,
-            parts["deviceType"]!!,
-            parts["manufacturer"]!!,
-            parts["model"]!!,
-            parts["kit"]!!,
-            parts["description"]!!,
-            parts["date"]!!,
-            parts["status"]!!,
-            parts["orderType"]!!,
-            photoPart
-        ).enqueue(object : Callback<Order> {
-            override fun onResponse(call: Call<Order>, response: Response<Order>) {
-                onResponseCallback(response.isSuccessful)
+            id,
+            parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
+            parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
+            parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
+            parts["kit"]!!, parts["description"]!!, parts["date"]!!,
+            parts["status"]!!, parts["order_type"]!!, photoPart
+        ).enqueue(object: Callback<Order> {
+            override fun onResponse(call: Call<Order>, resp: Response<Order>) {
+                val body = resp.errorBody()?.string()
+                callback(resp.isSuccessful, resp.code(), body)
             }
-
             override fun onFailure(call: Call<Order>, t: Throwable) {
-                onResponseCallback(false)
+                callback(false, -1, t.localizedMessage)
             }
         })
     }
 
-    private fun preparePhotoPart(context: Context, selectedPhotoUri: Uri?): MultipartBody.Part? {
-        return selectedPhotoUri?.let { uri ->
-            val file = File(getRealPathFromURI(context, uri))
-            val requestFile = file.asRequestBody("image/*".toMediaType())
-            MultipartBody.Part.createFormData("photo", file.name, requestFile)
-        }
+    private fun cb(fn:(Boolean)->Unit) = object: Callback<Order> {
+        override fun onResponse(call: Call<Order>, resp: Response<Order>) = fn(resp.isSuccessful)
+        override fun onFailure(call: Call<Order>, t: Throwable) = fn(false)
     }
 
-    private fun prepareOrderParts(order: Order): Map<String, okhttp3.RequestBody> {
-        val mediaType = "text/plain".toMediaType()
+    private fun makeParts(o:Order): Map<String, RequestBody> {
+        val mt="text/plain".toMediaType()
         return mapOf(
-            "orderNumber" to order.orderNumber.orEmpty().toRequestBody(mediaType),
-            "customer" to order.customer.orEmpty().toRequestBody(mediaType),
-            "contactInfo" to order.contactInfo.orEmpty().toRequestBody(mediaType),
-            "extraInfo" to order.extraInfo.orEmpty().toRequestBody(mediaType),
-            "telegram" to order.telegram.orEmpty().toRequestBody(mediaType),
-            "deviceName" to order.deviceName.orEmpty().toRequestBody(mediaType),
-            "deviceType" to order.deviceType.orEmpty().toRequestBody(mediaType),
-            "manufacturer" to order.manufacturer.orEmpty().toRequestBody(mediaType),
-            "model" to order.model.orEmpty().toRequestBody(mediaType),
-            "kit" to order.kit.orEmpty().toRequestBody(mediaType),
-            "description" to order.description.orEmpty().toRequestBody(mediaType),
-            "date" to order.date.orEmpty().toRequestBody(mediaType),
-            "status" to order.status.orEmpty().toRequestBody(mediaType),
-            "orderType" to order.orderType.orEmpty().toRequestBody(mediaType),
+            "order_number" to o.orderNumber.orEmpty().toRequestBody(mt),
+            "customer"     to o.customer.orEmpty().toRequestBody(mt),
+            "contact_info" to o.contactInfo.orEmpty().toRequestBody(mt),
+            "extra_info"   to o.extraInfo.orEmpty().toRequestBody(mt),
+            "telegram"     to o.telegram.orEmpty().toRequestBody(mt),
+            "device_name"  to o.deviceName.orEmpty().toRequestBody(mt),
+            "device_type"  to o.deviceType.orEmpty().toRequestBody(mt),
+            "manufacturer" to o.manufacturer.orEmpty().toRequestBody(mt),
+            "model"        to o.model.orEmpty().toRequestBody(mt),
+            "kit"          to o.kit.orEmpty().toRequestBody(mt),
+            "description"  to o.description.orEmpty().toRequestBody(mt),
+            "date"         to o.date.orEmpty().toRequestBody(mt),
+            "status"       to o.status.orEmpty().toRequestBody(mt),
+            "order_type"   to o.orderType.orEmpty().toRequestBody(mt)
         )
     }
 
-    private fun getRealPathFromURI(context: Context, contentUri: Uri): String {
-        val proj = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = context.contentResolver.query(contentUri, proj, null, null, null)
-        cursor?.moveToFirst()
-        val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-        val filePath = columnIndex?.let { cursor.getString(it) }
-        cursor?.close()
-        return filePath.orEmpty()
+    private fun getRealPath(ctx: Context, uri: Uri): String {
+        val c = ctx.contentResolver.query(uri, arrayOf(MediaStore.Images.Media.DATA), null,null,null)
+        c?.moveToFirst()
+        val idx = c?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        val path = idx?.let { c.getString(it) }
+        c?.close()
+        return path.orEmpty()
     }
 }

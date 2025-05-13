@@ -1,22 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/home_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="16dp"
     tools:context=".ui.home.HomeFragment">
 
+    <!-- Заголовок -->
     <TextView
-        android:id="@+id/text_home"
-        android:layout_width="match_parent"
+        android:id="@+id/textWelcome"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:text="Добро пожаловать в Relab."
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
         android:textAlignment="center"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Плитки: центрированный packed chain -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOrders"
+        style="@style/Widget.MaterialComponents.CardView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:clickable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:layout_constraintWidth_percent="0.25"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/cardProfile"
+        app:layout_constraintTop_toBottomOf="@id/textWelcome"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="Заказы"
+            android:src="@android:drawable/ic_menu_agenda" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Заказы"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+
+<com.google.android.material.card.MaterialCardView
+android:id="@+id/cardProfile"
+style="@style/Widget.MaterialComponents.CardView"
+android:layout_width="0dp"
+android:layout_height="0dp"
+app:cardCornerRadius="8dp"
+app:cardElevation="4dp"
+android:clickable="true"
+android:foreground="?attr/selectableItemBackground"
+
+app:layout_constraintWidth_percent="0.25"
+app:layout_constraintDimensionRatio="1:1"
+
+app:layout_constraintStart_toEndOf="@id/cardOrders"
+app:layout_constraintEnd_toStartOf="@id/cardAnalytics"
+app:layout_constraintTop_toBottomOf="@id/textWelcome"
+android:layout_marginStart="8dp"
+android:layout_marginEnd="8dp"
+android:layout_marginTop="24dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <ImageView
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:contentDescription="Профиль"
+        android:src="@android:drawable/ic_menu_my_calendar" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Профиль"
+        android:layout_marginTop="8dp"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+
+<com.google.android.material.card.MaterialCardView
+android:id="@+id/cardAnalytics"
+style="@style/Widget.MaterialComponents.CardView"
+android:layout_width="0dp"
+android:layout_height="0dp"
+app:cardCornerRadius="8dp"
+app:cardElevation="4dp"
+android:clickable="true"
+android:foreground="?attr/selectableItemBackground"
+
+app:layout_constraintWidth_percent="0.25"
+app:layout_constraintDimensionRatio="1:1"
+
+app:layout_constraintStart_toEndOf="@id/cardProfile"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintTop_toBottomOf="@id/textWelcome"
+android:layout_marginStart="8dp"
+android:layout_marginTop="24dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <ImageView
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:contentDescription="Аналитика"
+        android:src="@android:drawable/ic_menu_sort_alphabetically" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Аналитика"
+        android:layout_marginTop="8dp"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>

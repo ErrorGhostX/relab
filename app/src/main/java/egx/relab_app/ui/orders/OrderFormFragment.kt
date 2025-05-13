@@ -1,5 +1,6 @@
 package egx.relab_app.ui.orders
 
+import android.app.DatePickerDialog
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -14,6 +15,7 @@ import androidx.navigation.fragment.navArgs
 import egx.relab_app.databinding.FragmentOrderCreateBinding
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
+import java.util.Calendar
 
 class OrderFormFragment : Fragment() {
 
@@ -25,23 +27,18 @@ class OrderFormFragment : Fragment() {
     private val isEditMode get() = args.order != null
 
     private val statusMap = mapOf(
-        "Новый" to "new",
-        "В процессе" to "in_progress",
-        "Завершён" to "done",
-        "Ожидает" to "pending"
+        "Новый" to "new", "В процессе" to "in_progress",
+        "Завершён" to "done", "Ожидает" to "pending"
     )
-
     private val orderTypeMap = mapOf(
-        "Ремонт" to "repair",
-        "Диагностика" to "diagnosis"
+        "Ремонт" to "repair", "Диагностика" to "diagnosis"
     )
 
     private val reverseStatusMap = statusMap.entries.associate { it.value to it.key }
     private val reverseOrderTypeMap = orderTypeMap.entries.associate { it.value to it.key }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentOrderCreateBinding.inflate(inflater, container, false)
@@ -49,70 +46,84 @@ class OrderFormFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        setupSpinners()
-        setupListeners()
-        if (isEditMode) {
-            populateFields(args.order!!)
-        }
-    }
-
-    private fun setupSpinners() {
         val types = listOf("Ремонт", "Диагностика")
         val statuses = listOf("Новый", "В процессе", "Завершён", "Ожидает")
+        var selectedDate: String? = null
 
         binding.orderTypeSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, types)
         binding.statusSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, statuses)
-    }
+        binding.buttonSelectDate.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val datePicker = DatePickerDialog(
+                requireContext(),
+                { _, year, month, day ->
+                    selectedDate = "%04d-%02d-%02d".format(year, month + 1, day)
+                    binding.textViewSelectedDate.text = selectedDate
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            )
+            datePicker.show()
+        }
 
-    private fun setupListeners() {
-        val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+
+
+        val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             selectedPhotoUri = uri
             binding.textPhotoChosen.text = if (uri != null) "Фото выбрано" else "Фото не выбрано"
         }
+        binding.buttonChoosePhoto.setOnClickListener { pickImage.launch("image/*") }
 
-        binding.buttonChoosePhoto.setOnClickListener {
-            pickImageLauncher.launch("image/*")
+        if (isEditMode) {
+            val o = args.order!!
+            binding.editTextOrderNumber.setText(o.orderNumber)
+            binding.editTextCustomerName.setText(o.customer)
+            binding.editTextContactInfo.setText(o.contactInfo)
+            binding.editTextExtraInfo.setText(o.extraInfo)
+            binding.editTextTelegram.setText(o.telegram)
+            binding.editTextDeviceName.setText(o.deviceName)
+            binding.editTextDeviceType.setText(o.deviceType)
+            binding.editTextManufacturer.setText(o.manufacturer)
+            binding.editTextModel.setText(o.model)
+            binding.editTextKit.setText(o.kit)
+            binding.editTextDescription.setText(o.description)
+            binding.textViewSelectedDate.text = o.date
+            selectedDate = o.date
+            reverseOrderTypeMap[o.orderType]?.let {
+                binding.orderTypeSpinner.setSelection((binding.orderTypeSpinner.adapter as ArrayAdapter<String>).getPosition(it))
+            }
+            reverseStatusMap[o.status]?.let {
+                binding.statusSpinner.setSelection((binding.statusSpinner.adapter as ArrayAdapter<String>).getPosition(it))
+            }
         }
 
-        binding.buttonSave.setOnClickListener {
-            saveOrUpdateOrder()
-        }
+        binding.buttonSave.setOnClickListener { saveOrUpdate() }
     }
 
-    private fun populateFields(order: Order) {
-        binding.editTextOrderNumber.setText(order.orderNumber)
-        binding.editTextCustomerName.setText(order.customer)
-        binding.editTextContactInfo.setText(order.contactInfo)
-        binding.editTextExtraInfo.setText(order.extraInfo)
-        binding.editTextTelegram.setText(order.telegram)
-        binding.editTextDeviceName.setText(order.deviceName)
-        binding.editTextDeviceType.setText(order.deviceType)
-        binding.editTextManufacturer.setText(order.manufacturer)
-        binding.editTextModel.setText(order.model)
-        binding.editTextKit.setText(order.kit)
-        binding.editTextDescription.setText(order.description)
-        binding.editTextDate.setText(order.date)
-
-        // Устанавливаем значения спиннеров
-        reverseOrderTypeMap[order.orderType]?.let {
-            val position = (binding.orderTypeSpinner.adapter as ArrayAdapter<String>).getPosition(it)
-            binding.orderTypeSpinner.setSelection(position)
-        }
-        reverseStatusMap[order.status]?.let {
-            val position = (binding.statusSpinner.adapter as ArrayAdapter<String>).getPosition(it)
-            binding.statusSpinner.setSelection(position)
-        }
-    }
-
-    private fun saveOrUpdateOrder() {
-        val requiredFields = listOf(binding.editTextCustomerName, binding.editTextDeviceName)
-        if (requiredFields.any { it.text.isNullOrBlank() }) {
-            Toast.makeText(requireContext(), "Пожалуйста, заполните обязательные поля", Toast.LENGTH_SHORT).show()
+    private fun saveOrUpdate() {
+        val req = listOf(binding.editTextCustomerName, binding.editTextDeviceName)
+        if (req.any { it.text.isNullOrBlank() }) {
+            Toast.makeText(requireContext(), "Заполните обязательные поля", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Собираем данные в объект Order
-        val order = Order(
+        val filledOrder = if (isEditMode) buildUpdatedOrder() else buildNewOrder()
+
+        if (isEditMode) {
+            RetrofitClient.updateOrder(requireContext(), filledOrder, selectedPhotoUri) { success, code, errorBody ->
+                handleSaveResult(success, code, errorBody, filledOrder)
+            }
+        } else {
+            RetrofitClient.createOrder(requireContext(), filledOrder, selectedPhotoUri) { success, code, errorBody ->
+                handleSaveResult(success, code, errorBody, filledOrder)
+            }
+        }
+    }
+
+    private fun buildNewOrder(): Order {
+        return Order(
+            id = null,
             orderNumber = binding.editTextOrderNumber.text.toString(),
             customer = binding.editTextCustomerName.text.toString(),
             contactInfo = binding.editTextContactInfo.text.toString(),
@@ -124,25 +135,33 @@ class OrderFormFragment : Fragment() {
             model = binding.editTextModel.text.toString(),
             kit = binding.editTextKit.text.toString(),
             description = binding.editTextDescription.text.toString(),
-            date = binding.editTextDate.text.toString(),
+            date = binding.textViewSelectedDate.text.toString(),
             status = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new",
-            orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair",
-            photo = selectedPhotoUri?.toString() // URI фото
+            orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair"
         )
+    }
 
-        val context = requireContext()
-        val callback = { success: Boolean ->
-            Toast.makeText(context, if (success) "Заказ сохранён" else "Ошибка сохранения", Toast.LENGTH_SHORT).show()
-            if (success) findNavController().popBackStack()
-        }
+    private fun buildUpdatedOrder(): Order {
+        val originalOrder = args.order!!
+        return buildNewOrder().copy(id = originalOrder.id)
+    }
 
-        // Передаем данные в Retrofit для создания или обновления заказа
-        if (isEditMode) {
-            RetrofitClient.updateOrder(context, order.id, order, selectedPhotoUri, callback) // передаем ID для обновления
+    private fun handleSaveResult(success: Boolean, code: Int, errorBody: String?, order: Order) {
+        if (success) {
+            Toast.makeText(requireContext(), "Заказ сохранён", Toast.LENGTH_SHORT).show()
+
+            if (isEditMode) {
+                findNavController().previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("updatedOrder", order)
+            }
+
+            findNavController().popBackStack()
         } else {
-            RetrofitClient.createOrder(context, order, selectedPhotoUri, callback)
+            Toast.makeText(requireContext(), "Ошибка: $code\n$errorBody", Toast.LENGTH_LONG).show()
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

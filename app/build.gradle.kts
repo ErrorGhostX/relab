@@ -56,6 +56,7 @@ dependencies {
 
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 
+
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

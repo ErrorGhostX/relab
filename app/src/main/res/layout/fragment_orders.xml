@@ -6,11 +6,20 @@
     android:layout_height="match_parent">
 
     <LinearLayout
+
+
         android:id="@+id/ordersLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="8dp">
+
+        <!-- Фильтр по статусу -->
+        <Spinner
+            android:id="@+id/statusFilterSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ordersRecyclerView"
@@ -18,7 +27,10 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:padding="4dp" />
+
+
     </LinearLayout>
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add"
