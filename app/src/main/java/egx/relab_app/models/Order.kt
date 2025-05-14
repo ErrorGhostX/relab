@@ -1,63 +1,68 @@
+// egx/relab_app/models/Order.kt
 package egx.relab_app.models
 
 import android.os.Parcelable
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 import com.google.gson.annotations.SerializedName
 
 /**
- * Модель данных Order, которая соответствует JSON-объекту
- * заказа на сервере. Реализует Parcelable для передачи между
- * фрагментами через SafeArgs.
+ * Модель данных Order, соответствует JSON-объекту заказа.
  */
 @Parcelize
 data class Order(
-
     @SerializedName("id")
-    val id: String? = "",               // Уникальный идентификатор заказа (генерируется сервером)
+    val id: String? = null,
 
     @SerializedName("order_number")
-    val orderNumber: String? = "",      // Внутренний номер заказа, задаётся пользователем
+    val orderNumber: String? = null,
 
     @SerializedName("customer")
-    val customer: String? = "",         // Имя клиента, оформившего заказ
+    val customer: String? = null,
 
     @SerializedName("contact_info")
-    val contactInfo: String? = "",      // Контактная информация клиента (телефон, email)
+    val contactInfo: String? = null,
 
     @SerializedName("extra_info")
-    val extraInfo: String? = "",        // Дополнительная информация по заказу (необязательно)
+    val extraInfo: String? = null,
 
     @SerializedName("telegram")
-    val telegram: String? = "",         // Ник в Telegram, если клиент оставил его
+    val telegram: String? = null,
 
     @SerializedName("device_name")
-    val deviceName: String? = "",       // Название устройства (например, "iPhone 12")
+    val deviceName: String? = null,
 
     @SerializedName("device_type")
-    val deviceType: String? = "",       // Тип устройства (например, "Смартфон", "Ноутбук")
+    val deviceType: String? = null,
 
     @SerializedName("manufacturer")
-    val manufacturer: String? = "",     // Производитель устройства (например, "Apple")
+    val manufacturer: String? = null,
 
     @SerializedName("model")
-    val model: String? = "",            // Модель устройства (например, "iPhone 12 Pro")
+    val model: String? = null,
 
     @SerializedName("kit")
-    val kit: String? = "",              // Комплектация (зарядка, чехол и т.д.)
+    val kit: String? = null,
 
     @SerializedName("photo")
-    val photo: String? = null,          // Путь или URL до фотографии устройства (media/orders_photos/...)
+    val photo: String? = null,
 
     @SerializedName("description")
-    val description: String? = "",      // Описание неисправности или задачи
+    val description: String? = null,
 
     @SerializedName("date")
-    val date: String? = "",             // Дата создания заказа (формат YYYY-MM-DD или другой)
+    val date: String? = null,
 
     @SerializedName("order_type")
-    val orderType: String? = "",        // Код типа заказа ("repair" или "diagnosis")
+    val orderType: String? = null,
 
     @SerializedName("status")
-    val status: String? = ""            // Код статуса заказа ("new", "in_progress", "done", "pending")
+    val status: String? = null,
 
-) : Parcelable  // Инструкция Parcelize делает класс Parcelable для передачи между фрагментами
+    @SerializedName("created_by")  // убедитесь, что сериализатор на бэке даёт это поле
+    val createdByUsername: String? = null,
+
+
+    @SerializedName("services")
+    val services: List<Service> = emptyList()
+) : Parcelable

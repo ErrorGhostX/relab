@@ -14,6 +14,11 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 
+import android.app.Service
+import okhttp3.ResponseBody
+import retrofit2.http.Streaming
+
+
 /**
  * Интерфейс ApiService определяет все HTTP-запросы к REST API сервера.
  * Используется библиотекой Retrofit для генерации реальных вызовов.
@@ -94,6 +99,27 @@ interface ApiService {
     @GET("orders/")
     fun getOrders(): Call<List<Order>>
 
+
+    data class AddServiceRequest(
+        val description: String,
+        val price: Double
+    )
+
+    @POST("orders/{id}/add_service/")
+    suspend fun addService(
+        @Path("id") orderId: String,
+        @Body request: AddServiceRequest
+    ): Service
+
+    /**
+     * GET /api/orders/{id}/  — получить детали одного заказа
+     */
+    @GET("orders/{id}/")
+    suspend fun getOrderById(@Path("id") orderId: String): Order
+
+    @GET("orders/{id}/report/")
+    @Streaming
+    fun getOrderReport(@Path("id") orderId: String): Call<ResponseBody>
 
     @GET("auth/users/me/")
     suspend fun getCurrentUser(): UserResponse

@@ -27,92 +27,92 @@
                 android:src="@drawable/placeholder_image" />
         </androidx.cardview.widget.CardView>
 
-        <!-- Блок с ID и кнопкой редактирования -->
+        <!-- Блок с ID и кнопками -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
+            android:orientation="vertical"
+            android:padding="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end"
-                android:paddingVertical="8dp"
-                android:paddingHorizontal="16dp">
+                android:gravity="center_vertical">
 
-            <!-- Текст “ID: 123” займёт всё доступное пространство слева -->
-            <TextView
-                android:id="@+id/orderId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="ID: 123"
-                android:textStyle="bold"
-                android:textSize="16sp"/>
+                <TextView
+                    android:id="@+id/orderId"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="ID: 123"
+                    android:textStyle="bold"
+                    android:textSize="16sp"/>
 
-            <!-- Кнопка Тест -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/buttontest"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_menu_help"
-                app:backgroundTint="@color/purple_200"
-                android:tint="@android:color/white"
-                android:layout_marginStart="12dp"/>
+                <!-- Кнопки действия -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonAddService"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:src="@android:drawable/ic_menu_manage"
+                    android:tint="@android:color/white"
+                    app:backgroundTint="@color/purple_200"/>
 
-            <!-- Кнопка Печать -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/buttonPrint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="8dp"
                     android:src="@android:drawable/ic_menu_set_as"
                     android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_200" />
+                    app:backgroundTint="@color/purple_200"/>
 
-            <!-- Кнопка Редактировать -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/buttonEdit"
-                android:layout_width="wrap_content"
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonEdit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:tint="@android:color/white"
+                    app:backgroundTint="@color/purple_200"/>
+            </LinearLayout>
+
+            <!-- Кто создал -->
+            <TextView
+                android:id="@+id/createdBy"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_menu_edit"
-                app:backgroundTint="@color/purple_200"
-                android:tint="@android:color/white"
-                android:layout_marginStart="12dp"/>
-
+                android:text="Создан: Иван Иванов"
+                android:paddingTop="4dp"
+                android:textAppearance="@style/DetailTextStyle"/>
         </LinearLayout>
-        </LinearLayout>
-
 
         <!-- Поля заказа -->
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/orderNumber"
-            android:text="Номер заказа: 12345" />
+            android:text="Номер заказа: 12345"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/customer"
-            android:text="Клиент: Иван Иванов" />
+            android:text="Клиент: Иван Иванов"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/contactInfo"
-            android:text="Контакты: 888-123-45-67" />
+            android:text="Контакты: 888-123-45-67"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/extraInfo"
-            android:text="Доп. инфо: Срочно" />
+            android:text="Доп. инфо: Срочно"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/telegram"
-            android:text="Telegram: @ivan_telegram" />
+            android:text="Telegram: @ivan_telegram"/>
 
         <View
             android:layout_width="match_parent"
@@ -124,32 +124,32 @@
         <TextView
             style="@style/DetailTextStyle"
             android:textStyle="bold"
-            android:text="Устройство" />
+            android:text="Устройство"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/deviceName"
-            android:text="Название: iPhone 12" />
+            android:text="Название: iPhone 12"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/deviceType"
-            android:text="Тип: Смартфон" />
+            android:text="Тип: Смартфон"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/manufacturer"
-            android:text="Производитель: Apple" />
+            android:text="Производитель: Apple"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/model"
-            android:text="Модель: 12 Pro" />
+            android:text="Модель: 12 Pro"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/kit"
-            android:text="Комплектация: Зарядка, наушники" />
+            android:text="Комплектация: Зарядка, наушники"/>
 
         <View
             android:layout_width="match_parent"
@@ -161,22 +161,44 @@
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/description"
-            android:text="Описание: Не включается" />
+            android:text="Описание: Не включается"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/date"
-            android:text="Дата: 2025-05-11" />
+            android:text="Дата: 2025-05-11"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/orderType"
-            android:text="Тип заказа: Ремонт" />
+            android:text="Тип заказа: Ремонт"/>
 
         <TextView
             style="@style/DetailTextStyle"
             android:id="@+id/status"
-            android:text="Статус: В процессе" />
+            android:text="Статус: В процессе"/>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginVertical="12dp" />
+
+        <!-- Секция “Оказанные услуги” -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Оказанные услуги:"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:paddingTop="16dp"/>
+
+        <!-- Контейнер для списка услуг: здесь мы динамически добавим TextView -->
+        <LinearLayout
+            android:id="@+id/servicesContainer"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"/>
     </LinearLayout>
 </ScrollView>

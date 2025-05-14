@@ -1,6 +1,7 @@
 // RetrofitClient.kt
 package egx.relab_app.network
 
+import android.app.Service
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
@@ -20,6 +21,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.io.File
 import egx.relab_app.storage.TokenManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 
 
@@ -152,5 +157,26 @@ object RetrofitClient {
         val path = idx?.let { c.getString(it) }
         c?.close()
         return path.orEmpty()
+    }
+
+    fun addService(
+        orderId: String,
+        description: String,
+        price: Double,
+        onResult: (success: Boolean, service: Service?, error: String?) -> Unit
+    ) {
+        // Запускаем корутину на фоне
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val svc = apiService.addService(orderId, ApiService.AddServiceRequest(description, price))
+                withContext(Dispatchers.Main) {
+                    onResult(true, svc, null)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onResult(false, null, e.localizedMessage)
+                }
+            }
+        }
     }
 }
