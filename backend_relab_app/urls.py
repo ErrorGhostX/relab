@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/', include('orders.urls')),
     path('api/auth/', include('djoser.urls')),  # регистрация, профиль, сброс пароля
     path('api/auth/', include('djoser.urls.jwt')),  # получение и обновление JWT-токенов
+
 ]
 
 if settings.DEBUG:
