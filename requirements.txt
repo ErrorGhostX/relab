@@ -1,0 +1,5 @@
+Django~=5.2
+djangorestframework~=3.16.0
+views~=0.3
+reportlab~=4.4.0
+djoser~=2.3.1
