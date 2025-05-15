@@ -3,6 +3,7 @@ package egx.relab_app.ui.orders
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -44,18 +45,18 @@ class LoginFragment : Fragment() {
     private fun doLogin(user: String, pass: String) {
         lifecycleScope.launch {
             try {
-                // 1. Получаем JWT
+
                 val resp = RetrofitClient.apiService.login(ApiService.LoginRequest(user, pass))
                 RetrofitClient.tokenManager.accessToken = resp.access
                 RetrofitClient.tokenManager.refreshToken = resp.refresh
 
-                // 2. Получаем данные текущего пользователя
+
                 val currentUser = RetrofitClient.apiService.getCurrentUser()
 
-                // 3. Обновляем UI навигационного бара
+
                 updateNavBar(currentUser)
 
-                // 4. Переходим сразу в список заказов и очищаем back-stack
+
                 findNavController().navigate(
                     R.id.orderListFragment,
                     null,
@@ -71,14 +72,23 @@ class LoginFragment : Fragment() {
 
     private fun updateNavBar(user: UserResponse) {
         // Обновляем UI навигационного бара
-        val navView = requireActivity().findViewById<NavigationView>(R.id.nav_view) // Измените id на ваш actual nav_view
+        val navView = requireActivity().findViewById<NavigationView>(R.id.nav_view)
         val headerView = navView.getHeaderView(0)
 
         val userNameTextView = headerView.findViewById<TextView>(R.id.textView)
         val userMailTextView = headerView.findViewById<TextView>(R.id.textMail)
 
-        userNameTextView.text = user.username  // Или любое другое поле, которое хранит имя
-        userMailTextView.text = user.email  // Или другое поле для почты
+        userNameTextView.text = user.username
+        userMailTextView.text = user.email
+    }
+    override fun onResume() {
+        super.onResume()
+        (activity as AppCompatActivity).supportActionBar?.hide()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        (activity as AppCompatActivity).supportActionBar?.show()
     }
 
     override fun onDestroyView() {

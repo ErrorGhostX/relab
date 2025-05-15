@@ -16,40 +16,17 @@ import retrofit2.http.Path
 
 import android.app.Service
 import okhttp3.ResponseBody
+import retrofit2.http.DELETE
 import retrofit2.http.Streaming
 
 
-/**
- * Интерфейс ApiService определяет все HTTP-запросы к REST API сервера.
- * Используется библиотекой Retrofit для генерации реальных вызовов.
- */
+
 interface ApiService {
     data class LoginRequest(val username: String, val password: String)
     data class TokenResponse(val access: String, val refresh: String)
     data class RefreshRequest(val refresh: String)
     data class RefreshResponse(val access: String)
-    /**
-     * Отправляет multipart/form-data POST-запрос на создание нового заказа.
-     *
-     * @param orderNumber   Номер заказа.
-     * @param customer      Имя клиента.
-     * @param contactInfo   Контактная информация клиента.
-     * @param extraInfo     Дополнительная информация по заказу.
-     * @param telegram      Телеграм-контакт.
-     * @param deviceName    Название устройства.
-     * @param deviceType    Тип устройства.
-     * @param manufacturer  Производитель устройства.
-     * @param model         Модель устройства.
-     * @param kit           Комплектация устройства.
-     * @param description   Описание проблемы.
-     * @param date          Дата создания заказа.
-     * @param status        Статус заказа (new, in_progress, done, pending).
-     * @param orderType     Тип заказа (repair, diagnosis).
-     * @param photo         Файл изображения устройства (опционально).
-     *
-     * @return {@link Call<Order>} возвращает объект Call, который при выполнении
-     *         вернёт созданный объект Order или ошибку.
-     */
+
     @Multipart
     @POST("orders/create-with-photo/")
     fun createOrder(
@@ -90,30 +67,41 @@ interface ApiService {
         @Part("order_type") orderType: RequestBody,
         @Part photo: MultipartBody.Part?
     ): Call<Order>
-    /**
-     * Отправляет GET-запрос для получения списка всех заказов.
-     *
-     * @return {@link Call<List<Order>>} возвращает объект Call, который при выполнении
-     *         вернёт список всех заказов или ошибку.
-     */
+
     @GET("orders/")
     fun getOrders(): Call<List<Order>>
-
-
     data class AddServiceRequest(
         val description: String,
         val price: Double
     )
 
     @POST("orders/{id}/add_service/")
-    suspend fun addService(
+    fun addService(
         @Path("id") orderId: String,
         @Body request: AddServiceRequest
-    ): Service
+    ): Call<Service>
 
-    /**
-     * GET /api/orders/{id}/  — получить детали одного заказа
-     */
+    @GET("analytics/monthly_earnings/")
+    fun getMonthlyEarnings(): Call<EarningsResponse>
+    data class EarningsResponse(
+        val message: String
+    )
+
+
+    @GET("analytics/monthly_completed_orders/")
+    fun getMonthlyCompletedOrders(): Call<OrdersCountResponse>
+    data class OrdersCountResponse(
+        val message: String
+    )
+
+
+    @DELETE("orders/{orderId}/services/{serviceId}/")
+    fun deleteService(
+        @Path("orderId") orderId: Int,
+        @Path("serviceId") serviceId: Int
+    ): Call<Void>
+
+
     @GET("orders/{id}/")
     suspend fun getOrderById(@Path("id") orderId: String): Order
 
@@ -124,7 +112,7 @@ interface ApiService {
     @GET("auth/users/me/")
     suspend fun getCurrentUser(): UserResponse
 
-    // Регистрация / Логин через Djoser + SimpleJWT
+
     @POST("auth/jwt/create/")
     suspend fun login(@Body credentials: LoginRequest): TokenResponse
 

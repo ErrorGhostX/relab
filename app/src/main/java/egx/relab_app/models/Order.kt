@@ -6,13 +6,10 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 import com.google.gson.annotations.SerializedName
 
-/**
- * Модель данных Order, соответствует JSON-объекту заказа.
- */
 @Parcelize
 data class Order(
     @SerializedName("id")
-    val id: String? = null,
+    val id: Int? = null,
 
     @SerializedName("order_number")
     val orderNumber: String? = null,
@@ -59,10 +56,20 @@ data class Order(
     @SerializedName("status")
     val status: String? = null,
 
-    @SerializedName("created_by")  // убедитесь, что сериализатор на бэке даёт это поле
+    @SerializedName("created_by")
     val createdByUsername: String? = null,
 
 
     @SerializedName("services")
     val services: List<Service> = emptyList()
+
+
+) : Parcelable
+
+@Parcelize
+data class User(
+    @SerializedName("id")       val id: Int,
+    @SerializedName("username") val username: String,
+    @SerializedName("first_name") val firstName: String?,
+    @SerializedName("last_name")  val lastName: String?
 ) : Parcelable

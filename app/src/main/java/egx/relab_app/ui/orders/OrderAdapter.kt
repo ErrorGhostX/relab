@@ -8,21 +8,14 @@ import egx.relab_app.R
 import egx.relab_app.databinding.ItemOrderBinding
 import egx.relab_app.models.Order
 
-/**
- * Адаптер для отображения списка заказов в RecyclerView.
- *
- * @param onClick Лямбда-функция, вызываемая при клике на элемент.
- */
+
 class OrderAdapter(
     private val onClick: (Order) -> Unit
 ) : RecyclerView.Adapter<OrderAdapter.OrderViewHolder>() {
 
-    // Изменяемый список заказов
+
     var orders: List<Order> = emptyList()
 
-    /**
-     * Метод для обновления списка заказов.
-     */
     fun updateList(newList: List<Order>) {
         orders = newList
         notifyDataSetChanged()
@@ -52,7 +45,7 @@ class OrderAdapter(
             binding.orderIdText.text = "ID: ${order.id}"
             binding.deviceNameText.text = "Устройство: ${order.deviceName}"
             binding.orderStatusText.text = "Статус: ${order.status}"
-
+            binding.orderCreatedText.text = "Создан: ${order.createdByUsername}"
             Glide.with(binding.root.context)
                 .load(order.photo)
                 .placeholder(R.drawable.placeholder_image)

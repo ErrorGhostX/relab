@@ -40,5 +40,11 @@
             android:layout_height="wrap_content"
             android:text="Статус: В процессе" />
 
+        <TextView
+            android:id="@+id/orderCreatedText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Создан: В процессе" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="8dp">
+
+    <!-- Описание + цена: занимает всё свободное место -->
+    <TextView
+        android:id="@+id/tvServiceDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        style="@style/DetailTextStyleBlack"/>
+
+    <!-- Кнопка «корзина» -->
+    <ImageButton
+        android:id="@+id/btnDeleteService"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/purple_200"
+        android:contentDescription="Удалить услугу"
+        android:src="@android:drawable/ic_menu_delete" />
+</LinearLayout>

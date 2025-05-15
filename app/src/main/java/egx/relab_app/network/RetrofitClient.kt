@@ -29,11 +29,12 @@ import okhttp3.Interceptor
 
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:8000/api/"
+    private const val BASE_URL = "https://baseblock.ru/api/"
+
 
     lateinit var tokenManager: TokenManager
 
-    // Интерсептор, который добавляет заголовок Authorization
+
     private val authInterceptor = Interceptor { chain ->
         val reqBuilder = chain.request().newBuilder()
         tokenManager.accessToken?.let { token ->
@@ -42,7 +43,7 @@ object RetrofitClient {
         chain.proceed(reqBuilder.build())
     }
 
-    // Теперь клиент включает и authInterceptor, и логирование
+
     private val client = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
@@ -55,7 +56,7 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
-    // Инициализация токен-менеджера на старте приложения
+
     fun init(context: Context) {
         tokenManager = TokenManager(context)
     }
@@ -97,7 +98,7 @@ object RetrofitClient {
         selectedPhotoUri: Uri?,
         callback: (success: Boolean, code: Int, errorBody: String?) -> Unit
     ) {
-        val id = order.id ?: run {
+        val id = order.id?.toString() ?: run {  // Преобразуем id в String
             callback(false, -1, "Order ID is null")
             return@updateOrder
         }
@@ -125,10 +126,6 @@ object RetrofitClient {
         })
     }
 
-    private fun cb(fn:(Boolean)->Unit) = object: Callback<Order> {
-        override fun onResponse(call: Call<Order>, resp: Response<Order>) = fn(resp.isSuccessful)
-        override fun onFailure(call: Call<Order>, t: Throwable) = fn(false)
-    }
 
     private fun makeParts(o:Order): Map<String, RequestBody> {
         val mt="text/plain".toMediaType()
@@ -165,18 +162,29 @@ object RetrofitClient {
         price: Double,
         onResult: (success: Boolean, service: Service?, error: String?) -> Unit
     ) {
-        // Запускаем корутину на фоне
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val svc = apiService.addService(orderId, ApiService.AddServiceRequest(description, price))
-                withContext(Dispatchers.Main) {
-                    onResult(true, svc, null)
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    onResult(false, null, e.localizedMessage)
+        val body = ApiService.AddServiceRequest(description, price)
+        apiService.addService(orderId, body).enqueue(object : Callback<Service> {
+            override fun onResponse(call: Call<Service>, response: Response<Service>) {
+                if (response.isSuccessful) {
+                    val newService = response.body()
+                    if (newService != null) {
+                        onResult(true, newService, null)
+                    } else {
+                        onResult(false, null, "Не удалось получить услугу")
+                    }
+                } else {
+                    onResult(false, null, "")
                 }
             }
-        }
+
+            override fun onFailure(call: Call<Service>, t: Throwable) {
+                onResult(false, null, "")
+            }
+        })
     }
+
+
+
+
+
 }

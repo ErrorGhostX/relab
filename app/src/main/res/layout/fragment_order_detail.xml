@@ -47,7 +47,8 @@
                     android:layout_weight="1"
                     android:text="ID: 123"
                     android:textStyle="bold"
-                    android:textSize="16sp"/>
+                    android:textSize="16sp"
+                    android:textColor="#000000" />
 
                 <!-- Кнопки действия -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -85,32 +86,32 @@
                 android:layout_height="wrap_content"
                 android:text="Создан: Иван Иванов"
                 android:paddingTop="4dp"
-                android:textAppearance="@style/DetailTextStyle"/>
+                style="@style/DetailTextStyleBlack"/>
         </LinearLayout>
 
         <!-- Поля заказа -->
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/orderNumber"
             android:text="Номер заказа: 12345"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/customer"
             android:text="Клиент: Иван Иванов"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/contactInfo"
             android:text="Контакты: 888-123-45-67"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/extraInfo"
             android:text="Доп. инфо: Срочно"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/telegram"
             android:text="Telegram: @ivan_telegram"/>
 
@@ -122,32 +123,31 @@
 
         <!-- Блок устройства -->
         <TextView
-            style="@style/DetailTextStyle"
-            android:textStyle="bold"
+            style="@style/DetailHeaderTextStyleBlack"
             android:text="Устройство"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/deviceName"
             android:text="Название: iPhone 12"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/deviceType"
             android:text="Тип: Смартфон"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/manufacturer"
             android:text="Производитель: Apple"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/model"
             android:text="Модель: 12 Pro"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/kit"
             android:text="Комплектация: Зарядка, наушники"/>
 
@@ -159,22 +159,22 @@
 
         <!-- Описание и статус -->
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/description"
             android:text="Описание: Не включается"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/date"
             android:text="Дата: 2025-05-11"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/orderType"
             android:text="Тип заказа: Ремонт"/>
 
         <TextView
-            style="@style/DetailTextStyle"
+            style="@style/DetailTextStyleBlack"
             android:id="@+id/status"
             android:text="Статус: В процессе"/>
 
@@ -190,7 +190,8 @@
             android:layout_height="wrap_content"
             android:text="Оказанные услуги:"
             android:textStyle="bold"
-            android:textSize="16sp"
+            android:textSize="18sp"
+            android:textColor="#000000"
             android:paddingTop="16dp"/>
 
         <!-- Контейнер для списка услуг: здесь мы динамически добавим TextView -->

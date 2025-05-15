@@ -8,7 +8,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class Service(
     @SerializedName("id")
-    val id: String,
+    val id: Int,
 
     @SerializedName("description")
     val description: String,

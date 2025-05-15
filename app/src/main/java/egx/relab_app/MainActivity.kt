@@ -39,19 +39,38 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         appBarConfiguration = AppBarConfiguration(
-            setOf(R.id.nav_home, R.id.orderListFragment),
+            setOf(R.id.nav_home),
             drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        // Обработка пункта "Выход"
+
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.nav_home -> {
+                    navController.navigate(R.id.nav_home)
+                    drawerLayout.closeDrawers()
+                    true
+                }
+                R.id.nav_orders -> {
+                    navController.navigate(R.id.orderListFragment)
+                    drawerLayout.closeDrawers()
+                    true
+                }
+                R.id.nav_analytics -> {
+                    navController.navigate(R.id.analyticsFragment)
+                    drawerLayout.closeDrawers()
+                    true
+                }
+                R.id.nav_profile -> {
+                    navController.navigate(R.id.profileFragment)
+                    drawerLayout.closeDrawers()
+                    true
+                }
                 R.id.nav_logout -> {
                     tokenManager.accessToken = null
                     tokenManager.refreshToken = null
-                    tokenManager.username = null
                     tokenManager.username = null
                     drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                     navController.navigate(R.id.loginFragment)
@@ -61,7 +80,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Проверка авторизации и загрузка текущего пользователя
+
         lifecycleScope.launch {
             val token = tokenManager.accessToken
             if (token.isNullOrBlank()) {
@@ -69,13 +88,13 @@ class MainActivity : AppCompatActivity() {
                 navController.navigate(R.id.loginFragment)
             } else {
                 try {
-                    val user = RetrofitClient.apiService.getCurrentUser() // Получаем пользователя с почтой
+                    val user = RetrofitClient.apiService.getCurrentUser()
                     tokenManager.username = user.username
-                    tokenManager.email = user.email // Сохраняем почту пользователя
-                    updateNavBar(user) // Обновляем UI с именем и почтой
+                    tokenManager.email = user.email
+                    updateNavBar(user)
                     drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
                 } catch (e: Exception) {
-                    // Неверный токен — направляем на логин
+
                     tokenManager.accessToken = null
                     tokenManager.refreshToken = null
                     tokenManager.username = null
@@ -86,8 +105,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Установка имени и почты пользователя из SharedPreferences (на случай, если API ещё не вызван)
-        //updateNavBar(UserResponse(username = tokenManager.username, email = tokenManager.email))
+
     }
 
     private fun updateNavBar(user: UserResponse) {
@@ -97,8 +115,8 @@ class MainActivity : AppCompatActivity() {
         val userNameTextView = headerView.findViewById<TextView>(R.id.textView)
         val userMailTextView = headerView.findViewById<TextView>(R.id.textMail)
 
-        userNameTextView.text = user.username ?: "Гость"  // Или любое другое поле, которое хранит имя
-        userMailTextView.text = user.email ?: "Не указан"  // Или другое поле для почты
+        userNameTextView.text = user.username ?: "Гость"
+        userMailTextView.text = user.email ?: "Не указан"
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

@@ -13,15 +13,24 @@
         <action
             android:id="@+id/action_homeFragment_to_orderListFragment"
             app:destination="@id/orderListFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_analyticsFragment"
+            app:destination="@id/analyticsFragment" />
     </fragment>
 
-
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="egx.relab_app.ui.orders.ProfileFragment"
+        android:label="Профиль"
+        tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/orderListFragment"
         android:name="egx.relab_app.ui.orders.OrderListFragment"
         android:label="Заказы"
         tools:layout="@layout/fragment_orders">
+
+
 
         <action
             android:id="@+id/action_orderListFragment_to_orderFormFragment"
@@ -35,7 +44,11 @@
             app:exitAnim="@anim/nav_default_exit_anim" />
 
     </fragment>
-
+    <fragment
+        android:id="@+id/analyticsFragment"
+        android:name="egx.relab_app.ui.orders.AnalyticsFragment"
+        android:label="Аналитика"
+        tools:layout="@layout/fragment_analytics" />
 
     <fragment
         android:id="@+id/orderFormFragment"

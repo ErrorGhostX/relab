@@ -24,25 +24,40 @@ class HomeFragment : Fragment() {
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
-    }
 
+
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Проверка авторизации
+
         lifecycleScope.launch {
             try {
                 RetrofitClient.apiService.getCurrentUser()
-                // Если успешно, отображаем кнопку заказов
+
+
                 binding.cardOrders.setOnClickListener {
                     findNavController().navigate(R.id.action_homeFragment_to_orderListFragment)
                 }
+
+
+                binding.cardAnalytics.setOnClickListener {
+                    findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
+                }
+
+                /* Переход на профиль
+                binding.cardProfile.setOnClickListener {
+                    findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
+                }
+                */
+
+
             } catch (e: Exception) {
-                // Если токен невалиден или отсутствует — перенаправляем на логин
                 findNavController().navigate(R.id.loginFragment)
             }
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -5,10 +5,30 @@
 
     <group android:checkableBehavior="single">
 
+        <item
+            android:id="@+id/nav_home"
+            android:title="Главная"/>
+
+
+        <item
+            android:id="@+id/nav_orders"
+            android:title="Заказы"/>
+
+
+        <item
+            android:id="@+id/nav_analytics"
+            android:title="Аналитика"/>
+
+
+        <item
+            android:id="@+id/nav_profile"
+            android:title="Профиль"/>
+
 
         <item
             android:id="@+id/nav_logout"
             android:title="Выход"/>
+
 
     </group>
 </menu>

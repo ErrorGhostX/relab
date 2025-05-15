@@ -94,7 +94,7 @@ class OrderListFragment : Fragment() {
             override fun onResponse(call: Call<List<Order>>, response: Response<List<Order>>) {
                 when {
                     response.code() == 401 -> {
-                        // Только уведомляем — НЕ перенаправляем
+
                         Toast.makeText(requireContext(),
                             "Сессия истекла, пожалуйста войдите снова",
                             Toast.LENGTH_LONG).show()

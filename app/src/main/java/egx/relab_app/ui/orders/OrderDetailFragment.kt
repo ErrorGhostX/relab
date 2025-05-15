@@ -1,12 +1,10 @@
 package egx.relab_app.ui.orders
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
-import android.widget.Toast
+import android.view.*
+import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -17,13 +15,8 @@ import com.google.android.material.textfield.TextInputEditText
 import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrderDetailBinding
 import egx.relab_app.models.Order
-import egx.relab_app.models.Service
 import egx.relab_app.network.RetrofitClient
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.ResponseBody
+import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
 
@@ -31,92 +24,90 @@ class OrderDetailFragment : Fragment() {
 
     private var _binding: FragmentOrderDetailBinding? = null
     private val binding get() = _binding!!
-
     private lateinit var currentOrder: Order
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentOrderDetailBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
         currentOrder = OrderDetailFragmentArgs.fromBundle(requireArguments()).order
         bindOrderToUI(currentOrder)
 
         findNavController().currentBackStackEntry
             ?.savedStateHandle
             ?.getLiveData<Order>("updatedOrder")
-            ?.observe(viewLifecycleOwner) { updated ->
-                currentOrder = updated
-                bindOrderToUI(updated)
+            ?.observe(viewLifecycleOwner) {
+                currentOrder = it
+                bindOrderToUI(it)
             }
 
         binding.buttonEdit.setOnClickListener {
-            val action = OrderDetailFragmentDirections
-                .actionOrderDetailFragmentToOrderFormFragment(currentOrder)
+            val action = OrderDetailFragmentDirections.actionOrderDetailFragmentToOrderFormFragment(currentOrder)
             findNavController().navigate(action)
         }
 
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
-
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
     }
 
-    private fun bindOrderToUI(order: Order) {
-        binding.orderId.text        = "ID: ${order.id}"
-        binding.createdBy.text      = "Создан: ${order.createdByUsername ?: "-"}"
-        binding.orderNumber.text    = "Номер заказа: ${order.orderNumber}"
-        binding.customer.text       = "Клиент: ${order.customer}"
-        binding.contactInfo.text    = "Контакты: ${order.contactInfo}"
-        binding.extraInfo.text      = "Доп. инфо: ${order.extraInfo}"
-        binding.telegram.text       = "Телеграм: ${order.telegram}"
-        binding.deviceName.text     = "Устройство: ${order.deviceName}"
-        binding.deviceType.text     = "Тип: ${order.deviceType}"
-        binding.manufacturer.text   = "Производитель: ${order.manufacturer}"
-        binding.model.text          = "Модель: ${order.model}"
-        binding.kit.text            = "Комплектация: ${order.kit}"
-        binding.description.text    = "Описание: ${order.description}"
-        binding.date.text           = "Дата: ${order.date}"
-        binding.orderType.text      = "Тип: ${order.orderType}"
-        binding.status.text         = "Статус: ${order.status}"
+    private fun bindOrderToUI(order: Order) = with(binding) {
+        orderId.text        = "ID: ${order.id}"
+        createdBy.text      = "Создал: ${order.createdByUsername ?: "-"}"
+        orderNumber.text    = "Номер заказа: ${order.orderNumber}"
+        customer.text       = "Клиент: ${order.customer}"
+        contactInfo.text    = "Контакты: ${order.contactInfo}"
+        extraInfo.text      = "Доп. инфо: ${order.extraInfo}"
+        telegram.text       = "Телеграм: ${order.telegram}"
+        deviceName.text     = "Устройство: ${order.deviceName}"
+        deviceType.text     = "Тип: ${order.deviceType}"
+        manufacturer.text   = "Производитель: ${order.manufacturer}"
+        model.text          = "Модель: ${order.model}"
+        kit.text            = "Комплектация: ${order.kit}"
+        description.text    = "Описание: ${order.description}"
+        date.text           = "Дата: ${order.date}"
+        orderType.text      = "Тип: ${order.orderType}"
+        status.text         = "Статус: ${order.status}"
 
-        Glide.with(this)
+        Glide.with(this@OrderDetailFragment)
             .load(order.photo)
             .placeholder(R.drawable.placeholder_image)
-            .into(binding.orderImage)
+            .into(orderImage)
 
-        // Отображение оказанных услуг
+        displayServices(order)
+    }
+
+    private fun displayServices(order: Order) {
         val container = binding.servicesContainer
         container.removeAllViews()
 
         if (order.services.isEmpty()) {
             container.addView(TextView(requireContext()).apply {
                 text = "Услуг нет"
+                setTextAppearance(R.style.DetailTextStyleBlack)
                 setPadding(0, 8, 0, 8)
-                setTextAppearance(R.style.DetailTextStyle)
             })
-        } else {
-            var totalPrice = 0.0
-            order.services.forEach { svc ->
-                totalPrice += svc.price
-                container.addView(TextView(requireContext()).apply {
-                    text = "${svc.description}: ${"%.2f".format(svc.price)} ₽"
-                    setPadding(0, 4, 0, 4)
-                    setTextAppearance(R.style.DetailTextStyle)
-                })
-            }
-            container.addView(TextView(requireContext()).apply {
-                text = "Итого: ${"%.2f".format(totalPrice)} ₽"
-                setPadding(0, 10, 0, 4)
-
-            })
+            return
         }
+        order.services.forEach { svc ->
+            val row = layoutInflater.inflate(R.layout.item_service, container, false)
+            row.findViewById<TextView>(R.id.tvServiceDesc).text =
+                "${svc.description}: ${"%.2f".format(svc.price)} ₽"
+
+            row.findViewById<ImageButton>(R.id.btnDeleteService).setOnClickListener {
+                deleteService(order.id!!, svc.id)
+            }
+
+            container.addView(row)
+        }
+
+        val total = order.services.sumOf { it.price }
+        container.addView(TextView(requireContext()).apply {
+            text = "Итого: ${"%.2f".format(total)} ₽"
+            setTextAppearance(R.style.DetailTextStyleBlack)
+            setPadding(0, 10, 0, 4)
+        })
     }
 
     private fun showAddServiceDialog() {
@@ -128,46 +119,67 @@ class OrderDetailFragment : Fragment() {
             .setTitle("Добавить услугу")
             .setView(dialogView)
             .setPositiveButton("Добавить") { dialog, _ ->
-                val d = etDesc.text.toString().trim()
-                val pText = etPrice.text.toString().trim()
-                when {
-                    d.isEmpty() || pText.isEmpty() ->
-                        Toast.makeText(requireContext(), "Заполните оба поля", Toast.LENGTH_SHORT).show()
-                    pText.toDoubleOrNull() == null ->
-                        Toast.makeText(requireContext(), "Некорректная цена", Toast.LENGTH_SHORT).show()
-                    else -> addServiceToOrder(d, pText.toDouble())
+                val desc = etDesc.text.toString().trim()
+                val priceText = etPrice.text.toString().trim()
+
+                if (desc.isEmpty() || priceText.isEmpty()) {
+                    showToast("Заполните оба поля")
+                } else {
+                    priceText.toDoubleOrNull()?.let {
+                        addServiceToOrder(desc, it)
+                    } ?: showToast("Некорректная цена")
                 }
+
                 dialog.dismiss()
             }
-            .setNegativeButton("Отмена") { dlg, _ -> dlg.dismiss() }
+            .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
     private fun addServiceToOrder(description: String, price: Double) {
-        RetrofitClient.addService(currentOrder.id!!, description, price) { success, _, error ->
+        RetrofitClient.addService(currentOrder.id.toString(), description, price) { success, _, error ->  // Преобразуем id в String
             if (success) {
-                Toast.makeText(requireContext(), "Услуга добавлена", Toast.LENGTH_SHORT).show()
+                showToast("Услуга добавлена")
                 loadOrderDetails()
             } else {
-                Toast.makeText(requireContext(), "Ошибка: $error", Toast.LENGTH_LONG).show()
+                showToast("Ошибка: $error")
+                loadOrderDetails()
             }
+            loadOrderDetails()
         }
     }
 
+    private fun deleteService(orderId: Int, serviceId: Int) {
+        RetrofitClient.apiService.deleteService(orderId, serviceId)
+            .enqueue(object : retrofit2.Callback<Void> {
+                override fun onResponse(call: retrofit2.Call<Void>, response: retrofit2.Response<Void>) {
+                    if (response.isSuccessful) {
+                        showToast("Услуга удалена")
+                        loadOrderDetails()
+                    } else {
+                        showToast("Ошибка удаления")
+                        loadOrderDetails()
+                    }
+                }
+
+                override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
+                    showToast("Сеть недоступна")
+                    loadOrderDetails()
+                }
+            })
+    }
+
+
     private fun loadOrderDetails() {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch {
             try {
-                val updatedOrder = RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
-
-                withContext(Dispatchers.Main) {
-                    currentOrder = updatedOrder
-                    bindOrderToUI(updatedOrder)  // Обновляем весь UI
+                val updatedOrder = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
                 }
-
+                currentOrder = updatedOrder
+                bindOrderToUI(updatedOrder)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Ошибка загрузки заказа", Toast.LENGTH_SHORT).show()
-                }
+                showToast("Ошибка загрузки заказа")
             }
         }
     }
@@ -175,29 +187,36 @@ class OrderDetailFragment : Fragment() {
     private fun generateAndShareReport() {
         lifecycleScope.launch {
             try {
-                val pdfBytes: ByteArray = withContext(Dispatchers.IO) {
-                    val call = RetrofitClient.apiService.getOrderReport(currentOrder.id!!)
-                    val response = call.execute()
-                    val body: ResponseBody = response.body() ?: throw Exception("Пустой ответ")
-                    body.byteStream().use { it.readBytes() }
+                val pdfBytes = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getOrderReport(currentOrder.id.toString()).execute()
+                        .body()?.byteStream()?.readBytes() ?: throw Exception("Пустой ответ")
                 }
-                val file = File(requireContext().cacheDir, "report_${currentOrder.id}.pdf")
-                FileOutputStream(file).use { it.write(pdfBytes, 0, pdfBytes.size) }
+
+                val file = File(requireContext().cacheDir, "Order_${currentOrder.id}.pdf")
+                FileOutputStream(file).use { it.write(pdfBytes) }
+
                 val uri = FileProvider.getUriForFile(
                     requireContext(),
                     "${requireContext().packageName}.fileprovider",
                     file
                 )
-                val share = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
+
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/pdf")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                startActivity(Intent.createChooser(share, "Поделиться отчётом"))
+
+                startActivity(Intent.createChooser(intent, "Открыть отчёт"))
+            } catch (e: ActivityNotFoundException) {
+                showToast("Нет приложения для открытия PDF")
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Не удалось сгенерировать отчёт: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                showToast("Ошибка генерации PDF: ${e.localizedMessage}")
             }
         }
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {
