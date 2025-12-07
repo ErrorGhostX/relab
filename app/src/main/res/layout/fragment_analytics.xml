@@ -28,7 +28,7 @@
         android:text="Заработано: —"
         android:textSize="24sp"
         android:layout_marginTop="32dp"
-        android:textColor="@color/black" />
+/>
 
     <TextView
         android:id="@+id/tvCompletedOrders"
@@ -37,5 +37,5 @@
         android:text="Выполнено заказов: —"
         android:textSize="20sp"
         android:layout_marginTop="16dp"
-        android:textColor="@color/black" />
+ />
 </LinearLayout>

@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import egx.relab_app.R
 import egx.relab_app.databinding.FragmentOrdersBinding
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
@@ -45,13 +44,12 @@ class OrderListFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        // Лог, чтобы убедиться, что Fragment загружен
+        Log.d("OrderListFragment", "onViewCreated called")
+
         setupRecyclerView()
         setupFilterSpinner()
-        binding.add.setOnClickListener {
-            findNavController().navigate(
-                OrderListFragmentDirections.actionOrderListFragmentToOrderFormFragment()
-            )
-        }
+        setupFab()
         loadOrders()
     }
 
@@ -66,63 +64,83 @@ class OrderListFragment : Fragment() {
     }
 
     private fun setupFilterSpinner() {
+        Log.d("OrderListFragment", "setupFilterSpinner called")
+
         val options = listOf("Все") + statusMap.values
-        val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, options)
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            options
+        )
         binding.statusFilterSpinner.adapter = spinnerAdapter
 
-        binding.statusFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selected = options[position]
-                val filtered = if (selected == "Все") {
-                    allOrders
-                } else {
-                    val code = reverseStatusMap[selected]
-                    allOrders.filter { it.status == code }
+        binding.statusFilterSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    val selected = options[position]
+                    Log.d("OrderListFragment", "Spinner selected: $selected")
+                    val filtered = if (selected == "Все") {
+                        allOrders
+                    } else {
+                        val code = reverseStatusMap[selected]
+                        allOrders.filter { it.status == code }
+                    }
+                    showOrders(filtered)
                 }
-                showOrders(filtered)
-            }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+            }
+    }
+
+    private fun setupFab() {
+        binding.add.setOnClickListener {
+            findNavController().navigate(
+                OrderListFragmentDirections.actionOrderListFragmentToOrderFormFragment()
+            )
         }
     }
 
-
-
-
     private fun loadOrders() {
         RetrofitClient.apiService.getOrders().enqueue(object : Callback<List<Order>> {
-            override fun onResponse(call: Call<List<Order>>, response: Response<List<Order>>) {
-                when {
-                    response.code() == 401 -> {
-
-                        Toast.makeText(requireContext(),
-                            "Сессия истекла, пожалуйста войдите снова",
-                            Toast.LENGTH_LONG).show()
-                    }
-                    response.isSuccessful -> {
-                        allOrders = response.body().orEmpty()
-                        showOrders(allOrders)
-                    }
-                    else -> {
-                        Toast.makeText(requireContext(),
-                            "Ошибка сервера: ${response.code()}",
-                            Toast.LENGTH_SHORT).show()
-                    }
+            override fun onResponse(
+                call: Call<List<Order>>,
+                response: Response<List<Order>>
+            ) {
+                if (response.isSuccessful) {
+                    allOrders = response.body().orEmpty()
+                    showOrders(allOrders)
+                } else if (response.code() == 401) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Сессия истекла, пожалуйста войдите снова",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "Ошибка сервера: ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             override fun onFailure(call: Call<List<Order>>, t: Throwable) {
-                Toast.makeText(requireContext(),
+                Toast.makeText(
+                    requireContext(),
                     "Ошибка сети: ${t.localizedMessage}",
-                    Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         })
     }
 
-
-
-
-
     private fun showOrders(orders: List<Order>) {
+        // Преобразуем статус из кода в русское значение
         val displayOrders = orders.map { order ->
             order.copy(
                 status = statusMap[order.status] ?: order.status,
@@ -130,7 +148,10 @@ class OrderListFragment : Fragment() {
             )
         }
         adapter.updateList(displayOrders)
-        Toast.makeText(requireContext(), "Показано ${displayOrders.size} заказов", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(),
+            "Показано ${displayOrders.size} заказов",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun onDestroyView() {

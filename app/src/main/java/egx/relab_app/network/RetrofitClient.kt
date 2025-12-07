@@ -29,7 +29,7 @@ import okhttp3.Interceptor
 
 
 object RetrofitClient {
-    private const val BASE_URL = "https://baseblock.ru/api/"
+    private const val BASE_URL = "http://10.0.2.2:8000/api/"
 
 
     lateinit var tokenManager: TokenManager

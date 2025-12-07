@@ -58,7 +58,7 @@ class LoginFragment : Fragment() {
 
 
                 findNavController().navigate(
-                    R.id.orderListFragment,
+                    R.id.nav_home,
                     null,
                     navOptions {
                         popUpTo(R.id.loginFragment) { inclusive = true }
@@ -71,7 +71,7 @@ class LoginFragment : Fragment() {
     }
 
     private fun updateNavBar(user: UserResponse) {
-        // Обновляем UI навигационного бара
+
         val navView = requireActivity().findViewById<NavigationView>(R.id.nav_view)
         val headerView = navView.getHeaderView(0)
 

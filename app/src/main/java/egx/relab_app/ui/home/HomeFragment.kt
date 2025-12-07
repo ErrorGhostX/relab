@@ -45,11 +45,11 @@ class HomeFragment : Fragment() {
                     findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
                 }
 
-                /* Переход на профиль
+
                 binding.cardProfile.setOnClickListener {
                     findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
                 }
-                */
+
 
 
             } catch (e: Exception) {

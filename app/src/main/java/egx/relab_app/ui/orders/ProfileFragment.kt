@@ -38,15 +38,27 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         tokenManager = TokenManager(requireContext())
 
-        binding.tvUserName.text = tokenManager.username ?: "Неизвестный пользователь"
-        binding.tvEmail.text = tokenManager.email ?: "Email не указан"
+        // Сначала покажем то, что уже есть (из TokenManager), чтобы не было пустого экрана
+        binding.tvUserName.text = tokenManager.username ?: "Загрузка..."
+        binding.tvEmail.text    = tokenManager.email    ?: "Загрузка..."
 
+        // Теперь запросим свежие данные с сервера
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val user = RetrofitClient.apiService.getCurrentUser()
+                // Обновляем UI
+                binding.tvUserName.text = user.username
+                binding.tvEmail.text    = user.email
 
-
-//        binding.btnEditProfile.setOnClickListener {
-//
-//            Toast.makeText(requireContext(),
-//        }
+                // Сохраняем в TokenManager, чтобы в других местах было актуально
+                tokenManager.username = user.username
+                tokenManager.email    = user.email
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(),
+                    "Не удалось загрузить профиль: ${e.localizedMessage}",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
 
         binding.btnLogout.setOnClickListener {
             logout()
@@ -56,8 +68,8 @@ class ProfileFragment : Fragment() {
     private fun logout() {
         tokenManager.accessToken = null
         tokenManager.refreshToken = null
-        tokenManager.username = null
-        tokenManager.email = null
+        tokenManager.username     = null
+        tokenManager.email        = null
 
         findNavController().navigate(R.id.loginFragment)
     }
@@ -67,3 +79,4 @@ class ProfileFragment : Fragment() {
         _binding = null
     }
 }
+

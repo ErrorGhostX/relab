@@ -24,7 +24,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/placeholder_image" />
+                android:src="@color/purple_500" />
         </androidx.cardview.widget.CardView>
 
         <!-- Блок с ID и кнопками -->
@@ -58,7 +58,8 @@
                     android:layout_marginStart="8dp"
                     android:src="@android:drawable/ic_menu_manage"
                     android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_200"/>
+                    app:backgroundTint="@color/purple_500"/>
+
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/buttonPrint"
@@ -67,7 +68,8 @@
                     android:layout_marginStart="8dp"
                     android:src="@android:drawable/ic_menu_set_as"
                     android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_200"/>
+                    app:backgroundTint="@color/purple_500"/>
+
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/buttonEdit"
@@ -76,7 +78,8 @@
                     android:layout_marginStart="8dp"
                     android:src="@android:drawable/ic_menu_edit"
                     android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_200"/>
+                    app:backgroundTint="@color/purple_500"/>
+
             </LinearLayout>
 
             <!-- Кто создал -->
@@ -191,7 +194,6 @@
             android:text="Оказанные услуги:"
             android:textStyle="bold"
             android:textSize="18sp"
-            android:textColor="#000000"
             android:paddingTop="16dp"/>
 
         <!-- Контейнер для списка услуг: здесь мы динамически добавим TextView -->

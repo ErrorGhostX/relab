@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layoutCreateOrder"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -30,9 +31,10 @@
             android:text="Имя клиента"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextCustomerName"
             android:hint="Введите имя клиента"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Контактной информации -->
@@ -42,9 +44,10 @@
             android:text="Контактная информация"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextContactInfo"
             android:hint="Введите контактные данные"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Дополнительной информации -->
@@ -66,9 +69,10 @@
             android:text="Телеграм"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextTelegram"
             android:hint="Введите свой Телеграм"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Названия устройства -->
@@ -79,11 +83,12 @@
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
 
-        <!-- Поле для Типа устройства -->
-        <EditText
+        <!-- Поле для Названия устройства -->
+        <AutoCompleteTextView
             android:id="@+id/editTextDeviceName"
-            style="@style/FormEditText"
-            android:hint="Введите название устройства" />
+            android:hint="Введите название устройства"
+            android:completionThreshold="1"
+            style="@style/FormEditText" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -91,9 +96,10 @@
             android:text="Тип устройства"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextDeviceType"
             android:hint="Введите тип устройства"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Производителя -->
@@ -103,9 +109,10 @@
             android:text="Производитель"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextManufacturer"
             android:hint="Введите производителя"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Модели устройства -->
@@ -115,9 +122,10 @@
             android:text="Модель устройства"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextModel"
             android:hint="Введите модель устройства"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Комплектации -->
@@ -127,9 +135,10 @@
             android:text="Комплектация"
             android:paddingBottom="4dp"
             android:textStyle="bold"/>
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTextKit"
             android:hint="Введите комплектацию"
+            android:completionThreshold="1"
             style="@style/FormEditText"/>
 
         <!-- Поле для Описания -->
