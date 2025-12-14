@@ -1,12 +1,5 @@
 from django.contrib import admin
-
-# Register your models here.
-from django.contrib import admin
-from .models import Order, Service
-# admin.py
-
-from django.contrib import admin
-from .models import Order, Service
+from .models import Order, Service, UserProfile
 
 class ServiceInline(admin.TabularInline):
     model = Service
@@ -17,4 +10,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', )  # можно добавить другие поля
     inlines = [ServiceInline]
 
+from .models import UserProfile
+
 admin.site.register(Order, OrderAdmin)
+admin.site.register(UserProfile)

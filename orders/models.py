@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Order(models.Model):
     # Номер заказа задаёт сам пользователь (например, «12345»)
@@ -87,3 +89,29 @@ class Service(models.Model):
 
     def __str__(self):
         return f"{self.order.order_number}: {self.description} — {self.price:.2f}"
+
+
+class UserProfile(models.Model):
+    """
+    Расширенный профиль пользователя с ФИО и аватаром
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    full_name = models.CharField(max_length=255, blank=True, default='', verbose_name='ФИО')
+    avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.full_name or 'Без ФИО'}"
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Автоматически создавать профиль при создании пользователя"""
+    if created:
+        UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Сохранять профиль при сохранении пользователя"""
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

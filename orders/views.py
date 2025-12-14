@@ -73,12 +73,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         POST /api/orders/create-with-photo/
         тот же сериализатор, но принимает multipart/form-data
+        Возвращает полный объект заказа для синхронизации с мобильным приложением
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        # Возвращаем полный заказ (сериализованный), чтобы мобильное приложение получило serverId
         return Response(
-            {'message': 'Заказ с фото создан', 'order_id': serializer.instance.id},
+            serializer.data,  # Возвращаем полный OrderSerializer вместо только сообщения
             status=status.HTTP_201_CREATED
         )
 
