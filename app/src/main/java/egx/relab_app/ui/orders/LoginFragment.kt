@@ -71,15 +71,16 @@ class LoginFragment : Fragment() {
     }
 
     private fun updateNavBar(user: UserResponse) {
-
-        val navView = requireActivity().findViewById<NavigationView>(R.id.nav_view)
-        val headerView = navView.getHeaderView(0)
-
-        val userNameTextView = headerView.findViewById<TextView>(R.id.textView)
-        val userMailTextView = headerView.findViewById<TextView>(R.id.textMail)
-
-        userNameTextView.text = user.username
-        userMailTextView.text = user.email
+        // Используем метод из MainActivity для обновления навигации
+        val activity = requireActivity() as? egx.relab_app.MainActivity
+        activity?.updateNavBar(user)
+        
+        // Также сохраняем данные в TokenManager
+        val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        tokenManager.username = user.username
+        tokenManager.email = user.email
+        tokenManager.fullName = user.full_name
+        tokenManager.avatarUrl = user.avatar
     }
     override fun onResume() {
         super.onResume()

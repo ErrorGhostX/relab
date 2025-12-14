@@ -13,10 +13,16 @@ import androidx.fragment.app.Fragment
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import egx.relab_app.R
+import egx.relab_app.app
+import egx.relab_app.data.DeviceDatabase
 import egx.relab_app.databinding.FragmentOrderCreateBinding
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
-import egx.relab_app.data.DeviceDatabase
+import egx.relab_app.storage.TokenManager
+import egx.relab_app.sync.SyncManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -33,6 +39,14 @@ class OrderFormFragment : Fragment() {
     private val isEditMode get() = args.order != null
 
     private var allOrders: List<Order> = emptyList()
+    
+    // Получаем Repository и SyncManager из Application
+    private val repository by lazy { requireContext().app.orderRepository }
+    private val syncManager by lazy { SyncManager(repository, requireContext()) }
+    private val tokenManager by lazy { TokenManager(requireContext()) }
+    
+    // Локальный ID заказа (для режима редактирования)
+    private var orderLocalId: Long? = null
 
     private val statusMap = mapOf(
         "Новый" to "new", "В процессе" to "in_progress",
@@ -88,16 +102,130 @@ class OrderFormFragment : Fragment() {
         }
         binding.buttonChoosePhoto.setOnClickListener { pickImage.launch("image/*") }
 
-        // В режиме редактирования значения будут установлены после загрузки данных
-        // или сразу, если загрузка не требуется
-        if (isEditMode && allOrders.isEmpty()) {
+        // В режиме редактирования загружаем localId заказа
+        if (isEditMode) {
+            loadOrderLocalId()
             // Если данные еще не загружены, заполняем поля сразу
-            populateEditFields()
+            if (allOrders.isEmpty()) {
+                populateEditFields()
+            }
         }
 
         binding.buttonSave.setOnClickListener { saveOrUpdate() }
+        
+        // Добавляем валидацию при вводе для обязательных полей
+        setupFieldValidation()
+    }
+    
+    /**
+     * Настройка валидации полей при вводе
+     */
+    private fun setupFieldValidation() {
+        // Валидация для имени клиента
+        binding.editTextCustomerName.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                validateField(binding.editTextCustomerName, binding.inputLayoutCustomerName, "Имя клиента обязательно")
+            } else {
+                clearFieldError(binding.inputLayoutCustomerName)
+            }
+        }
+        
+        binding.editTextCustomerName.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (s?.isNotBlank() == true) {
+                    clearFieldError(binding.inputLayoutCustomerName)
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        
+        // Валидация для названия устройства
+        binding.editTextDeviceName.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                validateField(binding.editTextDeviceName, binding.inputLayoutDeviceName, "Название устройства обязательно")
+            } else {
+                clearFieldError(binding.inputLayoutDeviceName)
+            }
+        }
+        
+        binding.editTextDeviceName.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (s?.isNotBlank() == true) {
+                    clearFieldError(binding.inputLayoutDeviceName)
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+    }
+    
+    /**
+     * Валидация поля
+     */
+    private fun validateField(
+        field: android.widget.EditText,
+        layout: com.google.android.material.textfield.TextInputLayout,
+        errorMessage: String
+    ): Boolean {
+        val isValid = field.text?.isNotBlank() == true
+        if (!isValid) {
+            setFieldError(layout, errorMessage)
+        } else {
+            clearFieldError(layout)
+        }
+        return isValid
+    }
+    
+    /**
+     * Установить ошибку для поля (красная подсветка)
+     */
+    private fun setFieldError(
+        layout: com.google.android.material.textfield.TextInputLayout,
+        errorMessage: String
+    ) {
+        val ctx = context ?: return
+        layout.error = errorMessage
+        layout.boxStrokeColor = ctx.getColor(R.color.error_red)
+        layout.setErrorTextColor(android.content.res.ColorStateList.valueOf(ctx.getColor(R.color.error_red)))
+    }
+    
+    /**
+     * Убрать ошибку с поля
+     */
+    private fun clearFieldError(layout: com.google.android.material.textfield.TextInputLayout) {
+        val ctx = context ?: return
+        layout.error = null
+        layout.boxStrokeColor = ctx.getColor(R.color.gray_400)
     }
 
+    /**
+     * Загрузить локальный ID заказа для редактирования
+     */
+    private fun loadOrderLocalId() {
+        if (!isEditMode) return
+        
+        lifecycleScope.launch {
+            try {
+                val order = args.order!!
+                // Сначала пытаемся найти по serverId
+                order.id?.let { serverId ->
+                    val orderEntity = repository.getOrderEntityByServerId(serverId)
+                    orderLocalId = orderEntity?.localId
+                }
+                
+                // Если не нашли по serverId, возможно заказ еще не синхронизирован
+                // В этом случае ищем по другим признакам (например, по orderNumber)
+                if (orderLocalId == null && order.orderNumber != null) {
+                    // Можно добавить поиск по orderNumber, но пока оставим так
+                    // В реальности нужно хранить localId в навигационных аргументах
+                }
+            } catch (e: Exception) {
+                // Игнорируем ошибку, попробуем найти при сохранении
+            }
+        }
+    }
+    
     private fun loadOrdersForAutocomplete() {
         RetrofitClient.apiService.getOrders().enqueue(object : Callback<List<Order>> {
             override fun onResponse(
@@ -122,7 +250,7 @@ class OrderFormFragment : Fragment() {
             override fun onFailure(call: Call<List<Order>>, t: Throwable) {
                 // В случае ошибки просто не будет автодополнения
                 // Но если режим редактирования - все равно заполняем поля
-                if (isEditMode) {
+                if (isEditMode && isAdded && _binding != null) {
                     populateEditFields()
                 }
             }
@@ -278,21 +406,111 @@ class OrderFormFragment : Fragment() {
     }
 
     private fun saveOrUpdate() {
-        val req = listOf(binding.editTextCustomerName, binding.editTextDeviceName)
-        if (req.any { it.text.isNullOrBlank() }) {
-            Toast.makeText(requireContext(), "Заполните обязательные поля", Toast.LENGTH_SHORT).show()
+        // Валидируем обязательные поля с подсветкой красным
+        val customerNameValid = validateField(
+            binding.editTextCustomerName,
+            binding.inputLayoutCustomerName,
+            "Имя клиента обязательно"
+        )
+        val deviceNameValid = validateField(
+            binding.editTextDeviceName,
+            binding.inputLayoutDeviceName,
+            "Название устройства обязательно"
+        )
+        
+        if (!customerNameValid || !deviceNameValid) {
+            val ctx = context
+            if (ctx != null && isAdded) {
+                Toast.makeText(ctx, "Заполните обязательные поля", Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
         val filledOrder = if (isEditMode) buildUpdatedOrder() else buildNewOrder()
 
-        if (isEditMode) {
-            RetrofitClient.updateOrder(requireContext(), filledOrder, selectedPhotoUri) { success, code, errorBody ->
-                handleSaveResult(success, code, errorBody, filledOrder)
-            }
-        } else {
-            RetrofitClient.createOrder(requireContext(), filledOrder, selectedPhotoUri) { success, code, errorBody ->
-                handleSaveResult(success, code, errorBody, filledOrder)
+        // Сохраняем локально и синхронизируем в фоне
+        lifecycleScope.launch {
+            try {
+                if (isEditMode) {
+                    // Обновляем существующий заказ
+                    val localId = orderLocalId ?: run {
+                        // Если нет локального ID, ищем по serverId
+                        val foundId = filledOrder.id?.let { serverId ->
+                            val orderEntity = repository.getOrderEntityByServerId(serverId)
+                            orderEntity?.localId
+                        }
+                        foundId ?: throw Exception("Не найден локальный ID заказа. Попробуйте синхронизировать данные.")
+                    }
+                    
+                    // Обновляем локально
+                    repository.updateOrder(localId, filledOrder)
+                    
+                    // Пытаемся синхронизировать с сервером
+                    if (filledOrder.id != null) {
+                        // Заказ уже есть на сервере - обновляем
+                        val context = context ?: return@launch
+                        RetrofitClient.updateOrder(context, filledOrder, selectedPhotoUri) { success, code, errorBody, updatedOrder ->
+                            if (!isAdded) return@updateOrder // Проверяем, что фрагмент еще прикреплен
+                            lifecycleScope.launch {
+                                val ctx = context ?: return@launch
+                                if (success && updatedOrder != null) {
+                                    // Обновляем заказ с данными с сервера (включая статус синхронизации)
+                                    repository.saveOrderFromServer(updatedOrder)
+                                    if (isAdded) {
+                                        Toast.makeText(ctx, "Заказ обновлён и синхронизирован", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    if (isAdded) {
+                                        Toast.makeText(ctx, "Заказ обновлён локально (ошибка синхронизации)", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    val ctx = context
+                    if (ctx != null && isAdded) {
+                        Toast.makeText(ctx, "Заказ сохранён локально", Toast.LENGTH_SHORT).show()
+                        findNavController().popBackStack()
+                    }
+                } else {
+                    // Создаем новый заказ локально
+                    val localId = repository.createOrder(filledOrder)
+                    
+                    // Пытаемся сразу синхронизировать с сервером
+                    val context = context ?: return@launch
+                    RetrofitClient.createOrder(context, filledOrder, selectedPhotoUri) { success, code, errorBody, createdOrder ->
+                        if (!isAdded) return@createOrder // Проверяем, что фрагмент еще прикреплен
+                        lifecycleScope.launch {
+                            val ctx = context ?: return@launch
+                            if (success && createdOrder != null && createdOrder.id != null) {
+                                // Обновляем локальный заказ с данными с сервера
+                                // Передаем localId, чтобы гарантированно обновить правильный заказ
+                                repository.saveOrderFromServer(createdOrder, localId)
+                                
+                                if (isAdded) {
+                                    Toast.makeText(ctx, "Заказ сохранён и синхронизирован", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                // Ошибка синхронизации, но заказ сохранен локально
+                                if (isAdded) {
+                                    Toast.makeText(ctx, "Заказ сохранён локально (ошибка синхронизации)", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                    
+                    val ctx = context
+                    if (ctx != null && isAdded) {
+                        Toast.makeText(ctx, "Заказ сохранён локально", Toast.LENGTH_SHORT).show()
+                        findNavController().popBackStack()
+                    }
+                }
+            } catch (e: Exception) {
+                val ctx = context
+                if (ctx != null && isAdded) {
+                    Toast.makeText(ctx, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -313,13 +531,23 @@ class OrderFormFragment : Fragment() {
             description = binding.editTextDescription.text.toString(),
             date = binding.textViewSelectedDate.text.toString(),
             status = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new",
-            orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair"
+            orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair",
+            createdByUsername = tokenManager.username,  // Сохраняем username текущего пользователя
+            createdByFullName = tokenManager.fullName,  // Сохраняем ФИО текущего пользователя
+            createdByAvatar = tokenManager.avatarUrl   // Сохраняем аватар текущего пользователя
         )
     }
 
     private fun buildUpdatedOrder(): Order {
         val originalOrder = args.order!!
-        return buildNewOrder().copy(id = originalOrder.id)
+        // При обновлении сохраняем данные создателя из оригинального заказа, если они есть
+        // Иначе используем данные текущего пользователя
+        return buildNewOrder().copy(
+            id = originalOrder.id,
+            createdByUsername = originalOrder.createdByUsername ?: tokenManager.username,
+            createdByFullName = originalOrder.createdByFullName ?: tokenManager.fullName,
+            createdByAvatar = originalOrder.createdByAvatar ?: tokenManager.avatarUrl
+        )
     }
 
     private fun handleSaveResult(success: Boolean, code: Int, errorBody: String?, order: Order) {

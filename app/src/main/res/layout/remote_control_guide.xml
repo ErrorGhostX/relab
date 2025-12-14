@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:paddingTop="60dp"
+    android:paddingHorizontal="16dp"
+    android:paddingBottom="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Заголовок -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Интерактивная инструкция по пульту"
+            android:textColor="@color/gray_900"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Виртуальный пульт -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <!-- Верхняя часть пульта -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPower"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:text="🔴"
+                        android:textSize="24sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSource"
+                        android:layout_width="90dp"
+                        android:layout_height="50dp"
+                        android:text="Source"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                <!-- Навигационные кнопки -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnUp"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:text="▲"
+                        android:textSize="24sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_margin="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLeft"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:text="◄"
+                            android:textSize="24sp"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            app:strokeColor="@color/gray_900"
+                            android:textColor="@color/gray_900"
+                            android:layout_margin="4dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOk"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:text="OK"
+                            android:textSize="16sp"
+                            style="@style/Widget.MaterialComponents.Button"
+                            app:backgroundTint="@color/gray_900"
+                            android:textColor="@color/white"
+                            android:layout_margin="4dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRight"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:text="►"
+                            android:textSize="24sp"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            app:strokeColor="@color/gray_900"
+                            android:textColor="@color/gray_900"
+                            android:layout_margin="4dp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDown"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:text="▼"
+                        android:textSize="24sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_margin="4dp" />
+                </LinearLayout>
+
+                <!-- Нижние кнопки -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBack"
+                        android:layout_width="80dp"
+                        android:layout_height="50dp"
+                        android:text="Назад"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnHome"
+                        android:layout_width="80dp"
+                        android:layout_height="50dp"
+                        android:text="Menu"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+                </LinearLayout>
+
+                <!-- Кнопки громкости и дополнительные -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVolDown"
+                        android:layout_width="60dp"
+                        android:layout_height="50dp"
+                        android:text="−"
+                        android:textSize="20sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVolUp"
+                        android:layout_width="60dp"
+                        android:layout_height="50dp"
+                        android:text="+"
+                        android:textSize="20sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMute"
+                        android:layout_width="60dp"
+                        android:layout_height="50dp"
+                        android:text="🔇"
+                        android:textSize="16sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+                </LinearLayout>
+
+                <!-- Дополнительные кнопки -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChannelUp"
+                        android:layout_width="70dp"
+                        android:layout_height="50dp"
+                        android:text="Ch+"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChannelDown"
+                        android:layout_width="70dp"
+                        android:layout_height="50dp"
+                        android:text="Ch−"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnInput"
+                        android:layout_width="75dp"
+                        android:layout_height="50dp"
+                        android:text="Input"
+                        android:textSize="12sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_900"
+                        android:textColor="@color/gray_900"
+                        android:layout_margin="4dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Кнопки управления -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClearSequence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Очистить"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="@color/gray_900"
+                android:textColor="@color/gray_900"
+                android:layout_marginEnd="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGenerateInstruction"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Создать инструкцию"
+                style="@style/Widget.MaterialComponents.Button"
+                app:backgroundTint="@color/gray_900"
+                android:textColor="@color/white"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Последовательность нажатий -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Последовательность нажатий:"
+            android:textColor="@color/gray_900"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/textSequence"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Нажмите кнопки на пульте выше"
+            android:textColor="@color/gray_700"
+            android:textSize="14sp"
+            android:minHeight="60dp"
+            android:background="@color/gray_100"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Сгенерированная инструкция -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Текстовая инструкция:"
+            android:textColor="@color/gray_900"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/textInstruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Создайте последовательность, затем нажмите 'Создать инструкцию'"
+            android:textColor="@color/gray_700"
+            android:textSize="14sp"
+            android:minHeight="100dp"
+            android:background="@color/gray_100"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Кнопка поделиться -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnShareInstruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Поделиться инструкцией"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:strokeColor="@color/gray_900"
+            android:textColor="@color/gray_900"
+            android:layout_marginBottom="16dp"
+            android:enabled="false" />
+
+        <!-- Кнопка скачать приложение пульта -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDownloadRemoteApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📱 Скачать приложение пульта (Play Market)"
+            style="@style/Widget.MaterialComponents.Button"
+            app:backgroundTint="@color/gray_900"
+            android:textColor="@color/white"
+            app:icon="@android:drawable/ic_menu_view"
+            app:iconTint="@color/white" />
+    </LinearLayout>
+</ScrollView>
+

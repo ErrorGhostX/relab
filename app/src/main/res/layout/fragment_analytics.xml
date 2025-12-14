@@ -5,7 +5,11 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="24dp">
+    android:background="@color/white"
+    android:fitsSystemWindows="true"
+    android:paddingTop="?attr/actionBarSize"
+    android:paddingBottom="24dp"
+    android:paddingHorizontal="24dp">
 
     <ImageView
         android:layout_width="48dp"
@@ -19,7 +23,8 @@
         android:layout_height="wrap_content"
         android:text="Аналитика"
         android:layout_marginTop="12dp"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5" />
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
+        android:textColor="@color/black" />
 
     <TextView
         android:id="@+id/tvTotalEarnings"
@@ -28,7 +33,7 @@
         android:text="Заработано: —"
         android:textSize="24sp"
         android:layout_marginTop="32dp"
-/>
+        android:textColor="@color/black" />
 
     <TextView
         android:id="@+id/tvCompletedOrders"
@@ -37,5 +42,5 @@
         android:text="Выполнено заказов: —"
         android:textSize="20sp"
         android:layout_marginTop="16dp"
- />
+        android:textColor="@color/gray_700" />
 </LinearLayout>

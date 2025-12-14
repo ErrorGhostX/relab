@@ -13,10 +13,13 @@ import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import egx.relab_app.R
+import egx.relab_app.app
 import egx.relab_app.databinding.FragmentOrderDetailBinding
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
+import egx.relab_app.repository.OrderRepository
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.io.File
 import java.io.FileOutputStream
 
@@ -25,6 +28,21 @@ class OrderDetailFragment : Fragment() {
     private var _binding: FragmentOrderDetailBinding? = null
     private val binding get() = _binding!!
     private lateinit var currentOrder: Order
+    
+    // Получаем Repository из Application
+    private val repository by lazy { requireContext().app.orderRepository }
+    
+    // Маппинг статусов и типов заказов
+    private val statusMap = mapOf(
+        "new" to "Новый",
+        "in_progress" to "В процессе",
+        "done" to "Завершён",
+        "pending" to "Ожидает"
+    )
+    private val orderTypeMap = mapOf(
+        "repair" to "Ремонт",
+        "diagnosis" to "Диагностика"
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentOrderDetailBinding.inflate(inflater, container, false)
@@ -33,7 +51,24 @@ class OrderDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         currentOrder = OrderDetailFragmentArgs.fromBundle(requireArguments()).order
+        // Сначала показываем данные из аргументов
         bindOrderToUI(currentOrder)
+        
+        // Затем пытаемся загрузить полные данные с сервера, если есть ID
+        // Если нет подключения, используем данные из аргументов
+        if (currentOrder.id != null) {
+            loadOrderDetails()
+        } else {
+            // Если нет serverId, пытаемся загрузить из локальной БД
+            lifecycleScope.launch {
+                try {
+                    // Ищем по другим признакам (например, orderNumber)
+                    // Пока используем данные из аргументов
+                } catch (e: Exception) {
+                    android.util.Log.e("OrderDetail", "Ошибка загрузки из БД", e)
+                }
+            }
+        }
 
         findNavController().currentBackStackEntry
             ?.savedStateHandle
@@ -48,18 +83,36 @@ class OrderDetailFragment : Fragment() {
             findNavController().navigate(action)
         }
 
+        binding.buttonDelete.setOnClickListener { showDeleteConfirmationDialog() }
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
     }
 
     private fun bindOrderToUI(order: Order) = with(binding) {
         orderId.text        = "ID: ${order.id}"
-        createdBy.text      = "Создал: ${order.createdByUsername ?: "-"}"
+        
+        // Отображаем ФИО создателя если есть, иначе username
+        val creatorName = order.createdByFullName ?: order.createdByUsername
+        createdBy.text      = "Создал: ${creatorName ?: "-"}"
+        
+        // Загружаем аватар создателя если есть
+        android.util.Log.d("OrderDetail", "Created by avatar: ${order.createdByAvatar}")
+        if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
+            Glide.with(this@OrderDetailFragment)
+                .load(order.createdByAvatar)
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .circleCrop()
+                .into(createdByAvatar)
+        } else {
+            // Если аватара нет, показываем иконку приложения
+            createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
+        }
         orderNumber.text    = "Номер заказа: ${order.orderNumber}"
         customer.text       = "Клиент: ${order.customer}"
         contactInfo.text    = "Контакты: ${order.contactInfo}"
         extraInfo.text      = "Доп. инфо: ${order.extraInfo}"
-        telegram.text       = "Телеграм: ${order.telegram}"
+        telegram.text       = "Мэссэджер: ${order.telegram}"
         deviceName.text     = "Устройство: ${order.deviceName}"
         deviceType.text     = "Тип: ${order.deviceType}"
         manufacturer.text   = "Производитель: ${order.manufacturer}"
@@ -67,8 +120,8 @@ class OrderDetailFragment : Fragment() {
         kit.text            = "Комплектация: ${order.kit}"
         description.text    = "Описание: ${order.description}"
         date.text           = "Дата: ${order.date}"
-        orderType.text      = "Тип: ${order.orderType}"
-        status.text         = "Статус: ${order.status}"
+        orderType.text      = "Тип: ${orderTypeMap[order.orderType] ?: order.orderType}"
+        status.text         = "Статус: ${statusMap[order.status] ?: order.status}"
 
         Glide.with(this@OrderDetailFragment)
             .load(order.photo)
@@ -173,14 +226,68 @@ class OrderDetailFragment : Fragment() {
     private fun loadOrderDetails() {
         lifecycleScope.launch {
             try {
-                val updatedOrder = withContext(Dispatchers.IO) {
-                    RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                // Пытаемся загрузить с сервера, если есть ID
+                if (currentOrder.id != null) {
+                    try {
+                        val updatedOrder = withContext(Dispatchers.IO) {
+                            RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                        }
+                        currentOrder = updatedOrder
+                        bindOrderToUI(updatedOrder)
+                        
+                        // Сохраняем обновленный заказ в локальную БД (включая услуги)
+                        repository.saveOrderFromServer(updatedOrder)
+                    } catch (e: Exception) {
+                        // Если нет подключения, пытаемся загрузить из локальной БД
+                        android.util.Log.d("OrderDetail", "Ошибка загрузки с сервера, загружаем из локальной БД: ${e.message}")
+                        loadFromLocalDatabase()
+                    }
+                } else {
+                    // Если нет serverId, загружаем из локальной БД
+                    loadFromLocalDatabase()
                 }
-                currentOrder = updatedOrder
-                bindOrderToUI(updatedOrder)
             } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка загрузки заказа", e)
                 showToast("Ошибка загрузки заказа")
             }
+        }
+    }
+    
+    /**
+     * Загрузить заказ из локальной БД
+     */
+    private suspend fun loadFromLocalDatabase() {
+        if (!isAdded) return
+        try {
+            if (currentOrder.id != null) {
+                // Ищем по serverId
+                val localOrder = repository.getOrderByServerId(currentOrder.id!!)
+                if (localOrder != null && isAdded) {
+                    // Загружаем услуги для заказа
+                    val orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
+                    if (orderEntity != null) {
+                        val servicesFlow = repository.getServicesForOrder(orderEntity.localId)
+                        // Получаем первое значение из Flow
+                        val servicesList = try {
+                            servicesFlow.first()
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                        val orderWithServices = localOrder.copy(services = servicesList)
+                        if (isAdded) {
+                            currentOrder = orderWithServices
+                            bindOrderToUI(orderWithServices)
+                        }
+                    } else {
+                        if (isAdded) {
+                            currentOrder = localOrder
+                            bindOrderToUI(localOrder)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("OrderDetail", "Ошибка загрузки из локальной БД", e)
         }
     }
 
@@ -215,8 +322,83 @@ class OrderDetailFragment : Fragment() {
         }
     }
 
+    /**
+     * Показать диалог подтверждения удаления заказа
+     */
+    private fun showDeleteConfirmationDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Удалить заказ?")
+            .setMessage("Вы уверены, что хотите удалить этот заказ? Это действие нельзя отменить.")
+            .setPositiveButton("Удалить") { _, _ ->
+                deleteOrder()
+            }
+            .setNegativeButton("Отмена") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+    
+    /**
+     * Удалить заказ
+     */
+    private fun deleteOrder() {
+        lifecycleScope.launch {
+            try {
+                if (currentOrder.id != null) {
+                    // Заказ есть на сервере - удаляем и там, и локально
+                    val orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
+                    
+                    // Удаляем на сервере
+                    RetrofitClient.apiService.deleteOrder(currentOrder.id!!.toString())
+                        .enqueue(object : retrofit2.Callback<Void> {
+                            override fun onResponse(
+                                call: retrofit2.Call<Void>,
+                                response: retrofit2.Response<Void>
+                            ) {
+                                lifecycleScope.launch {
+                                    // Удаляем локально
+                                    orderEntity?.let {
+                                        repository.deleteOrder(it.localId)
+                                    }
+                                    
+                                    if (response.isSuccessful) {
+                                        showToast("Заказ удалён")
+                                        findNavController().popBackStack()
+                                    } else {
+                                        showToast("Заказ удалён локально (ошибка на сервере)")
+                                        findNavController().popBackStack()
+                                    }
+                                }
+                            }
+                            
+                            override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
+                                lifecycleScope.launch {
+                                    // Удаляем локально даже при ошибке сети
+                                    orderEntity?.let {
+                                        repository.deleteOrder(it.localId)
+                                    }
+                                    showToast("Заказ удалён локально (ошибка сети)")
+                                    findNavController().popBackStack()
+                                }
+                            }
+                        })
+                } else {
+                    // Заказ еще не синхронизирован - удаляем только локально
+                    // Ищем по другим признакам (например, по orderNumber)
+                    // Пока просто показываем сообщение
+                    showToast("Заказ ещё не синхронизирован. Удаление только локально.")
+                    findNavController().popBackStack()
+                }
+            } catch (e: Exception) {
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+
     private fun showToast(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        if (isAdded && context != null) {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroyView() {

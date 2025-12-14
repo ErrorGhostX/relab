@@ -29,10 +29,11 @@ import okhttp3.Interceptor
 
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:8000/api/"
+    private const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/api/"
 
 
     lateinit var tokenManager: TokenManager
+    private var retrofitInstance: Retrofit? = null
 
 
     private val authInterceptor = Interceptor { chain ->
@@ -44,30 +45,41 @@ object RetrofitClient {
     }
 
 
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
-        .build()
-
-    private val retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(client)  // <- здесь
-            .addConverterFactory(GsonConverterFactory.create())
+    private fun getClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
             .build()
+    }
+
+    private fun getRetrofit(): Retrofit {
+        if (retrofitInstance == null) {
+            val baseUrl = tokenManager.serverUrl ?: DEFAULT_BASE_URL
+            retrofitInstance = Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(getClient())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+        }
+        return retrofitInstance!!
+    }
+    
+    fun recreateRetrofit() {
+        retrofitInstance = null
     }
 
     fun init(context: Context) {
         tokenManager = TokenManager(context)
     }
 
-    val apiService: ApiService by lazy { retrofit.create(ApiService::class.java) }
+    val apiService: ApiService
+        get() = getRetrofit().create(ApiService::class.java)
 
     fun createOrder(
         context: Context,
         order: Order,
         selectedPhotoUri: Uri?,
-        callback: (success: Boolean, code: Int, errorBody: String?)->Unit
+        callback: (success: Boolean, code: Int, errorBody: String?, createdOrder: Order?)->Unit
     ) {
         val photoPart = selectedPhotoUri?.let { uri ->
             val f = File(getRealPath(context, uri))
@@ -84,10 +96,15 @@ object RetrofitClient {
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
-                callback(resp.isSuccessful, resp.code(), body)
+                if (resp.isSuccessful) {
+                    // Возвращаем созданный заказ с serverId
+                    callback(true, resp.code(), null, resp.body())
+                } else {
+                    callback(false, resp.code(), body, null)
+                }
             }
             override fun onFailure(call: Call<Order>, t: Throwable) {
-                callback(false, -1, t.localizedMessage)
+                callback(false, -1, t.localizedMessage, null)
             }
         })
     }
@@ -96,10 +113,10 @@ object RetrofitClient {
         context: Context,
         order: Order,
         selectedPhotoUri: Uri?,
-        callback: (success: Boolean, code: Int, errorBody: String?) -> Unit
+        callback: (success: Boolean, code: Int, errorBody: String?, updatedOrder: Order?) -> Unit
     ) {
         val id = order.id?.toString() ?: run {  // Преобразуем id в String
-            callback(false, -1, "Order ID is null")
+            callback(false, -1, "Order ID is null", null)
             return@updateOrder
         }
         val photoPart = selectedPhotoUri?.let { uri ->
@@ -118,10 +135,14 @@ object RetrofitClient {
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
-                callback(resp.isSuccessful, resp.code(), body)
+                if (resp.isSuccessful) {
+                    callback(true, resp.code(), null, resp.body())
+                } else {
+                    callback(false, resp.code(), body, null)
+                }
             }
             override fun onFailure(call: Call<Order>, t: Throwable) {
-                callback(false, -1, t.localizedMessage)
+                callback(false, -1, t.localizedMessage, null)
             }
         })
     }

@@ -33,8 +33,12 @@ class AnalyticsFragment : Fragment() {
     }
 
     private fun loadAnalytics() {
+        // Проверяем что фрагмент еще прикреплен к Activity
+        if (!isAdded) return
+        
         RetrofitClient.apiService.getMonthlyEarnings().enqueue(object : Callback<ApiService.EarningsResponse> {
             override fun onResponse(call: Call<ApiService.EarningsResponse>, response: Response<ApiService.EarningsResponse>) {
+                if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     binding.tvTotalEarnings.text = response.body()?.message ?: "Нет данных"
                 } else {
@@ -43,12 +47,14 @@ class AnalyticsFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ApiService.EarningsResponse>, t: Throwable) {
+                if (!isAdded || _binding == null) return
                 binding.tvTotalEarnings.text = "Ошибка загрузки заработка"
             }
         })
 
         RetrofitClient.apiService.getMonthlyCompletedOrders().enqueue(object : Callback<ApiService.OrdersCountResponse> {
             override fun onResponse(call: Call<ApiService.OrdersCountResponse>, response: Response<ApiService.OrdersCountResponse>) {
+                if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     binding.tvCompletedOrders.text = response.body()?.message ?: "Нет данных"
                 } else {
@@ -57,6 +63,7 @@ class AnalyticsFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ApiService.OrdersCountResponse>, t: Throwable) {
+                if (!isAdded || _binding == null) return
                 binding.tvCompletedOrders.text = "Ошибка загрузки заказов"
             }
         })

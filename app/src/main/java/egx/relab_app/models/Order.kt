@@ -59,6 +59,11 @@ data class Order(
     @SerializedName("created_by")
     val createdByUsername: String? = null,
 
+    @SerializedName("created_by_full_name")
+    val createdByFullName: String? = null,
+
+    @SerializedName("created_by_avatar")
+    val createdByAvatar: String? = null,
 
     @SerializedName("services")
     val services: List<Service> = emptyList()

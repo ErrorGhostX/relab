@@ -1,10 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- Черно-белая палитра -->
     <color name="black">#000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="gray_900">#212121</color>
+    <color name="gray_800">#424242</color>
+    <color name="gray_700">#616161</color>
+    <color name="gray_600">#757575</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_50">#FAFAFA</color>
+    
+    <!-- Полупрозрачные цвета -->
+    <color name="black_80">#CC000000</color>
+    <color name="black_60">#99000000</color>
+    <color name="black_40">#66000000</color>
+    <color name="black_20">#33000000</color>
+    <color name="white_80">#CCFFFFFF</color>
+    <color name="white_60">#99FFFFFF</color>
+    <color name="white_40">#66FFFFFF</color>
+    <color name="white_20">#33FFFFFF</color>
+    
+    <!-- Для совместимости (используем серые оттенки) -->
+    <color name="purple_200">#E0E0E0</color>
+    <color name="purple_500">#616161</color>
+    <color name="purple_700">#424242</color>
+    <color name="teal_200">#BDBDBD</color>
+    <color name="teal_700">#757575</color>
+    
+    <!-- Цвета для ошибок -->
+    <color name="error_red">#F44336</color>
+    <color name="error_red_light">#FFCDD2</color>
 </resources>

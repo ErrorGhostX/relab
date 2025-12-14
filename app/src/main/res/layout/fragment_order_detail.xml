@@ -4,7 +4,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@color/white"
+    android:fitsSystemWindows="true"
+    android:paddingTop="60dp"
+    android:paddingHorizontal="16dp"
+    android:paddingBottom="16dp">
 
     <LinearLayout
         android:orientation="vertical"
@@ -12,196 +16,320 @@
         android:layout_height="wrap_content">
 
         <!-- Карточка с изображением -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            card_view:cardCornerRadius="8dp"
-            card_view:cardElevation="4dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
             android:layout_marginBottom="16dp">
 
             <ImageView
                 android:id="@+id/orderImage"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="350dp"
                 android:scaleType="centerCrop"
-                android:src="@color/purple_500" />
-        </androidx.cardview.widget.CardView>
+                android:background="@color/gray_300" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Блок с ID и кнопками -->
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
+            android:layout_marginBottom="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/orderId"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="ID: 123"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:textColor="#000000" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
-                <!-- Кнопки действия -->
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/buttonAddService"
-                    android:layout_width="wrap_content"
+                    <TextView
+                        android:id="@+id/orderId"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="ID: 123"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:textColor="@color/gray_900" />
+
+                    <!-- Кнопки действия -->
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/buttonAddService"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:src="@android:drawable/ic_menu_manage"
+                        android:tint="@color/white"
+                        app:backgroundTint="#3F51B5"/>
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/buttonPrint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:src="@android:drawable/ic_menu_set_as"
+                        android:tint="@color/white"
+                        app:backgroundTint="#3F51B5"/>
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/buttonEdit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:src="@android:drawable/ic_menu_edit"
+                        android:tint="@color/white"
+                        app:backgroundTint="#3F51B5" />
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/buttonDelete"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:src="@android:drawable/ic_menu_delete"
+                        android:tint="@color/white"
+                        app:backgroundTint="#F44336"/>
+                </LinearLayout>
+
+                <!-- Разделитель -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/gray_300"
+                    android:layout_marginVertical="8dp" />
+
+                <!-- Кто создал -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:src="@android:drawable/ic_menu_manage"
-                    android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_500"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="4dp">
 
+                    <ImageView
+                        android:id="@+id/createdByAvatar"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:scaleType="centerCrop"
+                        android:src="@mipmap/ic_launcher_round"
+                        android:contentDescription="Аватар создателя" />
 
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/buttonPrint"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:src="@android:drawable/ic_menu_set_as"
-                    android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_500"/>
-
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/buttonEdit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:tint="@android:color/white"
-                    app:backgroundTint="@color/purple_500"/>
-
+                    <TextView
+                        android:id="@+id/createdBy"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Создан: Иван Иванов"
+                        android:textColor="@color/gray_900"
+                        android:textSize="14sp" />
+                </LinearLayout>
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <!-- Кто создал -->
-            <TextView
-                android:id="@+id/createdBy"
+        <!-- Основная информация о заказе -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Создан: Иван Иванов"
-                android:paddingTop="4dp"
-                style="@style/DetailTextStyleBlack"/>
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <!-- Поля заказа -->
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/orderNumber"
-            android:text="Номер заказа: 12345"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Основная информация"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="12dp" />
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/customer"
-            android:text="Клиент: Иван Иванов"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/orderNumber"
+                    android:text="Номер заказа: 12345"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/contactInfo"
-            android:text="Контакты: 888-123-45-67"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/customer"
+                    android:text="Клиент: Иван Иванов"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/extraInfo"
-            android:text="Доп. инфо: Срочно"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/contactInfo"
+                    android:text="Контакты: 888-123-45-67"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/telegram"
-            android:text="Telegram: @ivan_telegram"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/extraInfo"
+                    android:text="Доп. инфо: Срочно"
+                    android:textColor="@color/gray_900"/>
 
-        <View
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/telegram"
+                    android:text="Мэссэджер: @ivan_telegram"
+                    android:textColor="@color/gray_900"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Информация об устройстве -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginVertical="12dp" />
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
+            android:layout_marginBottom="16dp">
 
-        <!-- Блок устройства -->
-        <TextView
-            style="@style/DetailHeaderTextStyleBlack"
-            android:text="Устройство"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/deviceName"
-            android:text="Название: iPhone 12"/>
+                <TextView
+                    style="@style/DetailHeaderTextStyleBlack"
+                    android:text="Устройство"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/deviceType"
-            android:text="Тип: Смартфон"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/deviceName"
+                    android:text="Название: iPhone 12"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/manufacturer"
-            android:text="Производитель: Apple"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/deviceType"
+                    android:text="Тип: Смартфон"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/model"
-            android:text="Модель: 12 Pro"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/manufacturer"
+                    android:text="Производитель: Apple"
+                    android:textColor="@color/gray_900"/>
 
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/kit"
-            android:text="Комплектация: Зарядка, наушники"/>
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/model"
+                    android:text="Модель: 12 Pro"
+                    android:textColor="@color/gray_900"/>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginVertical="12dp" />
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/kit"
+                    android:text="Комплектация: Зарядка, наушники"
+                    android:textColor="@color/gray_900"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Описание и статус -->
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/description"
-            android:text="Описание: Не включается"/>
-
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/date"
-            android:text="Дата: 2025-05-11"/>
-
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/orderType"
-            android:text="Тип заказа: Ремонт"/>
-
-        <TextView
-            style="@style/DetailTextStyleBlack"
-            android:id="@+id/status"
-            android:text="Статус: В процессе"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginVertical="12dp" />
-
-        <!-- Секция “Оказанные услуги” -->
-        <TextView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Оказанные услуги:"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:paddingTop="16dp"/>
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
+            android:layout_marginBottom="16dp">
 
-        <!-- Контейнер для списка услуг: здесь мы динамически добавим TextView -->
-        <LinearLayout
-            android:id="@+id/servicesContainer"
-            android:orientation="vertical"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/description"
+                    android:text="Описание: Не включается"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/date"
+                    android:text="Дата: 2025-05-11"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/orderType"
+                    android:text="Тип заказа: Ремонт"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/status"
+                    android:text="Статус: В процессе"
+                    android:textColor="@color/gray_900"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Секция услуг -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="8dp"/>
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Оказанные услуги"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/gray_900"
+                    android:paddingBottom="12dp"/>
+
+                <!-- Контейнер для списка услуг -->
+                <LinearLayout
+                    android:id="@+id/servicesContainer"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

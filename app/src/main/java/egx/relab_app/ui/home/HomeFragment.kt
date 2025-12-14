@@ -7,9 +7,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.databinding.FragmentHomeBinding
 import egx.relab_app.network.RetrofitClient
+import egx.relab_app.storage.TokenManager
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
@@ -29,32 +31,106 @@ class HomeFragment : Fragment() {
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        setupClickListeners()
+        // СНАЧАЛА показываем сохраненные данные для мгновенного отображения
+        updateUserData()
+        
+        // ЗАТЕМ загружаем данные с сервера в фоне
+        loadUserData()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // ВАЖНО: Обновляем данные при возврате из других экранов (например, из профиля)
+        // СНАЧАЛА показываем сохраненные данные
+        updateUserData()
+        // ЗАТЕМ пытаемся обновить с сервера
+        loadUserData()
+    }
+    
+    private fun setupClickListeners() {
+        binding.cardOrders.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_orderListFragment)
+        }
 
-
+        binding.cardProfile.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
+        }
+        
+        binding.cardAnalytics.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
+        }
+        
+        binding.cardSettings.setOnClickListener {
+            findNavController().navigate(R.id.settingsFragment)
+        }
+        
+        binding.cardTools.setOnClickListener {
+            findNavController().navigate(R.id.toolsFragment)
+        }
+    }
+    
+    private fun updateUserData() {
+        val tokenManager = TokenManager(requireContext())
+        
+        // Показываем ФИО из TokenManager сразу, если есть, иначе username
+        val displayName = tokenManager.fullName ?: tokenManager.username
+        if (!displayName.isNullOrBlank()) {
+            binding.textUserName.text = "$displayName!"
+        }
+        
+        // Загружаем аватар пользователя в карточку профиля из сохраненных данных
+        loadProfileAvatar(tokenManager)
+    }
+    
+    private fun loadUserData() {
+        val tokenManager = TokenManager(requireContext())
+        
         lifecycleScope.launch {
             try {
-                RetrofitClient.apiService.getCurrentUser()
-
-
-                binding.cardOrders.setOnClickListener {
-                    findNavController().navigate(R.id.action_homeFragment_to_orderListFragment)
+                val user = RetrofitClient.apiService.getCurrentUser()
+                
+                // ВАЖНО: Обновляем TokenManager только если сервер вернул непустые значения
+                tokenManager.username = user.username
+                tokenManager.email = user.email ?: tokenManager.email
+                
+                // Обновляем full_name только если сервер вернул непустое значение
+                if (!user.full_name.isNullOrBlank()) {
+                    tokenManager.fullName = user.full_name
                 }
-
-
-                binding.cardAnalytics.setOnClickListener {
-                    findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
+                
+                // Обновляем avatar только если сервер вернул непустое значение
+                if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
+                    tokenManager.avatarUrl = user.avatar
                 }
-
-
-                binding.cardProfile.setOnClickListener {
-                    findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
-                }
-
-
+                
+                // Обновляем отображаемое имя (ФИО или username) из TokenManager
+                val displayName = tokenManager.fullName ?: tokenManager.username
+                binding.textUserName.text = "$displayName!"
+                
+                // Обновляем аватар в карточке профиля
+                loadProfileAvatar(tokenManager)
 
             } catch (e: Exception) {
-                findNavController().navigate(R.id.loginFragment)
+                // Не выкидываем на авторизацию при ошибке сети
+                // Просто продолжаем работу локально
             }
+        }
+    }
+    
+    private fun loadProfileAvatar(tokenManager: TokenManager) {
+        val avatarUrl = tokenManager.avatarUrl
+        if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
+            Glide.with(this)
+                .load(avatarUrl)
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .circleCrop()
+                .into(binding.cardProfileAvatar)
+        } else {
+            // Если аватара нет, показываем иконку приложения
+            binding.cardProfileAvatar.setImageResource(R.mipmap.ic_launcher_round)
         }
     }
 

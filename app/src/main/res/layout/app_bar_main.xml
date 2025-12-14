@@ -20,10 +20,22 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/purple_500"
+        android:background="@color/gray_900"
+        android:theme="@style/Theme.Relab.AppBarOverlay"
         app:layout_anchor="@+id/appBarLayout"
         app:layout_anchorGravity="center"
-        app:popupTheme="@style/Theme.Relab.PopupOverlay" />
+        app:popupTheme="@style/Theme.Relab.PopupOverlay"
+        app:titleTextColor="@color/white">
+        
+        <View
+            android:id="@+id/connectionIndicator"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/connection_indicator_red"
+            android:contentDescription="Индикатор подключения" />
+    </androidx.appcompat.widget.Toolbar>
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

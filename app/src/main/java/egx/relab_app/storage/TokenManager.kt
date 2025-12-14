@@ -21,4 +21,28 @@ class TokenManager(context: Context) {
     var email: String?
         get() = prefs.getString("EMAIL", null)
         set(value) = prefs.edit().putString("EMAIL", value).apply()
+    
+    // URL сервера
+    var serverUrl: String?
+        get() = prefs.getString("SERVER_URL", null)
+        set(value) = prefs.edit().putString("SERVER_URL", value).apply()
+    
+    // Настройки синхронизации
+    var autoSyncEnabled: Boolean
+        get() = prefs.getBoolean("AUTO_SYNC_ENABLED", true)
+        set(value) = prefs.edit().putBoolean("AUTO_SYNC_ENABLED", value).apply()
+    
+    var syncIntervalMinutes: Int
+        get() = prefs.getInt("SYNC_INTERVAL_MINUTES", 15)
+        set(value) = prefs.edit().putInt("SYNC_INTERVAL_MINUTES", value).apply()
+    
+    // ФИО пользователя
+    var fullName: String?
+        get() = prefs.getString("FULL_NAME", null)
+        set(value) = prefs.edit().putString("FULL_NAME", value).apply()
+    
+    // URL аватара
+    var avatarUrl: String?
+        get() = prefs.getString("AVATAR_URL", null)
+        set(value) = prefs.edit().putString("AVATAR_URL", value).apply()
 }

@@ -26,6 +26,11 @@ interface ApiService {
     data class TokenResponse(val access: String, val refresh: String)
     data class RefreshRequest(val refresh: String)
     data class RefreshResponse(val access: String)
+    data class UpdateProfileRequest(
+        val first_name: String? = null,
+        val last_name: String? = null,
+        val full_name: String? = null
+    )
 
     @Multipart
     @POST("orders/create-with-photo/")
@@ -105,12 +110,22 @@ interface ApiService {
     @GET("orders/{id}/")
     suspend fun getOrderById(@Path("id") orderId: String): Order
 
+    @DELETE("orders/{id}/")
+    fun deleteOrder(@Path("id") orderId: String): Call<Void>
+
     @GET("orders/{id}/report/")
     @Streaming
     fun getOrderReport(@Path("id") orderId: String): Call<ResponseBody>
 
     @GET("auth/users/me/")
     suspend fun getCurrentUser(): UserResponse
+    
+    @PATCH("auth/users/me/update/")
+    suspend fun updateUserProfile(@Body profile: UpdateProfileRequest): UserResponse
+    
+    @Multipart
+    @POST("auth/users/me/avatar/")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): UserResponse
 
 
     @POST("auth/jwt/create/")

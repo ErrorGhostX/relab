@@ -1,0 +1,312 @@
+# Relab
+
+Мобильное приложение для управления заказами на ремонт и диагностику электронных устройств с поддержкой офлайн-работы и синхронизации данных.
+
+## 📱 Описание
+
+Relab — это полнофункциональное Android-приложение для мастеров по ремонту устройств, которое позволяет:
+
+- 📝 Создавать и управлять заказами на ремонт и диагностику
+- 📸 Добавлять фотографии устройств
+- 💼 Отслеживать услуги и формировать отчеты
+- 📊 Просматривать аналитику (доходы, статистика выполненных заказов)
+- 🌐 Работать офлайн с последующей синхронизацией
+- 📄 Генерировать PDF-отчеты по заказам
+- 👤 Управлять профилем пользователя
+
+## 🏗️ Архитектура
+
+Проект состоит из двух основных компонентов:
+
+### Android приложение
+- **Язык**: Kotlin
+- **Архитектура**: MVVM (Model-View-ViewModel)
+- **Минимальная версия SDK**: Android 10 (API 29)
+- **Целевая версия SDK**: Android 14 (API 34)
+
+### Backend API
+- **Фреймворк**: Django REST Framework
+- **Язык**: Python 3
+- **База данных**: SQLite (по умолчанию)
+- **Аутентификация**: JWT (JSON Web Tokens)
+
+## 📦 Технологический стек
+
+### Android
+- **UI**: Material Design, ViewBinding, Navigation Component
+- **Сеть**: Retrofit 2.9.0, OkHttp 4.11.0
+- **Локальная БД**: Room Database 2.8.4
+- **Асинхронность**: Kotlin Coroutines
+- **Изображения**: Glide 4.16.0
+- **JSON**: Gson 2.10.1
+
+### Backend
+- Django 5.2
+- Django REST Framework 3.16.0
+- Djoser 2.3.1 (JWT аутентификация)
+- ReportLab 4.4.0 (генерация PDF)
+- Pillow (обработка изображений)
+
+## 🚀 Быстрый старт
+
+### Требования
+
+#### Для Android приложения:
+- Android Studio Hedgehog или новее
+- JDK 17
+- Android SDK 34
+- Gradle 8.10.2
+
+#### Для Backend:
+- Python 3.10+
+- pip
+- virtualenv (рекомендуется)
+
+### Установка Backend
+
+1. Перейдите в директорию backend:
+```bash
+cd backend_relab_app
+```
+
+2. Создайте виртуальное окружение:
+```bash
+python -m venv venv
+source venv/bin/activate  # На Windows: venv\Scripts\activate
+```
+
+3. Установите зависимости:
+```bash
+pip install -r requirements.txt
+```
+
+4. Выполните миграции:
+```bash
+python manage.py migrate
+```
+
+5. Создайте суперпользователя (опционально):
+```bash
+python manage.py createsuperuser
+```
+
+6. Запустите сервер разработки:
+```bash
+python manage.py runserver
+```
+
+Сервер будет доступен по адресу: `http://localhost:8000`
+
+### Настройка Android приложения
+
+1. Откройте проект в Android Studio
+2. Настройте URL сервера в `app/src/main/java/egx/relab_app/network/RetrofitClient.kt`:
+```kotlin
+private const val BASE_URL = "http://your-server-ip:8000/api/"
+```
+   Для локального тестирования используйте IP-адрес вашего компьютера вместо `localhost`
+
+3. Синхронизируйте проект Gradle
+4. Запустите приложение на эмуляторе или устройстве
+
+## 📁 Структура проекта
+
+```
+Relab/
+├── app/                          # Android приложение
+│   ├── src/main/
+│   │   ├── java/egx/relab_app/
+│   │   │   ├── MainActivity.kt          # Главная активность
+│   │   │   ├── RelabApplication.kt      # Application класс
+│   │   │   ├── models/                  # Модели данных
+│   │   │   │   ├── Order.kt
+│   │   │   │   ├── Services.kt
+│   │   │   │   └── UserResponse.kt
+│   │   │   ├── network/                 # Сетевой слой
+│   │   │   │   ├── ApiService.kt
+│   │   │   │   └── RetrofitClient.kt
+│   │   │   ├── database/                # Room Database
+│   │   │   │   ├── AppDatabase.kt
+│   │   │   │   ├── dao/
+│   │   │   │   └── entity/
+│   │   │   ├── repository/              # Репозитории
+│   │   │   │   └── OrderRepository.kt
+│   │   │   ├── storage/                 # Локальное хранилище
+│   │   │   │   └── TokenManager.kt
+│   │   │   ├── sync/                    # Синхронизация
+│   │   │   │   └── SyncManager.kt
+│   │   │   └── ui/                      # UI компоненты
+│   │   │       ├── home/
+│   │   │       ├── orders/
+│   │   │       ├── settings/
+│   │   │       └── tools/
+│   │   └── res/                         # Ресурсы
+│   └── build.gradle.kts
+│
+├── backend_relab_app/            # Django Backend
+│   ├── backend_relab_app/        # Настройки проекта
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── orders/                   # Приложение заказов
+│   │   ├── models.py             # Модели данных
+│   │   ├── views.py              # API представления
+│   │   ├── serializers.py        # Сериализаторы
+│   │   ├── urls.py               # URL маршруты
+│   │   └── migrations/           # Миграции БД
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── media/                    # Загруженные файлы
+│       ├── orders_photos/
+│       └── user_avatars/
+│
+├── gradle/                       # Gradle конфигурация
+│   └── libs.versions.toml        # Каталог версий
+└── README.md
+```
+
+## 🔑 Основные функции
+
+### Управление заказами
+- Создание новых заказов с подробной информацией
+- Редактирование существующих заказов
+- Просмотр списка всех заказов
+- Фильтрация по статусу (Новый, В процессе, Готов, Ожидаемый)
+- Загрузка фотографий устройств
+
+### Услуги и отчеты
+- Добавление услуг к заказам с указанием цены
+- Удаление услуг
+- Автоматический расчет итоговой стоимости
+- Генерация PDF-отчетов с логотипом компании
+
+### Аналитика
+- Месячный доход (сумма выполненных заказов)
+- Количество завершенных заказов за месяц
+- Визуализация статистики
+
+### Профиль пользователя
+- Управление персональными данными
+- Загрузка аватара
+- Указание ФИО
+
+### Офлайн-режим
+- Полная работа без интернета
+- Локальное хранение в Room Database
+- Автоматическая синхронизация при восстановлении соединения
+- Разрешение конфликтов при синхронизации
+
+## 🔐 Аутентификация
+
+Приложение использует JWT (JSON Web Tokens) для аутентификации:
+
+- **Access Token**: действителен 1 день
+- **Refresh Token**: действителен 7 дней
+- Автоматическое обновление токенов
+- Сохранение токенов в локальном хранилище
+
+## 📡 API Endpoints
+
+### Аутентификация (Djoser)
+- `POST /auth/users/` - Регистрация пользователя
+- `POST /auth/token/login/` - Получение JWT токена
+- `POST /auth/token/refresh/` - Обновление токена
+- `GET /auth/users/me/` - Информация о текущем пользователе
+
+### Заказы
+- `GET /api/orders/` - Список всех заказов
+- `POST /api/orders/` - Создание заказа (JSON)
+- `POST /api/orders/create-with-photo/` - Создание заказа с фотографией (multipart/form-data)
+- `GET /api/orders/{id}/` - Детали заказа
+- `PUT /api/orders/{id}/` - Обновление заказа
+- `DELETE /api/orders/{id}/` - Удаление заказа
+- `POST /api/orders/{id}/add_service/` - Добавление услуги
+- `DELETE /api/orders/{id}/services/{service_id}/` - Удаление услуги
+- `GET /api/orders/{id}/report/` - Получение PDF-отчета
+
+### Аналитика
+- `GET /api/analytics/monthly_earnings/` - Месячный доход
+- `GET /api/analytics/monthly_completed_orders/` - Количество завершенных заказов за месяц
+
+## 💾 База данных
+
+### Backend (Django Models)
+- **Order**: Заказы (номер, клиент, устройство, статус, тип и т.д.)
+- **Service**: Услуги, привязанные к заказам
+- **UserProfile**: Расширенный профиль пользователя (ФИО, аватар)
+
+### Android (Room Database)
+- **OrderEntity**: Локальное представление заказов
+- **ServiceEntity**: Локальное представление услуг
+
+## 🔄 Синхронизация
+
+Приложение реализует двухстороннюю синхронизацию:
+
+1. **Pull**: Получение обновлений с сервера
+2. **Push**: Отправка локальных изменений на сервер
+3. **Conflict Resolution**: Разрешение конфликтов (приоритет у серверных данных)
+
+Синхронизация происходит:
+- При запуске приложения (если есть интернет)
+- По запросу пользователя
+- Автоматически при восстановлении соединения
+
+## 🎨 UI/UX
+
+- Material Design компоненты
+- Navigation Drawer для навигации
+- ViewBinding для доступа к views
+- Индикатор подключения к серверу
+- Адаптивный дизайн
+
+## 📄 Генерация PDF
+
+Backend генерирует PDF-отчеты используя ReportLab:
+- Логотип компании (если есть)
+- Полная информация о заказе
+- Список услуг с ценами
+- Итоговая стоимость
+- Использование шрифта Times New Roman
+
+## 🧪 Тестирование
+
+### Android
+- Unit тесты: `app/src/test/java/`
+- Instrumented тесты: `app/src/androidTest/java/`
+
+### Backend
+- Django тесты: `orders/tests.py`
+
+## 🛠️ Разработка
+
+### Добавление новых зависимостей
+
+#### Android
+Отредактируйте `app/build.gradle.kts` и при необходимости `gradle/libs.versions.toml`
+
+#### Backend
+Добавьте зависимость в `backend_relab_app/requirements.txt`:
+```bash
+pip install package_name
+pip freeze > requirements.txt
+```
+
+### Выполнение миграций
+
+При изменении моделей Django:
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+## 👥 Авторы
+
+ ErrorGhostX.
+
+
+---
+
+**Версия**: 2  
+**Дата последнего обновления**: 2025
+
