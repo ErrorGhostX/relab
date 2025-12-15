@@ -93,14 +93,26 @@ class Service(models.Model):
 
 class UserProfile(models.Model):
     """
-    Расширенный профиль пользователя с ФИО и аватаром
+    Расширенный профиль пользователя с ФИО, аватаром и рангом
     """
+    RANK_CHOICES = (
+        ('admin', 'Администратор'),
+        ('employee', 'Сотрудник'),
+        ('employee_2', 'Сотрудник 2 ранга'),
+    )
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, default='', verbose_name='ФИО')
     avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
+    rank = models.CharField(
+        max_length=20,
+        choices=RANK_CHOICES,
+        default='employee',
+        verbose_name='Ранг'
+    )
     
     def __str__(self):
-        return f"{self.user.username} - {self.full_name or 'Без ФИО'}"
+        return f"{self.user.username} - {self.full_name or 'Без ФИО'} ({self.get_rank_display()})"
 
 
 @receiver(post_save, sender=User)

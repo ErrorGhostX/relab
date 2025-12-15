@@ -40,19 +40,22 @@ class OrderSerializer(serializers.ModelSerializer):
         return None
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    rank_display = serializers.CharField(source='get_rank_display', read_only=True)
     class Meta:
         model = UserProfile
-        fields = ('full_name', 'avatar')
+        fields = ('full_name', 'avatar', 'rank', 'rank_display')
 
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
     full_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
+    rank_display = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'profile')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'rank', 'rank_display', 'profile')
     
     def get_full_name(self, obj):
         """Получить ФИО из профиля"""
@@ -69,6 +72,16 @@ class UserSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(profile.avatar.url)
         return None
+    
+    def get_rank(self, obj):
+        """Получить ранг пользователя"""
+        profile, created = UserProfile.objects.get_or_create(user=obj)
+        return profile.rank if profile else 'employee'
+    
+    def get_rank_display(self, obj):
+        """Получить отображаемое название ранга"""
+        profile, created = UserProfile.objects.get_or_create(user=obj)
+        return profile.get_rank_display() if profile else 'Сотрудник'
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
