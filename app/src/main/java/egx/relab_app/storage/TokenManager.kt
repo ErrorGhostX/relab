@@ -45,4 +45,14 @@ class TokenManager(context: Context) {
     var avatarUrl: String?
         get() = prefs.getString("AVATAR_URL", null)
         set(value) = prefs.edit().putString("AVATAR_URL", value).apply()
+    
+    // Ранг пользователя
+    var rank: String?
+        get() = prefs.getString("RANK", null)
+        set(value) = prefs.edit().putString("RANK", value).apply()
+    
+    // Отображаемое название ранга
+    var rankDisplay: String?
+        get() = prefs.getString("RANK_DISPLAY", null)
+        set(value) = prefs.edit().putString("RANK_DISPLAY", value).apply()
 }

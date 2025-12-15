@@ -117,6 +117,10 @@ class ProfileFragment : Fragment() {
                     tokenManager.avatarUrl = user.avatar
                 }
                 
+                // Обновляем ранг
+                user.rank?.let { tokenManager.rank = it }
+                user.rank_display?.let { tokenManager.rankDisplay = it }
+                
                 // Обновляем UI с данными с сервера
                 updateUI(user)
                 
@@ -151,6 +155,10 @@ class ProfileFragment : Fragment() {
         binding.tvEmail.text = tokenManager.email ?: "Загрузка..."
         binding.editTextFullName.setText(tokenManager.fullName ?: "")
         
+        // Показываем ранг
+        val rankDisplay = tokenManager.rankDisplay ?: "Сотрудник"
+        binding.tvRank.text = "Ранг: $rankDisplay"
+        
         // Загружаем аватар из локального хранилища
         val savedAvatarUrl = tokenManager.avatarUrl
         if (!savedAvatarUrl.isNullOrEmpty() && savedAvatarUrl != "null") {
@@ -175,6 +183,10 @@ class ProfileFragment : Fragment() {
         // ВАЖНО: Отображаем ФИО в поле редактирования
         binding.editTextFullName.setText(user.full_name ?: "")
         
+        // Показываем ранг
+        val rankDisplay = user.rank_display ?: "Сотрудник"
+        binding.tvRank.text = "Ранг: $rankDisplay"
+        
         // Загружаем аватар
         val avatarUrl = user.avatar
         if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
@@ -191,6 +203,8 @@ class ProfileFragment : Fragment() {
         // ВАЖНО: Сохраняем в TokenManager ПЕРЕД обновлением навигации
         tokenManager.fullName = user.full_name
         tokenManager.avatarUrl = user.avatar
+        user.rank?.let { tokenManager.rank = it }
+        user.rank_display?.let { tokenManager.rankDisplay = it }
         
         // Обновляем навигацию в MainActivity сразу после загрузки
         val activity = activity as? egx.relab_app.MainActivity

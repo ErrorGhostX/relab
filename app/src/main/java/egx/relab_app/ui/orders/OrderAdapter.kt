@@ -42,14 +42,26 @@ class OrderAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(order: Order) {
-            binding.orderIdText.text = "ID: ${order.id}"
+            // ВАЖНО: Обрабатываем случай, когда order.id = null (локально созданный заказ)
+            binding.orderIdText.text = if (order.id != null && order.id!! > 0) {
+                "ID: ${order.id}"
+            } else {
+                "ID: Локальный"
+            }
+            
+            // ВАЖНО: Показываем номер заказа
+            binding.orderNumberText.text = "Номер: ${order.orderNumber ?: "-"}"
+            
             binding.deviceNameText.text = "Устройство: ${order.deviceName}"
-            
-            // Показываем ФИО если есть, иначе username
-            val creatorName = order.createdByFullName ?: order.createdByUsername ?: "Неизвестно"
-            binding.orderCreatedText.text = "Создан: $creatorName"
-            
-            // Загружаем аватар создателя
+
+// Показываем ФИО если есть, иначе username
+            val creatorName = order.createdByFullName
+                ?: order.createdByUsername
+                ?: "Неизвестно"
+
+            binding.orderCreatedText.text = creatorName
+
+// Загружаем аватар создателя
             if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
                 Glide.with(binding.root.context)
                     .load(order.createdByAvatar)
@@ -60,6 +72,7 @@ class OrderAdapter(
             } else {
                 binding.createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
             }
+
             
             // Статус внизу
             binding.orderStatusText.text = "Статус: ${order.status}"

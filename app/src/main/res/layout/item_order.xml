@@ -35,6 +35,16 @@
             android:layout_marginTop="8dp" />
 
         <TextView
+            android:id="@+id/orderNumberText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Номер: 12345"
+            android:textStyle="bold"
+            android:textColor="@color/gray_800"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp" />
+
+        <TextView
             android:id="@+id/deviceNameText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

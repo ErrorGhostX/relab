@@ -544,7 +544,11 @@ class OrderFormFragment : Fragment() {
     private fun buildNewOrder(): Order {
         // Форматируем дату в формат YYYY-MM-DD
         val dateString = formatDateForServer(binding.textViewSelectedDate.text.toString())
-        
+
+        // Получаем выбранные значения из MaterialAutoCompleteTextView
+        val statusSelected = binding.statusSpinner.text.toString()
+        val typeSelected = binding.orderTypeSpinner.text.toString()
+
         return Order(
             id = null,
             orderNumber = binding.editTextOrderNumber.text.toString(),
@@ -559,13 +563,14 @@ class OrderFormFragment : Fragment() {
             kit = binding.editTextKit.text.toString(),
             description = binding.editTextDescription.text.toString(),
             date = dateString,
-            status = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new",
-            orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair",
+            status = statusMap[statusSelected] ?: "new",
+            orderType = orderTypeMap[typeSelected] ?: "repair",
             createdByUsername = tokenManager.username,  // Сохраняем username текущего пользователя
             createdByFullName = tokenManager.fullName,  // Сохраняем ФИО текущего пользователя
-            createdByAvatar = tokenManager.avatarUrl   // Сохраняем аватар текущего пользователя
+            createdByAvatar = tokenManager.avatarUrl    // Сохраняем аватар текущего пользователя
         )
     }
+
     
     /**
      * Форматирует дату в формат YYYY-MM-DD для отправки на сервер
