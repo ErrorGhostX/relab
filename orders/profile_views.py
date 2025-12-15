@@ -9,26 +9,41 @@ from .serializers import UserSerializer, UserUpdateSerializer
 from django.http import Http404
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([IsAuthenticated])
 def get_current_user(request):
     """
-    GET /api/auth/users/me/
-    Получить текущего пользователя с профилем
+    GET /api/auth/users/me/ - Получить текущего пользователя с профилем
+    PATCH/PUT /api/auth/users/me/ - Обновить профиль пользователя (ФИО, аватар)
+    ВАЖНО: Этот эндпоинт должен быть определен ПЕРЕД djoser.urls в urls.py
     """
     # Гарантируем наличие профиля (создаем, если его нет)
     UserProfile.objects.get_or_create(user=request.user)
     
-    serializer = UserSerializer(request.user, context={'request': request})
-    return Response(serializer.data)
+    if request.method == 'GET':
+        serializer = UserSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+    
+    elif request.method in ['PATCH', 'PUT']:
+        user = request.user
+        serializer = UserUpdateSerializer(user, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            # Возвращаем обновленного пользователя
+            user_serializer = UserSerializer(user, context={'request': request})
+            return Response(user_serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated])
 def update_user_profile(request):
     """
-    PATCH/PUT /api/auth/users/me/
+    PATCH/PUT /api/auth/users/me/update/
     Обновить профиль пользователя (ФИО, аватар)
+    Альтернативный эндпоинт для обратной совместимости
     """
     user = request.user
     serializer = UserUpdateSerializer(user, data=request.data, partial=True)

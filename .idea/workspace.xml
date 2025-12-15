@@ -6,11 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend_relab_app/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -144,7 +139,7 @@
       <workItem from="1765068030355" duration="12387000" />
       <workItem from="1765320555372" duration="650000" />
       <workItem from="1765542300135" duration="3594000" />
-      <workItem from="1765661014383" duration="5128000" />
+      <workItem from="1765661014383" duration="6756000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />
