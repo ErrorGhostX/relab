@@ -20,6 +20,7 @@ import egx.relab_app.network.RetrofitClient
 import egx.relab_app.repository.OrderRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import java.io.File
 import java.io.FileOutputStream
 
@@ -29,8 +30,9 @@ class OrderDetailFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var currentOrder: Order
     
-    // Получаем Repository из Application
+    // Получаем Repository и ServiceDao из Application
     private val repository by lazy { requireContext().app.orderRepository }
+    private val serviceDao by lazy { requireContext().app.database.serviceDao() }
     
     // Маппинг статусов и типов заказов
     private val statusMap = mapOf(
@@ -51,22 +53,25 @@ class OrderDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         currentOrder = OrderDetailFragmentArgs.fromBundle(requireArguments()).order
-        // Сначала показываем данные из аргументов
+        
+        // ВАЖНО: Приоритет на локальность - загружаем СРАЗУ из локальной БД
+        // Показываем данные из аргументов как временные, пока загружаем из БД
         bindOrderToUI(currentOrder)
         
-        // Затем пытаемся загрузить полные данные с сервера, если есть ID
-        // Если нет подключения, используем данные из аргументов
-        if (currentOrder.id != null) {
-            loadOrderDetails()
-        } else {
-            // Если нет serverId, пытаемся загрузить из локальной БД
-            lifecycleScope.launch {
-                try {
-                    // Ищем по другим признакам (например, orderNumber)
-                    // Пока используем данные из аргументов
-                } catch (e: Exception) {
-                    android.util.Log.e("OrderDetail", "Ошибка загрузки из БД", e)
+        // Загружаем заказ из локальной БД (приоритет на локальность)
+        lifecycleScope.launch {
+            try {
+                loadFromLocalDatabase()
+                
+                // ВАЖНО: После загрузки из локальной БД пытаемся обновить с сервера в ФОНОВОМ режиме
+                // Это не блокирует отображение - пользователь видит локальные данные сразу
+                if (currentOrder.id != null) {
+                    // Если есть serverId, пытаемся обновить с сервера в фоне
+                    loadOrderDetailsFromServer()
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка загрузки из локальной БД", e)
+                // Продолжаем показывать данные из аргументов
             }
         }
 
@@ -89,7 +94,13 @@ class OrderDetailFragment : Fragment() {
     }
 
     private fun bindOrderToUI(order: Order) = with(binding) {
-        orderId.text        = "ID: ${order.id}"
+        // ВАЖНО: Обрабатываем случай, когда order.id = null (локально созданный заказ)
+        // Показываем serverId если есть (положительный), иначе показываем информацию о локальном заказе
+        orderId.text = if (order.id != null && order.id!! > 0) {
+            "ID: ${order.id}"
+        } else {
+            "ID: Локальный (ожидает синхронизации)"
+        }
         
         // Отображаем ФИО создателя если есть, иначе username
         val creatorName = order.createdByFullName ?: order.createdByUsername
@@ -123,10 +134,17 @@ class OrderDetailFragment : Fragment() {
         orderType.text      = "Тип: ${orderTypeMap[order.orderType] ?: order.orderType}"
         status.text         = "Статус: ${statusMap[order.status] ?: order.status}"
 
-        Glide.with(this@OrderDetailFragment)
-            .load(order.photo)
-            .placeholder(R.drawable.placeholder_image)
-            .into(orderImage)
+        // Фото заказа - обрабатываем 404 ошибки
+        if (!order.photo.isNullOrEmpty() && order.photo != "null") {
+            Glide.with(this@OrderDetailFragment)
+                .load(order.photo)
+                .placeholder(R.drawable.placeholder_image)
+                .error(R.drawable.placeholder_image)
+                .fallback(R.drawable.placeholder_image)
+                .into(orderImage)
+        } else {
+            orderImage.setImageResource(R.drawable.placeholder_image)
+        }
 
         displayServices(order)
     }
@@ -149,7 +167,15 @@ class OrderDetailFragment : Fragment() {
                 "${svc.description}: ${"%.2f".format(svc.price)} ₽"
 
             row.findViewById<ImageButton>(R.id.btnDeleteService).setOnClickListener {
-                deleteService(order.id!!, svc.id)
+                // ВАЖНО: Удаление работает локально в первую очередь
+                // Находим услугу по serverId или localId и удаляем из локальной БД
+                if (order.id != null && svc.id > 0) {
+                    deleteService(order.id!!, svc.id)
+                } else {
+                    // Если нет serverId, ищем по другим признакам
+                    // Пока просто показываем ошибку
+                    showToast("Услуга не может быть удалена (нет ID)")
+                }
             }
 
             container.addView(row)
@@ -189,100 +215,265 @@ class OrderDetailFragment : Fragment() {
             .show()
     }
 
+    /**
+     * Добавить услугу к заказу
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. Сохраняет услугу СРАЗУ в локальную БД
+     * 2. Обновляет UI СРАЗУ
+     * 3. Синхронизирует с сервером в ФОНОВОМ режиме
+     * 4. Не ждет ответа от сервера - приложение работает автономно
+     */
     private fun addServiceToOrder(description: String, price: Double) {
-        RetrofitClient.addService(currentOrder.id.toString(), description, price) { success, _, error ->  // Преобразуем id в String
-            if (success) {
-                showToast("Услуга добавлена")
-                loadOrderDetails()
-            } else {
-                showToast("Ошибка: $error")
-                loadOrderDetails()
+        lifecycleScope.launch {
+            try {
+                // Находим заказ в локальной БД
+                val orderEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else if (currentOrder.orderNumber != null) {
+                    val allEntities = repository.getAllOrderEntities()
+                    allEntities.firstOrNull { 
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    }
+                } else {
+                    null
+                }
+                
+                if (orderEntity != null) {
+                    // ВАЖНО: Добавляем услугу СРАЗУ в локальную БД
+                    repository.addServiceToOrder(
+                        orderLocalId = orderEntity.localId,
+                        orderServerId = currentOrder.id,
+                        description = description,
+                        price = price
+                    )
+                    
+                    // Обновляем UI СРАЗУ из локальной БД
+                    loadFromLocalDatabase()
+                    
+                    showToast("Услуга добавлена")
+                    
+                    // ВАЖНО: Синхронизация происходит в ФОНОВОМ режиме через SyncManager
+                    // Не блокируем UI и не ждем ответа
+                    if (currentOrder.id != null) {
+                        // Пытаемся синхронизировать с сервером в фоне
+                        try {
+                            RetrofitClient.addService(currentOrder.id!!.toString(), description, price) { success, _, error ->
+                                if (success) {
+                                    android.util.Log.d("OrderDetail", "Услуга синхронизирована с сервером")
+                                    // Обновляем заказ с сервера в фоне
+                                    lifecycleScope.launch {
+                                        try {
+                                            val updatedOrder = RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                                            repository.saveOrderFromServer(updatedOrder, orderEntity.localId)
+                                            loadFromLocalDatabase()
+                                        } catch (e: Exception) {
+                                            // Ошибка - это нормально, продолжаем работать с локальными данными
+                                        }
+                                    }
+                                } else {
+                                    android.util.Log.d("OrderDetail", "Ошибка синхронизации услуги: $error")
+                                    // Ошибка - это нормально, продолжаем работать с локальными данными
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Ошибка - это нормально, продолжаем работать с локальными данными
+                            android.util.Log.d("OrderDetail", "Не удалось синхронизировать услугу (офлайн режим): ${e.message}")
+                        }
+                    }
+                } else {
+                    showToast("Ошибка: заказ не найден в локальной БД")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка при добавлении услуги", e)
+                showToast("Ошибка: ${e.message}")
             }
-            loadOrderDetails()
         }
     }
 
+    /**
+     * Удалить услугу из заказа
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. Удаляет услугу СРАЗУ из локальной БД
+     * 2. Обновляет UI СРАЗУ
+     * 3. Синхронизирует удаление с сервером в ФОНОВОМ режиме
+     * 4. Не ждет ответа от сервера - приложение работает автономно
+     */
     private fun deleteService(orderId: Int, serviceId: Int) {
-        RetrofitClient.apiService.deleteService(orderId, serviceId)
-            .enqueue(object : retrofit2.Callback<Void> {
-                override fun onResponse(call: retrofit2.Call<Void>, response: retrofit2.Response<Void>) {
-                    if (response.isSuccessful) {
-                        showToast("Услуга удалена")
-                        loadOrderDetails()
-                    } else {
-                        showToast("Ошибка удаления")
-                        loadOrderDetails()
+        lifecycleScope.launch {
+            try {
+                // Находим заказ в локальной БД
+                val orderEntity = if (orderId > 0) {
+                    repository.getOrderEntityByServerId(orderId)
+                } else if (currentOrder.orderNumber != null) {
+                    // Если нет serverId, ищем по orderNumber
+                    val allEntities = repository.getAllOrderEntities()
+                    allEntities.firstOrNull { 
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
                     }
+                } else {
+                    null
                 }
-
-                override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
-                    showToast("Сеть недоступна")
-                    loadOrderDetails()
+                
+                if (orderEntity != null) {
+                    // Находим услугу в локальной БД
+                    val serviceEntity = if (serviceId > 0) {
+                        // Ищем по serverId
+                        serviceDao.getServiceByServerId(serviceId)
+                    } else {
+                        // Если нет serverId, ищем последнюю услугу заказа (предполагаем, что удаляем последнюю)
+                        val servicesFlow = serviceDao.getServicesByOrderLocalId(orderEntity.localId)
+                        val allServiceEntities = servicesFlow.first()
+                        allServiceEntities.lastOrNull()
+                    }
+                    
+                    if (serviceEntity != null) {
+                        // ВАЖНО: Удаляем услугу СРАЗУ из локальной БД
+                        repository.deleteService(serviceEntity.localId, orderEntity.localId)
+                        
+                        // Обновляем UI СРАЗУ из локальной БД
+                        loadFromLocalDatabase()
+                        
+                        showToast("Услуга удалена")
+                        
+                        // ВАЖНО: Синхронизация удаления происходит в ФОНОВОМ режиме
+                        // Не блокируем UI и не ждем ответа
+                        if (orderId > 0 && serviceId > 0) {
+                            // Пытаемся удалить на сервере в фоне
+                            try {
+                                RetrofitClient.apiService.deleteService(orderId, serviceId)
+                                    .enqueue(object : retrofit2.Callback<Void> {
+                                        override fun onResponse(
+                                            call: retrofit2.Call<Void>,
+                                            response: retrofit2.Response<Void>
+                                        ) {
+                                            if (response.isSuccessful) {
+                                                android.util.Log.d("OrderDetail", "Услуга удалена на сервере")
+                                            } else {
+                                                android.util.Log.d("OrderDetail", "Ошибка удаления услуги на сервере")
+                                                // Ошибка - это нормально, продолжаем работать с локальными данными
+                                            }
+                                        }
+                                        
+                                        override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
+                                            android.util.Log.d("OrderDetail", "Не удалось удалить услугу на сервере (офлайн режим): ${t.message}")
+                                            // Ошибка - это нормально, продолжаем работать с локальными данными
+                                        }
+                                    })
+                            } catch (e: Exception) {
+                                // Ошибка - это нормально, продолжаем работать с локальными данными
+                                android.util.Log.d("OrderDetail", "Не удалось синхронизировать удаление услуги (офлайн режим): ${e.message}")
+                            }
+                        }
+                    } else {
+                        showToast("Ошибка: услуга не найдена в локальной БД")
+                    }
+                } else {
+                    showToast("Ошибка: заказ не найден в локальной БД")
                 }
-            })
+            } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка при удалении услуги", e)
+                showToast("Ошибка: ${e.message}")
+            }
+        }
     }
 
 
-    private fun loadOrderDetails() {
+    /**
+     * Загрузить обновления с сервера в ФОНОВОМ режиме
+     * 
+     * ВАЖНО: Это НЕ блокирует отображение - пользователь уже видит локальные данные
+     * Используется только для обновления данных в фоне
+     */
+    private fun loadOrderDetailsFromServer() {
         lifecycleScope.launch {
             try {
-                // Пытаемся загрузить с сервера, если есть ID
-                if (currentOrder.id != null) {
-                    try {
-                        val updatedOrder = withContext(Dispatchers.IO) {
-                            RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
-                        }
-                        currentOrder = updatedOrder
-                        bindOrderToUI(updatedOrder)
-                        
-                        // Сохраняем обновленный заказ в локальную БД (включая услуги)
-                        repository.saveOrderFromServer(updatedOrder)
-                    } catch (e: Exception) {
-                        // Если нет подключения, пытаемся загрузить из локальной БД
-                        android.util.Log.d("OrderDetail", "Ошибка загрузки с сервера, загружаем из локальной БД: ${e.message}")
+                if (currentOrder.id != null && isAdded) {
+                    // Пытаемся загрузить с сервера в фоне
+                    val updatedOrder = withContext(Dispatchers.IO) {
+                        RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                    }
+                    
+                    // Сохраняем обновленный заказ в локальную БД
+                    // ВАЖНО: saveOrderFromServer не перезапишет локальные изменения (PENDING статус)
+                    repository.saveOrderFromServer(updatedOrder)
+                    
+                    // Обновляем UI только если фрагмент еще прикреплен
+                    if (isAdded) {
+                        // Загружаем обновленные данные из локальной БД
                         loadFromLocalDatabase()
                     }
-                } else {
-                    // Если нет serverId, загружаем из локальной БД
-                    loadFromLocalDatabase()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("OrderDetail", "Ошибка загрузки заказа", e)
-                showToast("Ошибка загрузки заказа")
+                // Ошибка загрузки с сервера - это нормально, продолжаем работать с локальными данными
+                android.util.Log.d("OrderDetail", "Не удалось обновить с сервера (офлайн режим): ${e.message}")
+                // Не показываем ошибку пользователю - приложение работает автономно
             }
         }
     }
     
     /**
      * Загрузить заказ из локальной БД
+     * 
+     * ВАЖНО: Приоритет на локальность - это основной метод загрузки данных
+     * Поддерживает поиск как по serverId, так и по orderNumber (для несинхронизированных заказов)
+     * 
+     * Логика поиска:
+     * 1. Если есть serverId - ищем по serverId
+     * 2. Если нет serverId, но есть orderNumber - ищем по orderNumber
+     * 3. Загружаем услуги из локальной БД
+     * 4. Обновляем UI с данными из локальной БД
      */
     private suspend fun loadFromLocalDatabase() {
         if (!isAdded) return
         try {
+            var orderEntity: egx.relab_app.database.entity.OrderEntity? = null
+            var localOrder: Order? = null
+            
             if (currentOrder.id != null) {
                 // Ищем по serverId
-                val localOrder = repository.getOrderByServerId(currentOrder.id!!)
-                if (localOrder != null && isAdded) {
-                    // Загружаем услуги для заказа
-                    val orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
+                orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
+                localOrder = repository.getOrderByServerId(currentOrder.id!!)
+            } else if (currentOrder.orderNumber != null) {
+                // Если нет serverId, ищем по orderNumber
+                // Получаем все заказы и ищем по orderNumber
+                val allOrders = repository.getAllOrders().first()
+                localOrder = allOrders.firstOrNull { it.orderNumber == currentOrder.orderNumber }
+                if (localOrder != null && localOrder.id != null) {
+                    orderEntity = repository.getOrderEntityByServerId(localOrder.id!!)
+                } else {
+                    // Если не нашли по serverId, ищем по orderNumber в Entity
+                    // Нужно получить все Entity и найти по orderNumber
+                    val allEntities = repository.getAllOrderEntities()
+                    orderEntity = allEntities.firstOrNull { 
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    }
                     if (orderEntity != null) {
-                        val servicesFlow = repository.getServicesForOrder(orderEntity.localId)
-                        // Получаем первое значение из Flow
-                        val servicesList = try {
-                            servicesFlow.first()
-                        } catch (e: Exception) {
-                            emptyList()
-                        }
-                        val orderWithServices = localOrder.copy(services = servicesList)
-                        if (isAdded) {
-                            currentOrder = orderWithServices
-                            bindOrderToUI(orderWithServices)
-                        }
-                    } else {
-                        if (isAdded) {
-                            currentOrder = localOrder
-                            bindOrderToUI(localOrder)
-                        }
+                        localOrder = orderEntity.toOrder()
+                    }
+                }
+            }
+            
+            if (localOrder != null && isAdded) {
+                // Загружаем услуги для заказа
+                if (orderEntity != null) {
+                    val servicesFlow = repository.getServicesForOrder(orderEntity.localId)
+                    // Получаем первое значение из Flow
+                    val servicesList = try {
+                        servicesFlow.first()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                    val orderWithServices = localOrder.copy(services = servicesList)
+                    if (isAdded) {
+                        currentOrder = orderWithServices
+                        bindOrderToUI(orderWithServices)
+                    }
+                } else {
+                    if (isAdded) {
+                        currentOrder = localOrder
+                        bindOrderToUI(localOrder)
                     }
                 }
             }
@@ -340,56 +531,49 @@ class OrderDetailFragment : Fragment() {
     
     /**
      * Удалить заказ
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. Удаляет заказ СРАЗУ в локальной БД (мягкое удаление)
+     * 2. Закрывает экран СРАЗУ
+     * 3. Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
+     * 4. Не ждет ответа от сервера - приложение работает автономно
      */
     private fun deleteOrder() {
         lifecycleScope.launch {
             try {
-                if (currentOrder.id != null) {
-                    // Заказ есть на сервере - удаляем и там, и локально
-                    val orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
-                    
-                    // Удаляем на сервере
-                    RetrofitClient.apiService.deleteOrder(currentOrder.id!!.toString())
-                        .enqueue(object : retrofit2.Callback<Void> {
-                            override fun onResponse(
-                                call: retrofit2.Call<Void>,
-                                response: retrofit2.Response<Void>
-                            ) {
-                                lifecycleScope.launch {
-                                    // Удаляем локально
-                                    orderEntity?.let {
-                                        repository.deleteOrder(it.localId)
-                                    }
-                                    
-                                    if (response.isSuccessful) {
-                                        showToast("Заказ удалён")
-                                        findNavController().popBackStack()
-                                    } else {
-                                        showToast("Заказ удалён локально (ошибка на сервере)")
-                                        findNavController().popBackStack()
-                                    }
-                                }
-                            }
-                            
-                            override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
-                                lifecycleScope.launch {
-                                    // Удаляем локально даже при ошибке сети
-                                    orderEntity?.let {
-                                        repository.deleteOrder(it.localId)
-                                    }
-                                    showToast("Заказ удалён локально (ошибка сети)")
-                                    findNavController().popBackStack()
-                                }
-                            }
-                        })
+                // Находим заказ в локальной БД
+                val orderEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else if (currentOrder.orderNumber != null) {
+                    // Если нет serverId, ищем по orderNumber
+                    val allEntities = repository.getAllOrderEntities()
+                    allEntities.firstOrNull { 
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    }
                 } else {
-                    // Заказ еще не синхронизирован - удаляем только локально
-                    // Ищем по другим признакам (например, по orderNumber)
-                    // Пока просто показываем сообщение
-                    showToast("Заказ ещё не синхронизирован. Удаление только локально.")
+                    null
+                }
+                
+                if (orderEntity != null) {
+                    // ВАЖНО: Удаляем СРАЗУ в локальной БД (мягкое удаление)
+                    repository.deleteOrder(orderEntity.localId)
+                    android.util.Log.d("OrderDetail", "Заказ удален локально. localId: ${orderEntity.localId}")
+                    
+                    // Закрываем экран СРАЗУ - не ждем сервера
+                    showToast("Заказ удалён")
                     findNavController().popBackStack()
+                    
+                    // ВАЖНО: Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
+                    // Не блокируем UI и не ждем ответа
+                    val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext())
+                    lifecycleScope.launch {
+                        syncManager.pushChanges() // Запускаем в фоне
+                    }
+                } else {
+                    showToast("Ошибка: заказ не найден в локальной БД")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка при удалении заказа", e)
                 showToast("Ошибка: ${e.message}")
             }
         }

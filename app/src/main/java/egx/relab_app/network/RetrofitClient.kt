@@ -96,14 +96,19 @@ object RetrofitClient {
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
+                android.util.Log.d("RetrofitClient", "createOrder response: code=${resp.code()}, isSuccessful=${resp.isSuccessful}, body=${resp.body()}")
                 if (resp.isSuccessful) {
+                    val createdOrder = resp.body()
+                    android.util.Log.d("RetrofitClient", "Заказ создан на сервере: id=${createdOrder?.id}")
                     // Возвращаем созданный заказ с serverId
-                    callback(true, resp.code(), null, resp.body())
+                    callback(true, resp.code(), null, createdOrder)
                 } else {
+                    android.util.Log.e("RetrofitClient", "Ошибка создания заказа: code=${resp.code()}, body=$body")
                     callback(false, resp.code(), body, null)
                 }
             }
             override fun onFailure(call: Call<Order>, t: Throwable) {
+                android.util.Log.e("RetrofitClient", "Ошибка сети при создании заказа", t)
                 callback(false, -1, t.localizedMessage, null)
             }
         })
@@ -150,6 +155,10 @@ object RetrofitClient {
 
     private fun makeParts(o:Order): Map<String, RequestBody> {
         val mt="text/plain".toMediaType()
+        // Форматируем дату в формат YYYY-MM-DD для сервера
+        val formattedDate = formatDateForServer(o.date)
+        android.util.Log.d("RetrofitClient", "Форматирование даты: '${o.date}' -> '$formattedDate'")
+        
         return mapOf(
             "order_number" to o.orderNumber.orEmpty().toRequestBody(mt),
             "customer"     to o.customer.orEmpty().toRequestBody(mt),
@@ -162,9 +171,67 @@ object RetrofitClient {
             "model"        to o.model.orEmpty().toRequestBody(mt),
             "kit"          to o.kit.orEmpty().toRequestBody(mt),
             "description"  to o.description.orEmpty().toRequestBody(mt),
-            "date"         to o.date.orEmpty().toRequestBody(mt),
+            "date"         to formattedDate.toRequestBody(mt),
             "status"       to o.status.orEmpty().toRequestBody(mt),
             "order_type"   to o.orderType.orEmpty().toRequestBody(mt)
+        )
+    }
+    
+    /**
+     * Форматирует дату в формат YYYY-MM-DD для отправки на сервер
+     */
+    private fun formatDateForServer(dateString: String?): String {
+        if (dateString.isNullOrBlank() || dateString == "Дата не выбрана" || dateString == "Выберите дату") {
+            // Если дата не выбрана, используем текущую дату
+            val calendar = java.util.Calendar.getInstance()
+            return "%04d-%02d-%02d".format(
+                calendar.get(java.util.Calendar.YEAR),
+                calendar.get(java.util.Calendar.MONTH) + 1,
+                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            )
+        }
+        
+        // Проверяем, что дата уже в формате YYYY-MM-DD
+        val datePattern = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+        if (datePattern.matches(dateString)) {
+            return dateString
+        }
+        
+        // Пытаемся распарсить дату в других форматах
+        try {
+            val formats = listOf(
+                java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("yyyy.MM.dd", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault())
+            )
+            
+            for (format in formats) {
+                try {
+                    val date = format.parse(dateString)
+                    if (date != null) {
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.time = date
+                        return "%04d-%02d-%02d".format(
+                            calendar.get(java.util.Calendar.YEAR),
+                            calendar.get(java.util.Calendar.MONTH) + 1,
+                            calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                        )
+                    }
+                } catch (e: Exception) {
+                    // Пробуем следующий формат
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("RetrofitClient", "Ошибка парсинга даты: $dateString", e)
+        }
+        
+        // Если не удалось распарсить, используем текущую дату
+        val calendar = java.util.Calendar.getInstance()
+        return "%04d-%02d-%02d".format(
+            calendar.get(java.util.Calendar.YEAR),
+            calendar.get(java.util.Calendar.MONTH) + 1,
+            calendar.get(java.util.Calendar.DAY_OF_MONTH)
         )
     }
 

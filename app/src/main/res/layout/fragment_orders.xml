@@ -41,19 +41,23 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Фильтр по статусу"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:hintTextColor="@color/black"
+                    app:boxStrokeColor="@color/black"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp">
 
-                    <Spinner
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/statusFilterSpinner"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:spinnerMode="dropdown"
-                        android:background="@android:color/transparent" />
+                        android:textColor="@color/black"
+                        android:inputType="none"
+                        app:iconTint="@color/black"
+                        android:focusable="false" />
+
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Кнопка синхронизации -->

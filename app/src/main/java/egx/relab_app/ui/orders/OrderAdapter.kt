@@ -64,12 +64,17 @@ class OrderAdapter(
             // Статус внизу
             binding.orderStatusText.text = "Статус: ${order.status}"
             
-            // Фото заказа
-            Glide.with(binding.root.context)
-                .load(order.photo)
-                .placeholder(R.drawable.placeholder_image)
-                .error(R.drawable.placeholder_image)
-                .into(binding.orderImage)
+            // Фото заказа - обрабатываем 404 ошибки
+            if (!order.photo.isNullOrEmpty() && order.photo != "null") {
+                Glide.with(binding.root.context)
+                    .load(order.photo)
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.placeholder_image)
+                    .fallback(R.drawable.placeholder_image)
+                    .into(binding.orderImage)
+            } else {
+                binding.orderImage.setImageResource(R.drawable.placeholder_image)
+            }
 
             binding.root.setOnClickListener {
                 onClick(order)

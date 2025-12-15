@@ -8,18 +8,33 @@ import egx.relab_app.database.entity.ServiceEntity
 import egx.relab_app.models.Order
 import egx.relab_app.models.Service
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
  * Repository для работы с заказами
  * 
- * Repository паттерн - это слой абстракции между UI и источниками данных (БД, API).
- * UI не знает, откуда берутся данные - из локальной БД или с сервера.
+ * ВАЖНО: Приоритет на локальность
  * 
- * Преимущества:
+ * Repository паттерн - это слой абстракции между UI и источниками данных.
+ * 
+ * ПРИНЦИПЫ РАБОТЫ:
+ * 1. Все операции работают ТОЛЬКО с локальной БД (Room Database)
+ * 2. НЕ делает прямых запросов к серверу
+ * 3. Сервер используется ТОЛЬКО для синхронизации через SyncManager
+ * 4. UI всегда получает данные из локальной БД
+ * 
+ * ПРЕИМУЩЕСТВА:
+ * - Мгновенная работа - все операции локальные
+ * - Работа офлайн - приложение работает без интернета
+ * - Надежность - ошибки сервера не влияют на работу
  * - Единая точка доступа к данным
  * - Легко тестировать
- * - Можно менять источники данных без изменения UI
+ * 
+ * СИНХРОНИЗАЦИЯ:
+ * - Синхронизация происходит через SyncManager в фоновом режиме
+ * - Repository не знает о синхронизации - это не его ответственность
+ * - saveOrderFromServer() используется ТОЛЬКО SyncManager'ом
  */
 class OrderRepository(
     private val orderDao: OrderDao,
@@ -27,14 +42,29 @@ class OrderRepository(
 ) {
     
     /**
-     * Получить все заказы (реактивно через Flow)
-     * UI автоматически обновится при изменении данных в БД
+     * Получить все заказы из локальной БД (реактивно через Flow)
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Возвращает заказы ТОЛЬКО из локальной БД
+     * - Не делает запросов к серверу
+     * - UI автоматически обновится при изменении данных в БД
+     * - Работает полностью автономно
+     * 
+     * @return Flow<List<Order>> - реактивный поток заказов из локальной БД
      */
     fun getAllOrders(): Flow<List<Order>> {
         return orderDao.getAllOrders().map { entities ->
             // Конвертируем Entity в модели Order
+            // ВАЖНО: entities - это данные из локальной БД
             entities.map { it.toOrder() }
         }
+    }
+    
+    /**
+     * Получить все Entity заказов (для внутреннего использования)
+     */
+    suspend fun getAllOrderEntities(): List<egx.relab_app.database.entity.OrderEntity> {
+        return orderDao.getAllOrders().first()
     }
     
     /**
@@ -70,27 +100,124 @@ class OrderRepository(
     }
     
     /**
-     * Получить услуги для заказа
+     * Получить услуги для заказа из локальной БД
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Возвращает услуги ТОЛЬКО из локальной БД
+     * - Не делает запросов к серверу
+     * - UI автоматически обновится при изменении данных в БД
+     * 
+     * @param orderLocalId - локальный ID заказа
+     * @return Flow<List<Service>> - реактивный поток услуг из локальной БД
      */
     fun getServicesForOrder(orderLocalId: Long): Flow<List<Service>> {
         return serviceDao.getServicesByOrderLocalId(orderLocalId).map { entities ->
+            // Конвертируем Entity в модели Service
+            // ВАЖНО: entities - это данные из локальной БД
             entities.map { it.toService() }
         }
     }
     
     /**
-     * Создать новый заказ (сохраняется локально со статусом PENDING)
+     * Добавить услугу к заказу в локальной БД
      * 
-     * @param order - модель заказа
+     * ВАЖНО: Приоритет на локальность
+     * - Сохраняет услугу СРАЗУ в локальную БД
+     * - serverId: null (будет присвоен после синхронизации)
+     * - Не делает запросов к серверу
+     * - Синхронизация происходит через SyncManager в фоне
+     * - Помечает заказ как требующий синхронизации (PENDING)
+     * 
+     * @param orderLocalId - локальный ID заказа
+     * @param orderServerId - серверный ID заказа (может быть null)
+     * @param description - описание услуги
+     * @param price - цена услуги
+     * @return локальный ID созданной услуги
+     */
+    suspend fun addServiceToOrder(
+        orderLocalId: Long,
+        orderServerId: Int?,
+        description: String,
+        price: Double
+    ): Long {
+        // Создаем Entity для новой услуги (serverId = null)
+        val serviceEntity = egx.relab_app.database.entity.ServiceEntity.fromNewService(
+            description = description,
+            price = price,
+            orderLocalId = orderLocalId,
+            orderServerId = orderServerId
+        )
+        
+        // Вставляем в локальную БД
+        val serviceLocalId = serviceDao.insertService(serviceEntity)
+        
+        // ВАЖНО: Помечаем заказ как требующий синхронизации
+        val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
+        if (orderEntity != null && orderEntity.syncStatus == egx.relab_app.database.entity.OrderEntity.SyncStatus.SYNCED) {
+            // Если заказ был синхронизирован, помечаем как PENDING
+            orderDao.updateSyncStatus(orderLocalId, egx.relab_app.database.entity.OrderEntity.SyncStatus.PENDING)
+        }
+        
+        android.util.Log.d("OrderRepository", "Услуга добавлена локально. localId: $serviceLocalId, orderLocalId: $orderLocalId")
+        return serviceLocalId
+    }
+    
+    /**
+     * Удалить услугу из локальной БД
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Удаляет услугу СРАЗУ из локальной БД
+     * - Не делает запросов к серверу
+     * - Синхронизация удаления происходит через SyncManager в фоне
+     * - Помечает заказ как требующий синхронизации (PENDING)
+     * 
+     * @param serviceLocalId - локальный ID услуги
+     * @param orderLocalId - локальный ID заказа (для обновления статуса синхронизации)
+     */
+    suspend fun deleteService(serviceLocalId: Long, orderLocalId: Long) {
+        // Удаляем услугу из локальной БД
+        val serviceEntity = serviceDao.getServiceByLocalId(serviceLocalId)
+        if (serviceEntity != null) {
+            serviceDao.deleteService(serviceEntity)
+            android.util.Log.d("OrderRepository", "Услуга удалена локально. localId: $serviceLocalId")
+            
+            // ВАЖНО: Помечаем заказ как требующий синхронизации
+            val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
+            if (orderEntity != null && orderEntity.syncStatus == egx.relab_app.database.entity.OrderEntity.SyncStatus.SYNCED) {
+                // Если заказ был синхронизирован, помечаем как PENDING
+                orderDao.updateSyncStatus(orderLocalId, egx.relab_app.database.entity.OrderEntity.SyncStatus.PENDING)
+            }
+        }
+    }
+    
+    /**
+     * Создать новый заказ в локальной БД
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Сохраняет заказ СРАЗУ в локальную БД
+     * - Статус синхронизации: PENDING (ожидает синхронизации)
+     * - serverId: null (будет присвоен после синхронизации)
+     * - Не делает запросов к серверу
+     * - Синхронизация происходит через SyncManager в фоне
+     * 
+     * @param order - модель заказа (id должен быть null)
      * @return локальный ID созданного заказа
      */
     suspend fun createOrder(order: Order): Long {
+        // Создаем Entity для нового заказа (статус PENDING, serverId = null)
         val entity = OrderEntity.fromNewOrder(order)
+        // Вставляем в локальную БД
         return orderDao.insertOrder(entity)
     }
     
     /**
-     * Обновить заказ
+     * Обновить заказ в локальной БД
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Обновляет заказ СРАЗУ в локальной БД
+     * - Статус синхронизации меняется на PENDING (ожидает синхронизации)
+     * - Не делает запросов к серверу
+     * - Синхронизация происходит через SyncManager в фоне
      * 
      * @param localId - локальный ID заказа
      * @param order - обновленные данные заказа
@@ -99,7 +226,8 @@ class OrderRepository(
         val existingEntity = orderDao.getOrderByLocalId(localId)
             ?: throw IllegalArgumentException("Order with localId $localId not found")
         
-        // Обновляем данные, сохраняя поля синхронизации
+        // ВАЖНО: Обновляем данные, сохраняя поля синхронизации
+        // Статус меняется на PENDING - заказ будет синхронизирован через SyncManager
         val updatedEntity = existingEntity.copy(
             orderNumber = order.orderNumber,
             customer = order.customer,
@@ -119,17 +247,28 @@ class OrderRepository(
             createdByUsername = order.createdByUsername,
             createdByFullName = order.createdByFullName,
             createdByAvatar = order.createdByAvatar,
-            syncStatus = OrderEntity.SyncStatus.PENDING,  // Помечаем как требующий синхронизации
-            lastModified = System.currentTimeMillis()
+            syncStatus = OrderEntity.SyncStatus.PENDING,  // ВАЖНО: Помечаем как требующий синхронизации
+            lastModified = System.currentTimeMillis()     // Обновляем время последнего изменения
         )
         
+        // Обновляем в локальной БД
         orderDao.updateOrder(updatedEntity)
     }
     
     /**
-     * Удалить заказ (мягкое удаление)
+     * Удалить заказ в локальной БД (мягкое удаление)
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Удаляет заказ СРАЗУ в локальной БД (мягкое удаление - isDeleted = true)
+     * - Заказ исчезает из UI сразу
+     * - Не делает запросов к серверу
+     * - Синхронизация удаления происходит через SyncManager в фоне
+     * 
+     * @param localId - локальный ID заказа
      */
     suspend fun deleteOrder(localId: Long) {
+        // ВАЖНО: Мягкое удаление - заказ помечается как удаленный
+        // При синхронизации удаление будет отправлено на сервер
         orderDao.softDeleteOrder(localId)
     }
     
@@ -143,34 +282,90 @@ class OrderRepository(
     /**
      * Сохранить заказ, полученный с сервера (при синхронизации)
      * 
+     * ВАЖНО: Используется ТОЛЬКО SyncManager'ом
+     * - НЕ вызывается напрямую из UI
+     * - Не перезаписывает локальные изменения (PENDING или ERROR статус)
+     * - Локальные изменения имеют приоритет над серверными
+     * 
+     * ЛОГИКА:
+     * 1. Если заказ изменен локально (PENDING/ERROR) - НЕ перезаписываем
+     * 2. Если заказ не изменен локально (SYNCED) - обновляем с сервера
+     * 3. Если заказ новый - сохраняем в локальную БД
+     * 
      * @param order - заказ с сервера
      * @param localId - опциональный локальный ID, если заказ уже существует локально
      */
     suspend fun saveOrderFromServer(order: Order, localId: Long? = null) {
-        val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+        android.util.Log.d("OrderRepository", "saveOrderFromServer: orderId=${order.id}, localId=$localId")
         
-        // Если передан localId, обновляем заказ напрямую
+        // Если передан localId, обновляем заказ напрямую (используется при успешной синхронизации)
         if (localId != null) {
             val existing = orderDao.getOrderByLocalId(localId)
             if (existing != null) {
-                // Обновляем существующий заказ, сохраняя локальный ID
-                val updated = entity.copy(localId = existing.localId)
-                orderDao.updateOrder(updated)
-                
-                // Сохраняем услуги заказа
-                if (order.services.isNotEmpty()) {
-                    saveServicesForOrder(existing.localId, order.id, order.services)
+                // ВАЖНО: Обновляем существующий заказ с данными с сервера
+                // Сохраняем локальный ID, но обновляем serverId и все остальные поля
+                if (order.id != null) {
+                    android.util.Log.d("OrderRepository", "Обновление заказа localId=$localId с serverId=${order.id}")
+                    android.util.Log.d("OrderRepository", "До обновления: serverId=${existing.serverId}, syncStatus=${existing.syncStatus}")
+                    
+                    // Создаем Entity из заказа с сервера с правильным serverId
+                    val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID
+                    val updated = entity.copy(
+                        localId = existing.localId,  // Сохраняем локальный ID
+                        serverId = order.id,  // ВАЖНО: Обновляем serverId с сервера
+                        syncStatus = OrderEntity.SyncStatus.SYNCED,  // Обновляем статус
+                        lastSynced = System.currentTimeMillis()  // Обновляем время синхронизации
+                    )
+                    
+                    // Обновляем заказ в БД
+                    orderDao.updateOrder(updated)
+                    
+                    // Сохраняем услуги заказа
+                    if (order.services.isNotEmpty()) {
+                        saveServicesForOrder(existing.localId, order.id, order.services)
+                    }
+                    
+                    // ВАЖНО: Проверяем, что serverId действительно обновлен
+                    val verify = orderDao.getOrderByLocalId(localId)
+                    if (verify != null) {
+                        android.util.Log.d("OrderRepository", "Проверка после обновления: serverId=${verify.serverId}, syncStatus=${verify.syncStatus}")
+                        if (verify.serverId != order.id) {
+                            android.util.Log.e("OrderRepository", "ОШИБКА: serverId не обновлен! Ожидалось: ${order.id}, получено: ${verify.serverId}")
+                            // Пытаемся обновить через специальный метод DAO
+                            orderDao.updateServerId(localId, order.id!!, OrderEntity.SyncStatus.SYNCED)
+                        }
+                    }
+                } else {
+                    android.util.Log.w("OrderRepository", "Заказ с сервера не имеет ID, не обновляем serverId")
                 }
                 return
+            } else {
+                android.util.Log.w("OrderRepository", "Заказ с localId=$localId не найден, создаем новый")
             }
         }
         
         // Проверяем, есть ли уже такой заказ (по serverId)
-        // В модели Order поле называется id, а не serverId
-        val existing = order.id?.let { orderDao.getOrderByServerId(it) }
+        // ВАЖНО: Игнорируем отрицательные ID (временные локальные ID)
+        val existing = order.id?.let { serverId ->
+            if (serverId > 0) {
+                orderDao.getOrderByServerId(serverId)
+            } else {
+                null
+            }
+        }
         
         if (existing != null) {
-            // Обновляем существующий заказ, сохраняя локальный ID
+            // Заказ уже существует локально
+            // ВАЖНО: Не перезаписываем, если заказ был изменен локально (PENDING или ERROR)
+            if (existing.syncStatus == OrderEntity.SyncStatus.PENDING || 
+                existing.syncStatus == OrderEntity.SyncStatus.ERROR) {
+                android.util.Log.d("OrderRepository", "Пропуск обновления заказа ${order.id} - локальные изменения в приоритете")
+                return
+            }
+            
+            // Обновляем только если заказ не был изменен локально
+            val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
             val updated = entity.copy(localId = existing.localId)
             orderDao.updateOrder(updated)
             
@@ -179,7 +374,8 @@ class OrderRepository(
                 saveServicesForOrder(existing.localId, order.id, order.services)
             }
         } else {
-            // Вставляем новый заказ
+            // Новый заказ с сервера - сохраняем
+            val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
             val newLocalId = orderDao.insertOrder(entity)
             
             // Сохраняем услуги заказа
@@ -227,6 +423,20 @@ class OrderRepository(
      */
     suspend fun getPendingCount(): Int {
         return orderDao.getPendingCount()
+    }
+    
+    /**
+     * Получить удаленные заказы для синхронизации (удаление на сервере)
+     */
+    suspend fun getDeletedOrdersForSync(): List<OrderEntity> {
+        return orderDao.getDeletedOrdersForSync()
+    }
+    
+    /**
+     * Пометить заказ как полностью удаленный (после успешного удаления на сервере)
+     */
+    suspend fun markAsFullyDeleted(localId: Long) {
+        orderDao.fullyDeleteOrder(localId)
     }
     
     /**

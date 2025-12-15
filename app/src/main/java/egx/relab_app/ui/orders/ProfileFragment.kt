@@ -79,22 +79,33 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        // ВАЖНО: Обновляем данные с сервера каждый раз при входе в профиль
+        // ВАЖНО: Приоритет на локальность - загружаем СРАЗУ из локального хранилища
         loadUserProfile()
     }
 
+    /**
+     * Загрузить профиль пользователя
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. СНАЧАЛА показываем данные из TokenManager (локальное хранилище)
+     * 2. ЗАТЕМ пытаемся обновить с сервера в ФОНОВОМ режиме
+     * 3. При отсутствии сети продолжаем работать с локальными данными
+     */
     private fun loadUserProfile() {
-        // СНАЧАЛА показываем сохраненные данные для быстрого отображения
+        // ВАЖНО: Показываем СРАЗУ сохраненные данные из локального хранилища
+        // Пользователь видит данные мгновенно, без ожидания сервера
         loadFromLocalStorage()
         
-        // ЗАТЕМ пытаемся загрузить с сервера, если есть подключение
+        // ВАЖНО: Обновление с сервера происходит в ФОНОВОМ режиме
+        // Не блокирует отображение - пользователь уже видит локальные данные
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val user = RetrofitClient.apiService.getCurrentUser()
                 
                 // ВАЖНО: Обновляем TokenManager только если сервер вернул непустые значения
-                tokenManager.username = user.username
-                tokenManager.email = user.email ?: tokenManager.email
+                // Не перезаписываем локальные данные пустыми значениями
+                user.username?.let { tokenManager.username = it }
+                user.email?.let { tokenManager.email = it }
                 
                 // Обновляем full_name только если сервер вернул непустое значение
                 if (!user.full_name.isNullOrBlank()) {
@@ -106,30 +117,32 @@ class ProfileFragment : Fragment() {
                     tokenManager.avatarUrl = user.avatar
                 }
                 
-                // Создаем UserResponse с сохраненными значениями, если сервер не вернул
-                val userWithSavedData = user.copy(
-                    full_name = user.full_name ?: tokenManager.fullName,
-                    avatar = if (!user.avatar.isNullOrEmpty() && user.avatar != "null") user.avatar else tokenManager.avatarUrl
-                )
-                
-                // Обновляем UI с данными с сервера (с сохраненными значениями для full_name и avatar)
-                updateUI(userWithSavedData)
+                // Обновляем UI с данными с сервера
+                updateUI(user)
                 
                 // Обновляем навигацию
                 val activity = activity as? egx.relab_app.MainActivity
                 activity?.refreshNavBar()
             } catch (e: Exception) {
-                // Если нет подключения, используем локальные данные
+                // ВАЖНО: Если нет подключения, используем локальные данные
                 // Они уже загружены в loadFromLocalStorage()
-                if (isAdded) {
-                    // Не показываем ошибку, просто используем локальные данные
-                }
+                // Приложение продолжает работать автономно
+                android.util.Log.d("ProfileFragment", "Не удалось загрузить с сервера (офлайн режим): ${e.message}")
+                // Не показываем ошибку пользователю - приложение работает автономно
             }
         }
     }
     
+    /**
+     * Загрузить данные из локального хранилища (TokenManager)
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Показывает данные СРАЗУ из локального хранилища
+     * - Не делает запросов к серверу
+     * - Работает полностью автономно
+     */
     private fun loadFromLocalStorage() {
-        // Показываем сохраненные данные из TokenManager
+        // Показываем сохраненные данные из TokenManager (локальное хранилище)
         binding.tvUserId.text = "ID: ${tokenManager.username?.hashCode() ?: "-"}"
         
         // Показываем ФИО если есть, иначе username
@@ -198,25 +211,42 @@ class ProfileFragment : Fragment() {
             .into(binding.profileImage)
     }
 
+    /**
+     * Сохранить профиль пользователя
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. Сохраняет изменения СРАЗУ в TokenManager (локальное хранилище)
+     * 2. Обновляет UI СРАЗУ
+     * 3. Синхронизирует с сервером в ФОНОВОМ режиме
+     * 4. Не ждет ответа от сервера - приложение работает автономно
+     */
     private fun saveProfile() {
         val fullName = binding.editTextFullName.text.toString().trim()
         
+        // ВАЖНО: Сохраняем СРАЗУ в локальное хранилище (TokenManager)
+        tokenManager.fullName = fullName
+        
+        // Обновляем UI СРАЗУ с локальными данными
+        binding.tvUserName.text = fullName.ifEmpty { tokenManager.username ?: "Пользователь" }
+        
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                // Обновляем ФИО
+                // ВАЖНО: Синхронизация с сервером происходит в ФОНОВОМ режиме
+                // Не блокируем UI и не ждем ответа
+                
+                // Обновляем ФИО на сервере в фоне
                 val updateRequest = ApiService.UpdateProfileRequest(
                     full_name = fullName
                 )
-                val updatedUser = RetrofitClient.apiService.updateUserProfile(updateRequest)
-                
-                // Если выбран новый аватар, загружаем его
-                selectedAvatarUri?.let { uri ->
-                    uploadAvatar(uri)
-                } ?: run {
-                    // Если аватар не менялся, просто обновляем UI
+                try {
+                    val updatedUser = RetrofitClient.apiService.updateUserProfile(updateRequest)
+                    
+                    // Обновляем локальное хранилище с данными с сервера
+                    updatedUser.full_name?.let { tokenManager.fullName = it }
+                    updatedUser.avatar?.let { tokenManager.avatarUrl = it }
+                    
+                    // Обновляем UI
                     updateUI(updatedUser)
-                    tokenManager.fullName = updatedUser.full_name
-                    tokenManager.avatarUrl = updatedUser.avatar
                     
                     // Обновляем навигацию в MainActivity
                     val activity = activity as? egx.relab_app.MainActivity
@@ -225,8 +255,25 @@ class ProfileFragment : Fragment() {
                     if (isAdded) {
                         Toast.makeText(requireContext(), "Профиль обновлен", Toast.LENGTH_SHORT).show()
                     }
+                } catch (e: Exception) {
+                    // Ошибка синхронизации - это нормально, продолжаем работать с локальными данными
+                    android.util.Log.d("ProfileFragment", "Не удалось синхронизировать с сервером (офлайн режим): ${e.message}")
+                    // Показываем сообщение, но не блокируем работу
+                    if (isAdded) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Профиль сохранён локально",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                
+                // Если выбран новый аватар, загружаем его в фоне
+                selectedAvatarUri?.let { uri ->
+                    uploadAvatar(uri)
                 }
             } catch (e: Exception) {
+                android.util.Log.e("ProfileFragment", "Ошибка при сохранении профиля", e)
                 if (isAdded) {
                     Toast.makeText(requireContext(),
                         "Ошибка обновления профиля: ${e.localizedMessage}",

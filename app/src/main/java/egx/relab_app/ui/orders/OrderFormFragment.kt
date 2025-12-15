@@ -3,6 +3,7 @@ package egx.relab_app.ui.orders
 import android.app.DatePickerDialog
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,12 +69,39 @@ class OrderFormFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         val types = listOf("Ремонт", "Диагностика")
         val statuses = listOf("Новый", "В процессе", "Завершён", "Ожидает")
 
-        binding.orderTypeSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, types)
-        binding.statusSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, statuses)
-        
+        val typeAdapter = ArrayAdapter(
+            requireContext(),
+            R.layout.item_spinner_black,
+            types
+        )
+
+        val statusAdapter = ArrayAdapter(
+            requireContext(),
+            R.layout.item_spinner_black,
+            statuses
+        )
+
+        binding.orderTypeSpinner.setAdapter(typeAdapter)
+        binding.statusSpinner.setAdapter(statusAdapter)
+
+        // значения по умолчанию (чтобы hint не прыгал)
+        binding.orderTypeSpinner.setText(types.first(), false)
+        binding.statusSpinner.setText(statuses.first(), false)
+
+        binding.orderTypeSpinner.setOnItemClickListener { _, _, position, _ ->
+            val selectedType = types[position]
+            Log.d("Order", "Тип заказа: $selectedType")
+        }
+
+        binding.statusSpinner.setOnItemClickListener { _, _, position, _ ->
+            val selectedStatus = statuses[position]
+            Log.d("Order", "Статус заказа: $selectedStatus")
+        }
         // Инициализируем базу данных устройств
         DeviceDatabase.initialize(requireContext())
         
@@ -227,32 +255,44 @@ class OrderFormFragment : Fragment() {
     }
     
     private fun loadOrdersForAutocomplete() {
+        // ВАЖНО: Загружаем заказы из локальной БД, а не с сервера
+        lifecycleScope.launch {
+            try {
+                // Загружаем из локальной БД
+                repository.getAllOrders().collect { orders ->
+                    allOrders = orders
+                    setupAutocompleteAdapters()
+                    // Если режим редактирования, устанавливаем значения после загрузки данных
+                    if (isEditMode) {
+                        populateEditFields()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OrderForm", "Ошибка загрузки заказов для автодополнения", e)
+                // В случае ошибки просто не будет автодополнения
+                // Но если режим редактирования - все равно заполняем поля
+                if (isEditMode && isAdded && _binding != null) {
+                    populateEditFields()
+                }
+            }
+        }
+        
+        // Также пытаемся загрузить с сервера в фоне для обновления данных
         RetrofitClient.apiService.getOrders().enqueue(object : Callback<List<Order>> {
             override fun onResponse(
                 call: Call<List<Order>>,
                 response: Response<List<Order>>
             ) {
                 if (response.isSuccessful) {
-                    allOrders = response.body().orEmpty()
+                    // Обновляем список заказов с сервера
+                    val serverOrders = response.body().orEmpty()
+                    allOrders = (allOrders + serverOrders).distinctBy { it.id ?: it.orderNumber }
                     setupAutocompleteAdapters()
-                    // Если режим редактирования, устанавливаем значения после загрузки данных
-                    if (isEditMode) {
-                        populateEditFields()
-                    }
-                } else {
-                    // Если не удалось загрузить, но режим редактирования - все равно заполняем поля
-                    if (isEditMode) {
-                        populateEditFields()
-                    }
                 }
             }
 
             override fun onFailure(call: Call<List<Order>>, t: Throwable) {
-                // В случае ошибки просто не будет автодополнения
-                // Но если режим редактирования - все равно заполняем поля
-                if (isEditMode && isAdded && _binding != null) {
-                    populateEditFields()
-                }
+                // Игнорируем ошибку - используем локальные данные
             }
         })
     }
@@ -405,6 +445,15 @@ class OrderFormFragment : Fragment() {
         }
     }
 
+    /**
+     * Сохранить или обновить заказ
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * 1. Сохраняет заказ в локальную БД СРАЗУ
+     * 2. Закрывает форму СРАЗУ после локального сохранения
+     * 3. Синхронизация с сервером происходит в ФОНОВОМ режиме через SyncManager
+     * 4. Не ждет ответа от сервера - приложение работает автономно
+     */
     private fun saveOrUpdate() {
         // Валидируем обязательные поля с подсветкой красным
         val customerNameValid = validateField(
@@ -428,85 +477,62 @@ class OrderFormFragment : Fragment() {
 
         val filledOrder = if (isEditMode) buildUpdatedOrder() else buildNewOrder()
 
-        // Сохраняем локально и синхронизируем в фоне
+        // ВАЖНО: Сохраняем СРАЗУ в локальную БД (приоритет на локальность)
         lifecycleScope.launch {
             try {
                 if (isEditMode) {
-                    // Обновляем существующий заказ
+                    // ========== РЕЖИМ РЕДАКТИРОВАНИЯ ==========
+                    // Находим локальный ID заказа
                     val localId = orderLocalId ?: run {
-                        // Если нет локального ID, ищем по serverId
+                        // Если нет локального ID, ищем по serverId или orderNumber
                         val foundId = filledOrder.id?.let { serverId ->
-                            val orderEntity = repository.getOrderEntityByServerId(serverId)
-                            orderEntity?.localId
-                        }
-                        foundId ?: throw Exception("Не найден локальный ID заказа. Попробуйте синхронизировать данные.")
-                    }
-                    
-                    // Обновляем локально
-                    repository.updateOrder(localId, filledOrder)
-                    
-                    // Пытаемся синхронизировать с сервером
-                    if (filledOrder.id != null) {
-                        // Заказ уже есть на сервере - обновляем
-                        val context = context ?: return@launch
-                        RetrofitClient.updateOrder(context, filledOrder, selectedPhotoUri) { success, code, errorBody, updatedOrder ->
-                            if (!isAdded) return@updateOrder // Проверяем, что фрагмент еще прикреплен
-                            lifecycleScope.launch {
-                                val ctx = context ?: return@launch
-                                if (success && updatedOrder != null) {
-                                    // Обновляем заказ с данными с сервера (включая статус синхронизации)
-                                    repository.saveOrderFromServer(updatedOrder)
-                                    if (isAdded) {
-                                        Toast.makeText(ctx, "Заказ обновлён и синхронизирован", Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    if (isAdded) {
-                                        Toast.makeText(ctx, "Заказ обновлён локально (ошибка синхронизации)", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    val ctx = context
-                    if (ctx != null && isAdded) {
-                        Toast.makeText(ctx, "Заказ сохранён локально", Toast.LENGTH_SHORT).show()
-                        findNavController().popBackStack()
-                    }
-                } else {
-                    // Создаем новый заказ локально
-                    val localId = repository.createOrder(filledOrder)
-                    
-                    // Пытаемся сразу синхронизировать с сервером
-                    val context = context ?: return@launch
-                    RetrofitClient.createOrder(context, filledOrder, selectedPhotoUri) { success, code, errorBody, createdOrder ->
-                        if (!isAdded) return@createOrder // Проверяем, что фрагмент еще прикреплен
-                        lifecycleScope.launch {
-                            val ctx = context ?: return@launch
-                            if (success && createdOrder != null && createdOrder.id != null) {
-                                // Обновляем локальный заказ с данными с сервера
-                                // Передаем localId, чтобы гарантированно обновить правильный заказ
-                                repository.saveOrderFromServer(createdOrder, localId)
-                                
-                                if (isAdded) {
-                                    Toast.makeText(ctx, "Заказ сохранён и синхронизирован", Toast.LENGTH_SHORT).show()
-                                }
+                            repository.getOrderEntityByServerId(serverId)?.localId
+                        } ?: run {
+                            // Если нет serverId, ищем по orderNumber
+                            if (filledOrder.orderNumber != null) {
+                                val allEntities = repository.getAllOrderEntities()
+                                allEntities.firstOrNull { 
+                                    it.orderNumber == filledOrder.orderNumber && !it.isDeleted 
+                                }?.localId
                             } else {
-                                // Ошибка синхронизации, но заказ сохранен локально
-                                if (isAdded) {
-                                    Toast.makeText(ctx, "Заказ сохранён локально (ошибка синхронизации)", Toast.LENGTH_SHORT).show()
-                                }
+                                null
                             }
                         }
+                        foundId ?: throw Exception("Не найден локальный ID заказа")
                     }
                     
+                    // ВАЖНО: Обновляем СРАЗУ в локальной БД (статус PENDING)
+                    repository.updateOrder(localId, filledOrder)
+                    android.util.Log.d("OrderForm", "Заказ обновлен локально. localId: $localId")
+                    
+                    // Закрываем форму СРАЗУ - не ждем сервера
                     val ctx = context
                     if (ctx != null && isAdded) {
-                        Toast.makeText(ctx, "Заказ сохранён локально", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(ctx, "Заказ обновлён", Toast.LENGTH_SHORT).show()
                         findNavController().popBackStack()
                     }
+                    
+                    // ВАЖНО: Автоматическая синхронизация отключена
+                    // Синхронизация происходит только при нажатии кнопки синхронизации
+                    
+                } else {
+                    // ========== РЕЖИМ СОЗДАНИЯ ==========
+                    // ВАЖНО: Создаем СРАЗУ в локальной БД (статус PENDING, временный отрицательный serverId)
+                    val localId = repository.createOrder(filledOrder)
+                    android.util.Log.d("OrderForm", "Заказ создан локально. localId: $localId")
+                    
+                    // Закрываем форму СРАЗУ - не ждем сервера
+                    val ctx = context
+                    if (ctx != null && isAdded) {
+                        Toast.makeText(ctx, "Заказ создан", Toast.LENGTH_SHORT).show()
+                        findNavController().popBackStack()
+                    }
+                    
+                    // ВАЖНО: Автоматическая синхронизация отключена
+                    // Синхронизация происходит только при нажатии кнопки синхронизации
                 }
             } catch (e: Exception) {
+                android.util.Log.e("OrderForm", "Ошибка при сохранении заказа", e)
                 val ctx = context
                 if (ctx != null && isAdded) {
                     Toast.makeText(ctx, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
@@ -516,6 +542,9 @@ class OrderFormFragment : Fragment() {
     }
 
     private fun buildNewOrder(): Order {
+        // Форматируем дату в формат YYYY-MM-DD
+        val dateString = formatDateForServer(binding.textViewSelectedDate.text.toString())
+        
         return Order(
             id = null,
             orderNumber = binding.editTextOrderNumber.text.toString(),
@@ -529,12 +558,70 @@ class OrderFormFragment : Fragment() {
             model = binding.editTextModel.text.toString(),
             kit = binding.editTextKit.text.toString(),
             description = binding.editTextDescription.text.toString(),
-            date = binding.textViewSelectedDate.text.toString(),
+            date = dateString,
             status = statusMap[binding.statusSpinner.selectedItem.toString()] ?: "new",
             orderType = orderTypeMap[binding.orderTypeSpinner.selectedItem.toString()] ?: "repair",
             createdByUsername = tokenManager.username,  // Сохраняем username текущего пользователя
             createdByFullName = tokenManager.fullName,  // Сохраняем ФИО текущего пользователя
             createdByAvatar = tokenManager.avatarUrl   // Сохраняем аватар текущего пользователя
+        )
+    }
+    
+    /**
+     * Форматирует дату в формат YYYY-MM-DD для отправки на сервер
+     */
+    private fun formatDateForServer(dateString: String?): String {
+        if (dateString.isNullOrBlank() || dateString == "Выберите дату") {
+            // Если дата не выбрана, используем текущую дату
+            val calendar = Calendar.getInstance()
+            return "%04d-%02d-%02d".format(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH) + 1,
+                calendar.get(Calendar.DAY_OF_MONTH)
+            )
+        }
+        
+        // Проверяем, что дата уже в формате YYYY-MM-DD
+        val datePattern = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+        if (datePattern.matches(dateString)) {
+            return dateString
+        }
+        
+        // Пытаемся распарсить дату в других форматах
+        try {
+            val formats = listOf(
+                java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("yyyy.MM.dd", java.util.Locale.getDefault()),
+                java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault())
+            )
+            
+            for (format in formats) {
+                try {
+                    val date = format.parse(dateString)
+                    if (date != null) {
+                        val calendar = Calendar.getInstance()
+                        calendar.time = date
+                        return "%04d-%02d-%02d".format(
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH) + 1,
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        )
+                    }
+                } catch (e: Exception) {
+                    // Пробуем следующий формат
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("OrderForm", "Ошибка парсинга даты: $dateString", e)
+        }
+        
+        // Если не удалось распарсить, используем текущую дату
+        val calendar = Calendar.getInstance()
+        return "%04d-%02d-%02d".format(
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH) + 1,
+            calendar.get(Calendar.DAY_OF_MONTH)
         )
     }
 

@@ -67,11 +67,13 @@ class OrderListFragment : Fragment() {
         setupFab()
         setupSyncButton()
         
-        // Загружаем заказы из локальной БД (реактивно через Flow)
+        // ========== ВАЖНО: Приоритет на локальность ==========
+        // Загружаем заказы СРАЗУ из локальной БД (реактивно через Flow)
+        // UI автоматически обновится при изменении данных в БД
         observeOrders()
         
-        // Синхронизируем с сервером в фоне при загрузке
-        syncOrders()
+        // ВАЖНО: Автоматическая синхронизация отключена
+        // Синхронизация происходит только при нажатии кнопки синхронизации
         
         // Показываем количество несинхронизированных заказов
         updateSyncStatus()
@@ -166,39 +168,34 @@ class OrderListFragment : Fragment() {
     }
 
     private fun setupFilterSpinner() {
-        Log.d("OrderListFragment", "setupFilterSpinner called")
+        val options = listOf("Все") + statusMap.values.toList()
 
-        val options = listOf("Все") + statusMap.values
-        val spinnerAdapter = ArrayAdapter(
+        val adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
+            R.layout.item_spinner_black,
             options
         )
-        binding.statusFilterSpinner.adapter = spinnerAdapter
+        adapter.setDropDownViewResource(R.layout.item_spinner_black)
 
-        binding.statusFilterSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    val selected = options[position]
-                    Log.d("OrderListFragment", "Spinner selected: $selected")
-                    
-                    // Подписываемся на заказы с фильтром по статусу
-                    if (selected == "Все") {
-                        observeOrders()
-                    } else {
-                        val code = reverseStatusMap[selected]
-                        observeOrdersByStatus(code ?: "")
-                    }
+        binding.statusFilterSpinner.setAdapter(adapter)
+
+        // значение по умолчанию
+        binding.statusFilterSpinner.setText("Все", false)
+
+        binding.statusFilterSpinner.setOnItemClickListener { _, _, position, _ ->
+            val selected = options[position]
+            Log.d("OrderListFragment", "Filter selected: $selected")
+
+            if (selected == "Все") {
+                observeOrders()
+            } else {
+                reverseStatusMap[selected]?.let {
+                    observeOrdersByStatus(it)
                 }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
             }
+        }
     }
+
 
     private fun setupFab() {
         binding.add.setOnClickListener {
@@ -217,19 +214,62 @@ class OrderListFragment : Fragment() {
     
     /**
      * Ручная синхронизация с индикацией статуса
+     * 
+     * ВАЖНО: 
+     * - Синхронизация происходит ТОЛЬКО при нажатии кнопки
+     * - Проверяет подключение перед синхронизацией
+     * - Показывает уведомление если нет подключения
+     * - Добавлены проверки isAdded и _binding для предотвращения NullPointerException
      */
     private fun performManualSync() {
-        val ctx = context ?: return
-        binding.syncStatusCard.visibility = View.VISIBLE
-        binding.syncStatusText.text = "🔄 Синхронизация..."
-        binding.syncStatusText.setTextColor(ctx.getColor(android.R.color.holo_blue_dark))
+        // ВАЖНО: Проверяем, что фрагмент еще прикреплен и binding доступен
+        if (!isAdded || _binding == null) return
         
+        val ctx = context ?: return
+        val activity = activity as? egx.relab_app.MainActivity
+        
+        // ВАЖНО: Проверяем подключение перед синхронизацией
         lifecycleScope.launch {
             try {
+                // Проверяем подключение к серверу
+                val isConnected = try {
+                    RetrofitClient.apiService.getCurrentUser()
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+                
+                // Обновляем индикатор подключения
+                activity?.updateConnectionIndicator(isConnected)
+                
+                // ВАЖНО: Если нет подключения, показываем уведомление и не синхронизируем
+                if (!isConnected) {
+                    if (isAdded && _binding != null) {
+                        binding.syncStatusCard.visibility = View.VISIBLE
+                        binding.syncStatusText.text = "✗ Нет подключения к серверу"
+                        binding.syncStatusText.setTextColor(ctx.getColor(android.R.color.holo_red_dark))
+                        
+                        // Показываем всплывающее окно
+                        android.app.AlertDialog.Builder(ctx)
+                            .setTitle("Нет подключения")
+                            .setMessage("Невозможно синхронизировать данные. Проверьте подключение к интернету и попробуйте снова.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                    return@launch
+                }
+                
+                // Если есть подключение, начинаем синхронизацию
+                if (isAdded && _binding != null) {
+                    binding.syncStatusCard.visibility = View.VISIBLE
+                    binding.syncStatusText.text = "🔄 Синхронизация..."
+                    binding.syncStatusText.setTextColor(ctx.getColor(android.R.color.holo_blue_dark))
+                }
+                
                 val result = syncManager.fullSync()
                 
-                val ctx = context ?: return@launch
-                val activity = activity as? egx.relab_app.MainActivity
+                // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+                if (!isAdded || _binding == null) return@launch
                 
                 if (result.success) {
                     binding.syncStatusText.text = "✓ Синхронизировано: ${result.syncedCount} заказов"
@@ -256,9 +296,15 @@ class OrderListFragment : Fragment() {
                 // Обновляем статус через 3 секунды
                 lifecycleScope.launch {
                     kotlinx.coroutines.delay(3000)
-                    updateSyncStatus()
+                    // ВАЖНО: Проверяем, что фрагмент еще прикреплен
+                    if (isAdded && _binding != null) {
+                        updateSyncStatus()
+                    }
                 }
             } catch (e: Exception) {
+                // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+                if (!isAdded || _binding == null) return@launch
+                
                 val ctx = context ?: return@launch
                 binding.syncStatusText.text = "✗ Ошибка: ${e.message}"
                 binding.syncStatusText.setTextColor(ctx.getColor(android.R.color.holo_red_dark))
@@ -273,10 +319,16 @@ class OrderListFragment : Fragment() {
     
     /**
      * Обновить индикатор статуса синхронизации
+     * 
+     * ВАЖНО: Добавлены проверки isAdded и _binding для предотвращения NullPointerException
      */
     private fun updateSyncStatus() {
         lifecycleScope.launch {
             val pendingCount = repository.getPendingCount()
+            
+            // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+            if (!isAdded || _binding == null) return@launch
+            
             val ctx = context ?: return@launch
             if (pendingCount > 0) {
                 binding.syncStatusCard.visibility = View.VISIBLE
@@ -290,11 +342,18 @@ class OrderListFragment : Fragment() {
 
     /**
      * Наблюдаем за всеми заказами из локальной БД (реактивно)
-     * Flow автоматически обновит UI при изменении данных
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Показывает заказы ТОЛЬКО из локальной БД
+     * - Flow автоматически обновит UI при изменении данных в БД
+     * - Не делает запросов к серверу - работает полностью автономно
+     * - Данные с сервера попадают в БД только через SyncManager
      */
     private fun observeOrders() {
         lifecycleScope.launch {
             repository.getAllOrders().collect { orders ->
+                // ВАЖНО: orders - это данные из локальной БД
+                // UI автоматически обновится при любых изменениях в БД
                 showOrders(orders)
             }
         }
@@ -311,31 +370,8 @@ class OrderListFragment : Fragment() {
         }
     }
     
-    /**
-     * Синхронизация с сервером в фоне
-     * ВАЖНО: Не блокирует работу при отсутствии подключения
-     */
-    private fun syncOrders() {
-        lifecycleScope.launch {
-            try {
-                // Пытаемся синхронизировать, но не блокируем работу при ошибке
-                val result = syncManager.fullSync()
-                if (result.success) {
-                    Log.d("OrderListFragment", "Синхронизация успешна: ${result.syncedCount} заказов")
-                    // Обновляем статус синхронизации
-                    updateSyncStatus()
-                } else {
-                    Log.e("OrderListFragment", "Ошибка синхронизации: ${result.error}")
-                    // Показываем данные из локальной БД даже при ошибке синхронизации
-                    // Это нормально - приложение работает офлайн
-                }
-            } catch (e: Exception) {
-                Log.e("OrderListFragment", "Ошибка при синхронизации (офлайн режим)", e)
-                // Продолжаем работать с локальными данными
-                // Это нормальное поведение при отсутствии сети
-            }
-        }
-    }
+    // ВАЖНО: Автоматическая синхронизация отключена
+    // Синхронизация происходит только при нажатии кнопки синхронизации
 
     private fun showOrders(orders: List<Order>) {
         // Преобразуем статус из кода в русское значение

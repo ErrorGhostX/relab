@@ -120,7 +120,7 @@ interface ApiService {
     @GET("auth/users/me/")
     suspend fun getCurrentUser(): UserResponse
     
-    @PATCH("auth/users/me/update/")
+    @PATCH("auth/users/me/")
     suspend fun updateUserProfile(@Body profile: UpdateProfileRequest): UserResponse
     
     @Multipart

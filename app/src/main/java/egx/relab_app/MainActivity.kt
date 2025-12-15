@@ -97,26 +97,35 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        lifecycleScope.launch {
-            val token = tokenManager.accessToken
-            if (token.isNullOrBlank()) {
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                navController.navigate(R.id.loginFragment)
-            } else {
-                // Если есть токен, разрешаем работу локально даже без интернета
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                
-                // ВАЖНО: СНАЧАЛА загружаем и показываем сохраненные данные для мгновенного отображения
-                loadAndDisplaySavedProfile()
-                
-                // ЗАТЕМ пытаемся загрузить свежие данные с сервера в фоне
-                loadProfileFromServer()
-            }
-        }
+                lifecycleScope.launch {
+                    val token = tokenManager.accessToken
+                    if (token.isNullOrBlank()) {
+                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                        navController.navigate(R.id.loginFragment)
+                    } else {
+                        // ВАЖНО: Приоритет на локальность
+                        // Если есть токен, разрешаем работу локально даже без интернета
+                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                        
+                        // ВАЖНО: СНАЧАЛА загружаем и показываем сохраненные данные для мгновенного отображения
+                        // Пользователь видит данные сразу из локального хранилища
+                        loadAndDisplaySavedProfile()
+                        
+                        // ВАЖНО: ЗАТЕМ пытаемся загрузить свежие данные с сервера в ФОНОВОМ режиме
+                        // Не блокирует отображение - пользователь уже видит локальные данные
+                        loadProfileFromServer()
+                    }
+                }
     }
     
     /**
      * Загрузить и отобразить сохраненные данные профиля из TokenManager
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Загружает данные СРАЗУ из локального хранилища (TokenManager)
+     * - Пользователь видит данные мгновенно
+     * - Не делает запросов к серверу
+     * - Работает полностью автономно
      */
     private fun loadAndDisplaySavedProfile() {
         val savedUsername = tokenManager.username
@@ -148,6 +157,12 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * Загрузить профиль с сервера и обновить локальные данные
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Работает в ФОНОВОМ режиме - не блокирует UI
+     * - Обновляет локальное хранилище (TokenManager) с данными с сервера
+     * - Не перезаписывает локальные данные пустыми значениями
+     * - При отсутствии сети продолжает работать с локальными данными
      */
     private fun loadProfileFromServer() {
         lifecycleScope.launch {
@@ -188,6 +203,16 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    /**
+     * Обновить навигационную панель с данными пользователя
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Обновляет UI с данными пользователя
+     * - Сохраняет данные в TokenManager (локальное хранилище)
+     * - Не перезаписывает локальные данные пустыми значениями
+     * 
+     * @param user - данные пользователя (может быть из сервера или локального хранилища)
+     */
     fun updateNavBar(user: UserResponse) {
         val navView = binding.navView
         val headerView = navView.getHeaderView(0)
@@ -236,8 +261,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Обновить навигационную панель из локального хранилища
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Загружает данные из TokenManager (локальное хранилище)
+     * - Не делает запросов к серверу
+     * - Работает полностью автономно
+     */
     fun refreshNavBar() {
-        // Обновляем навигацию используя сохраненные данные
+        // ВАЖНО: Обновляем навигацию используя сохраненные данные из локального хранилища
         val savedUsername = tokenManager.username
         val savedEmail = tokenManager.email
         val savedFullName = tokenManager.fullName

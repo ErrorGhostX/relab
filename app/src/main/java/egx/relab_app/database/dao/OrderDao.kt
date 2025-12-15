@@ -100,6 +100,19 @@ interface OrderDao {
     suspend fun getPendingCount(): Int
     
     /**
+     * Получить удаленные заказы, которые нужно удалить на сервере
+     * (удаленные локально, но еще не удаленные на сервере)
+     */
+    @Query("SELECT * FROM orders WHERE isDeleted = 1 AND serverId IS NOT NULL")
+    suspend fun getDeletedOrdersForSync(): List<OrderEntity>
+    
+    /**
+     * Полностью удалить заказ из БД (после успешного удаления на сервере)
+     */
+    @Query("DELETE FROM orders WHERE localId = :localId")
+    suspend fun fullyDeleteOrder(localId: Long)
+    
+    /**
      * Очистить все заказы из базы данных
      */
     @Query("DELETE FROM orders")

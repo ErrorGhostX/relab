@@ -65,10 +65,17 @@ data class OrderEntity(
     
     /**
      * Конвертация Entity в модель Order для использования в UI
+     * 
+     * ВАЖНО: Если serverId отрицательный (временный ID), возвращаем null
+     * Это позволяет UI различать локальные и синхронизированные заказы
      */
     fun toOrder(): Order {
+        // ВАЖНО: Если serverId отрицательный (временный ID), возвращаем null
+        // Отрицательные ID - это временные локальные ID, которые будут заменены при синхронизации
+        val displayId = if (serverId != null && serverId!! < 0) null else serverId
+        
         return Order(
-            id = serverId,
+            id = displayId,
             orderNumber = orderNumber,
             customer = customer,
             contactInfo = contactInfo,
@@ -124,10 +131,18 @@ data class OrderEntity(
         
         /**
          * Создание Entity для нового заказа (еще не синхронизированного)
+         * 
+         * ВАЖНО: Генерируем временный отрицательный ID для локальных заказов
+         * Этот ID будет заменен на серверный ID при синхронизации
          */
         fun fromNewOrder(order: Order): OrderEntity {
+            // ВАЖНО: Генерируем временный отрицательный ID для локальных заказов
+            // Отрицательные числа гарантируют, что они не конфликтуют с серверными ID (которые всегда положительные)
+            // Используем timestamp в миллисекундах, но делаем отрицательным
+            val tempId = -(System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+            
             return OrderEntity(
-                serverId = null,  // Пока нет ID на сервере
+                serverId = tempId,  // ВАЖНО: Временный отрицательный ID (будет заменен при синхронизации)
                 syncStatus = SyncStatus.PENDING,
                 lastModified = System.currentTimeMillis(),
                 lastSynced = null,
