@@ -13,43 +13,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Информация об устройстве -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Информация об устройстве"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:id="@+id/textDeviceInfo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Загрузка информации..."
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:fontFamily="monospace"
-                    android:lineSpacingExtra="4dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <!-- Настройки сервера -->
         <com.google.android.material.card.MaterialCardView
@@ -71,7 +35,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Настройки сервера"
+                    android:text="Настройки сервера синхрронизации"
                     android:textColor="@color/gray_900"
                     android:textStyle="bold"
                     android:textSize="18sp"
@@ -119,7 +83,7 @@
             app:cardBackgroundColor="@color/gray_200"
             app:strokeColor="@color/gray_900"
             app:strokeWidth="2dp">
-
+<!--
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -171,7 +135,7 @@
                         android:inputType="number"
                         android:textColor="@color/gray_900" />
                 </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
+            </LinearLayout>-->
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Дополнительные настройки -->
@@ -220,6 +184,45 @@
                     android:textColor="@color/gray_900" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Информация об устройстве -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Информация об устройстве"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/textDeviceInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Загрузка информации..."
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 </ScrollView>
 

@@ -5,6 +5,7 @@ import android.view.Menu
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
@@ -25,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
     lateinit var binding: ActivityMainBinding
     private lateinit var tokenManager: TokenManager
-
+    private lateinit var toggle: ActionBarDrawerToggle
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -34,23 +35,56 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setSupportActionBar(binding.appBarMain.toolbar)
-        
-        // Устанавливаем белый цвет текста в Toolbar
-        binding.appBarMain.toolbar.setTitleTextColor(resources.getColor(egx.relab_app.R.color.white, theme))
-        binding.appBarMain.toolbar.setSubtitleTextColor(resources.getColor(egx.relab_app.R.color.white, theme))
 
+        // ------------------ Toolbar ------------------
+        val toolbar = binding.appBarMain.toolbar
+        setSupportActionBar(toolbar)
+        binding.appBarMain.toolbar.setTitleTextColor(resources.getColor(R.color.white, theme))
+        binding.appBarMain.toolbar.setSubtitleTextColor(resources.getColor(R.color.white, theme))
+
+        // ------------------ Drawer ------------------
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
+
+        toggle = ActionBarDrawerToggle(
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
         val navController = findNavController(R.id.nav_host_fragment_content_main)
+        setSupportActionBar(toolbar)
+
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val isHome = destination.id == R.id.nav_home
+            val isLogin = destination.id == R.id.loginFragment
+
+            if (isHome || isLogin) {
+                hideToolbarAnimated(toolbar)
+                supportActionBar?.setDisplayHomeAsUpEnabled(false)
+            } else {
+                showToolbarAnimated(toolbar)
+                supportActionBar?.setDisplayHomeAsUpEnabled(true)
+            }
+        }
+
+
+
+
+        // ------------------ AppBarConfiguration ------------------
 
         appBarConfiguration = AppBarConfiguration(
             setOf(R.id.nav_home),
             drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)
 
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        navView.setupWithNavController(navController)
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -117,7 +151,29 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
     }
-    
+
+
+
+    private fun hideToolbarAnimated(toolbar: View) {
+        toolbar.animate()
+            .translationY(-toolbar.height.toFloat())
+            .alpha(0f)
+            .setDuration(200)
+            .withEndAction { toolbar.visibility = View.GONE }
+            .start()
+    }
+
+    private fun showToolbarAnimated(toolbar: View) {
+        toolbar.visibility = View.VISIBLE
+        toolbar.translationY = -toolbar.height.toFloat()
+        toolbar.alpha = 0f
+        toolbar.animate()
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(200)
+            .start()
+    }
+
     /**
      * Загрузить и отобразить сохраненные данные профиля из TokenManager
      * 
@@ -301,9 +357,9 @@ class MainActivity : AppCompatActivity() {
     fun updateConnectionIndicator(isConnected: Boolean) {
         val indicator = binding.appBarMain.toolbar.findViewById<View>(R.id.connectionIndicator)
         indicator?.background = if (isConnected) {
-            resources.getDrawable(egx.relab_app.R.drawable.connection_indicator_green, theme)
+            resources.getDrawable(R.drawable.connection_indicator_green, theme)
         } else {
-            resources.getDrawable(egx.relab_app.R.drawable.connection_indicator_red, theme)
+            resources.getDrawable(R.drawable.connection_indicator_red, theme)
         }
     }
 
@@ -314,6 +370,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+        return if (navController.currentDestination?.id != R.id.nav_home) {
+            navController.popBackStack() // возвращаемся на предыдущий фрагмент
+        } else {
+            false
+        }
     }
+
 }

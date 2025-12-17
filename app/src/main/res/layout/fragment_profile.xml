@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/white"
     android:fitsSystemWindows="true"
-    android:paddingTop="?attr/actionBarSize"
+    android:paddingTop="60dp"
     android:paddingHorizontal="16dp"
     android:paddingBottom="16dp">
 
@@ -14,49 +14,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Блок: Фото профиля -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:padding="24dp">
-
-                <ImageView
-                    android:id="@+id/profileImage"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="@drawable/placeholder_image"
-                    android:clipToOutline="true"
-                    android:contentDescription="Фото профиля"
-                    android:outlineProvider="background"
-                    android:scaleType="centerCrop"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackgroundBorderless" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonChangeAvatar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Изменить фото"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:textColor="@color/gray_700" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Блок: Основная информация -->
+        <!-- ================= ОСНОВНАЯ ИНФОРМАЦИЯ ================= -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,72 +31,113 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+
+
+                <!-- Фото + ID -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:cardBackgroundColor="@color/gray_200"
+                    app:strokeColor="@color/gray_900"
+                    app:strokeWidth="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:id="@+id/profileImage"
+                            android:layout_width="106dp"
+                            android:layout_height="100dp"
+                            android:background="@drawable/relab"
+                            android:clickable="true"
+                            android:clipToOutline="true"
+                            android:contentDescription="Фото профиля"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:scaleType="centerCrop" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:id="@+id/tvUserName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Фамилия Имя Отчество"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/gray_900"
+                                android:layout_marginBottom="6dp" />
+
+                            <TextView
+                                android:id="@+id/tvUserId"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ID: НОМЕР"
+                                android:textSize="14sp"
+                                android:textColor="@color/gray_600" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Заголовок -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Основная информация"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
                     android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900"
                     android:layout_marginBottom="16dp" />
 
-                <TextView
-                    android:id="@+id/tvUserId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="ID: -"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray_600" />
-
-                <TextView
-                    android:id="@+id/tvUserName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:text="Имя пользователя"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_900" />
-
+                <!-- ФИО -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/inputLayoutFullName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="ФИО"
+                    android:layout_marginBottom="16dp"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
-                    app:hintTextColor="@color/gray_300"
                     app:boxStrokeColor="@color/gray_400"
-                    android:layout_marginBottom="16dp">
-
+                    app:hintTextColor="@color/gray_300">
+                    <!-- Поле ФИО -->
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTextFullName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="56dp"
-                        android:inputType="textPersonName"
-                        android:textColor="@color/gray_900"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp" />
+                        android:id="@+id/editTextFullName" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="56dp"
+                        android:inputType="textPersonName" android:textColor="@color/gray_900"
+                        android:paddingStart="12dp" android:paddingEnd="12dp" />
+
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Телефон -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/inputLayoutPhone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Номер телефона"
+                    android:layout_marginBottom="16dp"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
-                    app:hintTextColor="@color/gray_300"
                     app:boxStrokeColor="@color/gray_400"
-                    android:layout_marginBottom="16dp">
+                    app:hintTextColor="@color/gray_300">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/editTextPhone"
@@ -147,25 +146,32 @@
                         android:minHeight="56dp"
                         android:inputType="phone"
                         android:textColor="@color/gray_900"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp" />
+                        android:paddingHorizontal="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Email -->
                 <TextView
                     android:id="@+id/tvEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="email@example.com"
+                    android:text="Почта: email@example.com"
+                    android:textSize="14sp"
+                    android:textColor="@color/gray_700" />
+                <TextView
+                    android:id="@+id/tvRank"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ранг: —"
                     android:textSize="16sp"
                     android:textColor="@color/gray_700" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Блок: Дополнительная информация -->
+        <!-- ================= ДОП. ИНФОРМАЦИЯ ================= -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/gray_200"
@@ -182,41 +188,33 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Дополнительная информация"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
                     android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:id="@+id/tvRank"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ранг: -"
-                    android:textSize="16sp"
-                    android:textColor="@color/gray_700" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Кнопка сохранения -->
+        <!-- КНОПКИ -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSaveProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Сохранить изменения"
-            style="@style/Widget.MaterialComponents.Button"
-            app:backgroundTint="@color/gray_900"
             android:textColor="@color/white"
-            android:layout_marginBottom="16dp" />
+            app:backgroundTint="@color/gray_900"
+            android:layout_marginBottom="12dp" />
 
-        <!-- Кнопка выхода -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:text="Выйти"
-            style="@style/Widget.MaterialComponents.Button"
-            app:backgroundTint="@color/gray_900"
-            android:textColor="@color/white" />
+            android:text="Выйти из аккаунта"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/gray_900" />
+
     </LinearLayout>
 </ScrollView>

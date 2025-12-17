@@ -94,48 +94,81 @@ class RemoteControlGuideDialog : DialogFragment() {
         buttonSequence.add(buttonId)
         updateSequenceDisplay()
     }
-    
+
     private fun clearSequence() {
         buttonSequence.clear()
         updateSequenceDisplay()
-        binding.textInstruction.text = "Создайте последовательность, затем нажмите 'Создать инструкцию'"
+        binding.textInstruction.setText(
+            "Создайте последовательность, затем нажмите «Создать инструкцию»"
+        )
         binding.btnShareInstruction.isEnabled = false
     }
-    
+
     private fun updateSequenceDisplay() {
         if (buttonSequence.isEmpty()) {
-            binding.textSequence.text = "Нажмите кнопки на пульте выше"
+            binding.textSequence.setText("Нажмите кнопки на пульте выше")
         } else {
             val sequenceText = buttonSequence.mapIndexed { index, buttonId ->
                 "${index + 1}. ${buttonNames[buttonId] ?: buttonId}"
             }.joinToString("\n")
-            binding.textSequence.text = sequenceText
+
+            binding.textSequence.setText(sequenceText)
         }
     }
-    
+
+
     private fun generateInstruction() {
         if (buttonSequence.isEmpty()) {
-            Toast.makeText(requireContext(), "Сначала нажмите кнопки на пульте", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Сначала нажмите кнопки на пульте",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
-        
+
         val instruction = buildString {
-            append("📺 ИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ ПУЛЬТА\n\n")
-            append("Выполните следующие действия по порядку:\n\n")
-            
+            append("📺 ПОШАГОВАЯ ИНСТРУКЦИЯ\n\n")
+
+            append("Здравствуйте!\n")
+            append("Ниже описано, какие кнопки нужно нажать на пульте телевизора.\n")
+            append("Пожалуйста, выполняйте действия медленно и по порядку.\n\n")
+
+            append("🔹 ЧТО НУЖНО СДЕЛАТЬ:\n\n")
+
             buttonSequence.forEachIndexed { index, buttonId ->
-                val buttonName = buttonNames[buttonId] ?: buttonId
-                append("${index + 1}. Нажмите кнопку: $buttonName\n")
+                val text = when (buttonId) {
+                    "power" -> "Нажмите кнопку питания (обычно с красным кружком), чтобы включить или выключить телевизор."
+                    "up" -> "Нажмите стрелку ВВЕРХ."
+                    "down" -> "Нажмите стрелку ВНИЗ."
+                    "left" -> "Нажмите стрелку ВЛЕВО."
+                    "right" -> "Нажмите стрелку ВПРАВО."
+                    "ok" -> "Нажмите кнопку «OK», чтобы подтвердить выбор."
+                    "back" -> "Нажмите кнопку «Назад», чтобы вернуться на предыдущий экран."
+                    "home" -> "Нажмите кнопку «Меню», чтобы открыть главное меню телевизора."
+                    "volUp" -> "Нажмите кнопку увеличения громкости («+»), чтобы сделать звук громче."
+                    "volDown" -> "Нажмите кнопку уменьшения громкости («−»), чтобы сделать звук тише."
+                    "mute" -> "Нажмите кнопку «Без звука», чтобы временно выключить звук."
+                    "channelUp" -> "Нажмите кнопку «Канал +», чтобы переключить канал вверх."
+                    "channelDown" -> "Нажмите кнопку «Канал −», чтобы переключить канал вниз."
+                    "source" -> "Нажмите кнопку «Источник», чтобы выбрать, откуда идёт сигнал (например, HDMI)."
+                    "input" -> "Нажмите кнопку «Вход», чтобы выбрать подключённое устройство."
+                    else -> "Нажмите нужную кнопку."
+                }
+
+                append("${index + 1}. $text\n\n")
             }
-            
-            append("\n")
-            append("✅ После выполнения всех шагов нужное действие будет выполнено.\n\n")
-            append("💡 Совет: Выполняйте действия медленно и последовательно.")
+
+            append("✅ ГОТОВО\n\n")
+            append("Если всё сделано правильно, телевизор выполнит нужное действие.\n")
+            append("Если что-то не получилось — попробуйте ещё раз, не спеша.\n\n")
+            append("💡 Совет: держите пульт направленным на телевизор.")
         }
-        
-        binding.textInstruction.text = instruction
+
+        binding.textInstruction.setText(instruction)
         binding.btnShareInstruction.isEnabled = true
     }
+
     
     private fun shareInstruction() {
         val instruction = binding.textInstruction.text.toString()

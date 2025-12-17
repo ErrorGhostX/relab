@@ -11,7 +11,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingHorizontal="16dp"
+        android:paddingHorizontal="5dp"
         android:paddingTop="?attr/actionBarSize">
 
         <!-- Карточка с фильтром и статусом -->
@@ -34,47 +34,59 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="12dp"
+                android:spacing="8dp">
 
-                <!-- Spinner фильтра -->
-                <com.google.android.material.textfield.TextInputLayout
+                <!-- Горизонтальный ряд: фильтр + кнопка -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Фильтр по статусу"
-                    app:hintTextColor="@color/black"
-                    app:boxStrokeColor="@color/black"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                    app:boxCornerRadiusTopStart="8dp"
-                    app:boxCornerRadiusTopEnd="8dp"
-                    app:boxCornerRadiusBottomStart="8dp"
-                    app:boxCornerRadiusBottomEnd="8dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/statusFilterSpinner"
-                        android:layout_width="match_parent"
+                    <!-- Spinner фильтра (половина ширины) -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Фильтр по статусу"
+                        app:boxBackgroundMode="outline"
+                        app:boxCornerRadiusBottomEnd="8dp"
+                        app:boxCornerRadiusBottomStart="8dp"
+                        app:boxCornerRadiusTopEnd="8dp"
+                        app:boxCornerRadiusTopStart="8dp"
+                        app:boxStrokeColor="@color/black"
+                        app:hintTextColor="@color/black">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/statusFilterSpinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:textColor="@color/black"
+                            app:iconTint="@color/black" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Кнопка синхронизации (половина ширины) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonSync"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="57dp"
+                        android:layout_marginStart="3dp"
+                        android:layout_weight="1"
+                        android:text="Синхронизация"
+                        android:textAllCaps="false"
                         android:textColor="@color/black"
-                        android:inputType="none"
-                        app:iconTint="@color/black"
-                        android:focusable="false" />
+                        app:icon="@android:drawable/ic_menu_rotate"
+                        app:iconGravity="textStart"
+                        app:iconTint="@color/black" />
+                </LinearLayout>
 
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Кнопка синхронизации -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonSync"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Синхронизация"
-                    android:textAllCaps="false"
-                    android:textColor="@color/black"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:icon="@android:drawable/ic_menu_rotate"
-                    app:iconTint="@color/black"
-                    app:iconGravity="textStart" />
-
-                <!-- Индикатор статуса синхронизации -->
+                <!-- Вертикальный мини-блок для текста -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/syncStatusCard"
                     android:layout_width="match_parent"
@@ -90,15 +102,18 @@
                         android:id="@+id/syncStatusText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textSize="12sp"
-                        android:textColor="@color/white"
+                        android:gravity="center_vertical"
                         android:padding="12dp"
-                        android:drawablePadding="8dp"
-                        android:gravity="center_vertical" />
+                        android:text=""
+                        android:textColor="@color/white"
+                        android:textSize="12sp" />
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+
+
+
 
         <!-- RecyclerView с заказами -->
         <androidx.recyclerview.widget.RecyclerView
@@ -106,7 +121,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
-            android:paddingTop="4dp"
+            android:paddingTop="2dp"
             android:paddingBottom="80dp"
             android:scrollbars="vertical"
             app:layout_constraintTop_toBottomOf="@id/filterCard"

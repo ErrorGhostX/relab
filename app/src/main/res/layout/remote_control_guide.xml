@@ -167,7 +167,7 @@
                         android:id="@+id/btnHome"
                         android:layout_width="80dp"
                         android:layout_height="50dp"
-                        android:text="Menu"
+                        android:text="Меню"
                         android:textSize="12sp"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         app:strokeColor="@color/gray_900"
@@ -301,17 +301,20 @@
             android:textSize="16sp"
             android:layout_marginBottom="8dp" />
 
-        <TextView
+        <EditText
             android:id="@+id/textSequence"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Нажмите кнопки на пульте выше"
-            android:textColor="@color/gray_700"
+            android:hint="Нажмите кнопки на пульте выше"
+            android:textColor="@color/gray_900"
             android:textSize="14sp"
             android:minHeight="60dp"
             android:background="@color/gray_100"
             android:padding="12dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:inputType="textMultiLine"
+            android:gravity="top"
+            android:overScrollMode="ifContentScrolls" />
 
         <!-- Сгенерированная инструкция -->
         <TextView
@@ -323,17 +326,20 @@
             android:textSize="16sp"
             android:layout_marginBottom="8dp" />
 
-        <TextView
+        <EditText
             android:id="@+id/textInstruction"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Создайте последовательность, затем нажмите 'Создать инструкцию'"
-            android:textColor="@color/gray_700"
+            android:hint="Создайте последовательность, затем нажмите «Создать инструкцию»"
+            android:textColor="@color/gray_900"
             android:textSize="14sp"
             android:minHeight="100dp"
             android:background="@color/gray_100"
             android:padding="12dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:inputType="textMultiLine"
+            android:gravity="top"
+            android:overScrollMode="ifContentScrolls" />
 
         <!-- Кнопка поделиться -->
         <com.google.android.material.button.MaterialButton

@@ -40,39 +40,39 @@ class SettingsFragment : Fragment() {
         val currentUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
         binding.editTextServerUrl.setText(currentUrl)
         
-        // Загружаем настройки синхронизации
-        binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
-        binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
-        
-        binding.buttonSaveServerUrl.setOnClickListener {
-            val newUrl = binding.editTextServerUrl.text.toString().trim()
-            if (newUrl.isNotEmpty()) {
-                // Убеждаемся, что URL заканчивается на /
-                val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
-                tokenManager.serverUrl = url
-                Toast.makeText(requireContext(), "Адрес сервера сохранен. Перезапустите приложение для применения изменений.", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        // Сохранение настроек синхронизации
-        binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
-            tokenManager.autoSyncEnabled = isChecked
-            Toast.makeText(requireContext(), if (isChecked) "Автосинхронизация включена" else "Автосинхронизация выключена", Toast.LENGTH_SHORT).show()
-        }
-        
-        binding.editTextSyncInterval.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
-                val interval = binding.editTextSyncInterval.text.toString().toIntOrNull()
-                if (interval != null && interval > 0) {
-                    tokenManager.syncIntervalMinutes = interval
-                } else {
-                    binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
-                    Toast.makeText(requireContext(), "Введите корректное значение (больше 0)", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+//        // Загружаем настройки синхронизации
+//        binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
+//        binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
+//
+//        binding.buttonSaveServerUrl.setOnClickListener {
+//            val newUrl = binding.editTextServerUrl.text.toString().trim()
+//            if (newUrl.isNotEmpty()) {
+//                // Убеждаемся, что URL заканчивается на /
+//                val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
+//                tokenManager.serverUrl = url
+//                Toast.makeText(requireContext(), "Адрес сервера сохранен. Перезапустите приложение для применения изменений.", Toast.LENGTH_LONG).show()
+//            } else {
+//                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//
+//        // Сохранение настроек синхронизации
+//        binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
+//            tokenManager.autoSyncEnabled = isChecked
+//            Toast.makeText(requireContext(), if (isChecked) "Автосинхронизация включена" else "Автосинхронизация выключена", Toast.LENGTH_SHORT).show()
+//        }
+//
+//        binding.editTextSyncInterval.setOnFocusChangeListener { _, hasFocus ->
+//            if (!hasFocus) {
+//                val interval = binding.editTextSyncInterval.text.toString().toIntOrNull()
+//                if (interval != null && interval > 0) {
+//                    tokenManager.syncIntervalMinutes = interval
+//                } else {
+//                    binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
+//                    Toast.makeText(requireContext(), "Введите корректное значение (больше 0)", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//        }
         
         // Очистка кэша
         binding.buttonClearCache.setOnClickListener {
@@ -97,16 +97,16 @@ class SettingsFragment : Fragment() {
         //     Toast.makeText(requireContext(), "Функция экспорта данных в разработке", Toast.LENGTH_SHORT).show()
         // }
 
-        // О приложении
+        // О приложении ($versionCode)  // val versionCode = packageInfo.longVersionCode
         binding.buttonAbout.setOnClickListener {
             try {
                 val packageInfo = requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
                 val versionName = packageInfo.versionName ?: "Неизвестно"
-                val versionCode = packageInfo.longVersionCode
-                
+
+
                 AlertDialog.Builder(requireContext())
                     .setTitle("О приложении")
-                    .setMessage("Relab\nВерсия: $versionName ($versionCode)\n\nПриложение для управления заказами и ремонтом устройств сотрудников Relab.")
+                    .setMessage("Relab\nВерсия: $versionName \n\nПриложение для управления заказами и ремонтом устройств сотрудников Relab. \n\nРазработчик: ErrorGhostX")
                     .setPositiveButton("OK", null)
                     .show()
             } catch (e: PackageManager.NameNotFoundException) {

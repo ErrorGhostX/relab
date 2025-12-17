@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
     android:fitsSystemWindows="true"
-    android:paddingTop="60dp"
-    android:paddingHorizontal="16dp"
+    android:paddingTop="58dp"
     android:paddingBottom="16dp">
 
     <LinearLayout
@@ -15,24 +13,64 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Карточка с изображениями -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Блок с картинкой растянутый на всю ширину -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp"
-            android:layout_marginBottom="16dp">
+            android:layout_height="350dp"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/photosRecyclerView"
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="350dp"
-                android:background="@color/gray_300"
-                android:scrollbars="horizontal" />
-        </com.google.android.material.card.MaterialCardView>
+                android:layout_height="match_parent"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/gray_200"
+                app:strokeWidth="0dp">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/photosViewPager"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Левая стрелка -->
+            <ImageButton
+                android:id="@+id/btnLeft"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|start"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_media_play"
+                android:rotation="180"
+                android:contentDescription="Previous"
+                app:tint="@color/black"
+                android:elevation="8dp"/>
+
+            <!-- Правая стрелка -->
+            <ImageButton
+                android:id="@+id/btnRight"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|end"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_media_play"
+                android:contentDescription="Next"
+                app:tint="@color/black"
+                android:elevation="8dp"/>
+        </FrameLayout>
+
+
+
+
+    <!-- Остальные блоки с паддингом -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp">
+
 
         <!-- Блок с ID и кнопками -->
         <com.google.android.material.card.MaterialCardView
@@ -46,14 +84,14 @@
             android:layout_marginBottom="16dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="382dp"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="68dp"
                     android:layout_marginBottom="12dp"
                     android:gravity="center"
                     android:orientation="horizontal">
@@ -64,7 +102,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:src="@android:drawable/ic_menu_manage"
+                        android:src="@drawable/tools_svgrepo_com"
                         android:tint="@color/white"
                         app:backgroundTint="#3F51B5" />
 
@@ -73,7 +111,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:src="@android:drawable/ic_menu_set_as"
+                        android:src="@drawable/document_send_svgrepo_com"
                         android:tint="@color/white"
                         app:backgroundTint="#3F51B5" />
 
@@ -82,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:src="@android:drawable/ic_menu_edit"
+                        android:src="@drawable/pencil_file_svgrepo_com"
                         android:tint="@color/white"
                         app:backgroundTint="#3F51B5" />
 
@@ -91,7 +129,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:src="@android:drawable/ic_menu_delete"
+                        android:src="@drawable/trash_can_svgrepo_com"
                         android:tint="@color/white"
                         app:backgroundTint="#F44336" />
                 </LinearLayout>
@@ -100,46 +138,46 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@color/gray_300"
-                    android:layout_marginVertical="8dp" />
+                    android:layout_marginVertical="6dp"
+                    android:background="@color/gray_900" />
 
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="12dp">
+                    android:layout_marginBottom="12dp"
+                    android:orientation="vertical">
 
                     <TextView
                         android:id="@+id/orderId"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="ID: 123"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
                         android:textColor="@color/gray_900"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/orderNumber"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Номер заказа: 12345"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:textColor="@color/gray_900"
+                        android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?attr/selectableItemBackground" />
+                        android:text="Номер заказа: 12345"
+                        android:textColor="@color/gray_900"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
 
                 <!-- Кто создал -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_width="347dp"
+                    android:layout_height="34dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <!-- "Создан:" -->
                     <TextView
@@ -148,22 +186,24 @@
                         android:layout_height="wrap_content"
                         android:text="Создан:"
                         android:textColor="@color/gray_900"
-                        android:textSize="14sp" />
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+
 
                     <!-- Аватар -->
                     <ImageView
                         android:id="@+id/createdByAvatar"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="34dp"
+                        android:layout_height="match_parent"
                         android:layout_marginStart="6dp"
                         android:layout_marginEnd="6dp"
-                        android:src="@mipmap/ic_launcher_round"
-                        android:scaleType="centerCrop" />
+                        android:scaleType="centerCrop"
+                        android:src="@mipmap/ic_launcher_round" />
 
                     <!-- ФИО / username -->
                     <TextView
                         android:id="@+id/orderCreatedName"
-                        android:layout_width="wrap_content"
+                        android:layout_width="236dp"
                         android:layout_height="wrap_content"
                         android:text="Иван Иванов"
                         android:textColor="@color/gray_900"
@@ -225,13 +265,12 @@
                     style="@style/DetailTextStyleBlack"
                     android:id="@+id/telegram"
                     android:text="Мессенджер: @ivan_telegram"
-                    android:textColor="@android:color/holo_blue_dark"
-                    android:textStyle="bold"
                     android:clickable="true"
                     android:focusable="true"
                     android:background="?attr/selectableItemBackground"
                     android:paddingBottom="2dp"
-                    android:drawablePadding="4dp"/>
+                    android:drawablePadding="4dp"
+                    android:textColor="@color/gray_900"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -366,5 +405,7 @@
                     android:layout_height="wrap_content"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

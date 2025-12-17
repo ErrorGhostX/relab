@@ -10,6 +10,8 @@
     android:background="@color/white"
     tools:context=".ui.orders.LoginFragment">
 
+
+
     <LinearLayout
         android:id="@+id/loginForm"
         android:layout_width="0dp"
@@ -20,7 +22,15 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
-
+        <ImageView
+            android:id="@+id/logoImageView"
+            android:layout_width="match_parent"
+            android:layout_height="209dp"
+            android:contentDescription="Relab Logo"
+            android:scaleType="fitCenter"
+            android:src="@drawable/relab"
+            tools:layout_editor_absoluteX="81dp"
+            tools:layout_editor_absoluteY="6dp" />
         <!-- Заголовок -->
         <TextView
             android:id="@+id/textLoginTitle"

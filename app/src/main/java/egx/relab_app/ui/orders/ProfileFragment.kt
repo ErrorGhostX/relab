@@ -59,9 +59,9 @@ class ProfileFragment : Fragment() {
         loadUserProfile()
 
         // Кнопка изменения аватара
-        binding.buttonChangeAvatar.setOnClickListener {
-            openImagePicker()
-        }
+//        binding.buttonChangeAvatar.setOnClickListener {
+//            openImagePicker()
+//        }
 
         binding.profileImage.setOnClickListener {
             openImagePicker()
@@ -180,13 +180,14 @@ class ProfileFragment : Fragment() {
         // Показываем ФИО если есть, иначе username
         val displayName = user.full_name ?: user.username
         binding.tvUserName.text = displayName ?: "Пользователь"
-        binding.tvEmail.text = user.email ?: "Не указан"
+        val emailDisplay = user.email ?: "Почты нет"
+        binding.tvEmail.text = "Почта: $emailDisplay"
         // ВАЖНО: Отображаем ФИО в поле редактирования
-        binding.editTextFullName.setText(user.full_name ?: "")
-        binding.editTextPhone.setText(user.phone ?: "")
+        binding.editTextFullName.setText(user.full_name ?: "ФИО нет")
+        binding.editTextPhone.setText(user.phone ?: "Номер не указан")
         
         // Показываем ранг
-        val rankDisplay = user.rank_display ?: "Сотрудник"
+        val rankDisplay = user.rank_display ?: "Не указан"
         binding.tvRank.text = "Ранг: $rankDisplay"
         
         // Загружаем аватар

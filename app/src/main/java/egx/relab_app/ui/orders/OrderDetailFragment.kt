@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -44,11 +45,11 @@ class OrderDetailFragment : Fragment() {
     private var _binding: FragmentOrderDetailBinding? = null
     private val binding get() = _binding!!
     private lateinit var currentOrder: Order
-    
+
     // Получаем Repository и ServiceDao из Application
     private val repository by lazy { requireContext().app.orderRepository }
     private val serviceDao by lazy { requireContext().app.database.serviceDao() }
-    
+
     // Маппинг статусов и типов заказов
     private val statusMap = mapOf(
         "new" to "Новый",
@@ -68,36 +69,93 @@ class OrderDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         currentOrder = OrderDetailFragmentArgs.fromBundle(requireArguments()).order
-        
-        // ВАЖНО: Приоритет на локальность - загружаем СРАЗУ из локальной БД
-        // Показываем данные из аргументов как временные, пока загружаем из БД
+
+        // Показываем данные из аргументов как временные
         bindOrderToUI(currentOrder)
-        
-        // Загружаем заказ из локальной БД (приоритет на локальность)
+
+        // Инициализация ViewPager и кнопок
+        val viewPager = binding.photosViewPager
+        val btnLeft = binding.btnLeft
+        val btnRight = binding.btnRight
+
+        // Создаем адаптер для фото
+
+
+
+// Преобразуем JSON-массив строк в List<String>
+        val photosJson = currentOrder.photo // это строка типа '["path1","path2"]'
+        val photos: List<String> = try {
+            if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
+                val jsonArray = JSONArray(photosJson)
+                List(jsonArray.length()) { index -> jsonArray.getString(index) }
+            } else if (!photosJson.isNullOrEmpty()) {
+                listOf(photosJson) // просто один URL
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+// Передаём в адаптер
+        val photoAdapter = PhotoPagerAdapter(photos)
+        viewPager.adapter = photoAdapter
+
+
+
+        fun updateArrows() {
+            btnLeft.visibility = if (viewPager.currentItem > 0) View.VISIBLE else View.INVISIBLE
+            btnRight.visibility = if (viewPager.currentItem < photoAdapter.itemCount - 1) View.VISIBLE else View.INVISIBLE
+        }
+// Первичная установка
+        updateArrows()
+
+// Слушатель прокрутки
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                updateArrows()
+            }
+        })
+
+        // Обработчики кнопок
+        btnLeft.setOnClickListener {
+            val prev = viewPager.currentItem - 1
+            if (prev >= 0) viewPager.currentItem = prev
+        }
+        btnRight.setOnClickListener {
+            val next = viewPager.currentItem + 1
+            if (next < photoAdapter.itemCount) viewPager.currentItem = next
+        }
+
+        // Загрузка заказа из локальной БД
         lifecycleScope.launch {
             try {
                 loadFromLocalDatabase()
-                
-                // ВАЖНО: После загрузки из локальной БД пытаемся обновить с сервера в ФОНОВОМ режиме
-                // Это не блокирует отображение - пользователь видит локальные данные сразу
+
+                // После загрузки из локальной БД обновляем с сервера в фоне
                 if (currentOrder.id != null) {
-                    // Если есть serverId, пытаемся обновить с сервера в фоне
                     loadOrderDetailsFromServer()
                 }
+
+                // После обновления можно обновить фото в адаптере
+                photoAdapter.notifyDataSetChanged()
             } catch (e: Exception) {
                 android.util.Log.e("OrderDetail", "Ошибка загрузки из локальной БД", e)
-                // Продолжаем показывать данные из аргументов
             }
         }
 
+        // Наблюдение за обновлениями заказа
         findNavController().currentBackStackEntry
             ?.savedStateHandle
             ?.getLiveData<Order>("updatedOrder")
             ?.observe(viewLifecycleOwner) {
                 currentOrder = it
                 bindOrderToUI(it)
+                // Обновляем фото
+                photoAdapter.notifyDataSetChanged()
             }
 
+        // Кнопки действий
         binding.buttonEdit.setOnClickListener {
             val action = OrderDetailFragmentDirections.actionOrderDetailFragmentToOrderFormFragment(currentOrder)
             findNavController().navigate(action)
@@ -107,6 +165,34 @@ class OrderDetailFragment : Fragment() {
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
     }
+//Адаптер Фоток
+    class PhotoPagerAdapter(
+        private val photos: List<String>
+    ) : RecyclerView.Adapter<PhotoPagerAdapter.PhotoViewHolder>() {
+
+        inner class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_photo, parent, false)
+            return PhotoViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
+            val photo = photos[position]
+            // Загружаем фото через Glide
+            Glide.with(holder.imageView.context)
+                .load(photo)
+                .placeholder(R.color.gray_200) // пока грузится
+                .error(R.drawable.ic_menu_camera) // если ошибка
+                .into(holder.imageView)
+        }
+
+        override fun getItemCount(): Int = photos.size
+    }
+
 
     private fun bindOrderToUI(order: Order) = with(binding) {
         // ВАЖНО: Обрабатываем случай, когда order.id = null (локально созданный заказ)
@@ -157,7 +243,7 @@ class OrderDetailFragment : Fragment() {
 
         customer.text = customerSpannable
 
-        
+
         // Контактная информация - делаем кликабельным только текст контакта
         val contactText = order.contactInfo ?: "—"
         val contactInfoText = "Контакты: $contactText"
@@ -167,7 +253,7 @@ class OrderDetailFragment : Fragment() {
             contactInfoSpannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, contactColonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         contactInfo.text = contactInfoSpannable
-        
+
         val extraInfoText = "Доп. инфо: ${order.extraInfo}"
         val extraInfoSpannable = android.text.SpannableString(extraInfoText)
         val extraColonIndex = extraInfoText.indexOf(":")
@@ -175,7 +261,7 @@ class OrderDetailFragment : Fragment() {
             extraInfoSpannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, extraColonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         extraInfo.text = extraInfoSpannable
-        
+
         // Мессенджер - префикс жирный, значение подчеркнуто и синее
         val telegramText = order.telegram ?: "—"
         val fullTelegramText = "Мессенджер: $telegramText"
@@ -193,7 +279,7 @@ class OrderDetailFragment : Fragment() {
             spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         telegram.text = spannable
-        
+
         // Делаем номер заказа, контакты и мессенджер кликабельными для копирования
         orderNumber.setOnClickListener {
             val text = order.orderNumber ?: "-"
@@ -202,7 +288,7 @@ class OrderDetailFragment : Fragment() {
             clipboard.setPrimaryClip(clip)
             Toast.makeText(requireContext(), "Номер заказа скопирован: $text", Toast.LENGTH_SHORT).show()
         }
-        
+
         contactInfo.setOnClickListener {
             // Копируем только текст контакта без префикса "Контакты: "
             val text = contactText
@@ -211,7 +297,7 @@ class OrderDetailFragment : Fragment() {
             clipboard.setPrimaryClip(clip)
             Toast.makeText(requireContext(), "Контакты скопированы: $text", Toast.LENGTH_SHORT).show()
         }
-        
+
         telegram.setOnClickListener {
             // Копируем только текст мессенджера без префикса "Мессенджер: "
             val text = telegramText
@@ -220,10 +306,10 @@ class OrderDetailFragment : Fragment() {
             clipboard.setPrimaryClip(clip)
             Toast.makeText(requireContext(), "Мессенджер скопирован: $text", Toast.LENGTH_SHORT).show()
         }
-        
+
         // Загружаем фото в RecyclerView
-        setupPhotosRecyclerView(order.photo)
-        
+        //setupPhotosRecyclerView(order.photo)
+
         // Вспомогательная функция для форматирования текста (жирный до двоеточия)
         fun formatText(text: String): android.text.SpannableString {
             val spannable = android.text.SpannableString(text)
@@ -233,7 +319,7 @@ class OrderDetailFragment : Fragment() {
             }
             return spannable
         }
-        
+
         deviceName.text = formatText("Устройство: ${order.deviceName}")
         deviceType.text = formatText("Тип: ${order.deviceType}")
         manufacturer.text = formatText("Производитель: ${order.manufacturer}")
@@ -291,7 +377,7 @@ class OrderDetailFragment : Fragment() {
      * Предустановленные услуги с ценами
      */
     private data class PresetService(val name: String, val price: Double)
-    
+
     private val presetServices = listOf(
         PresetService("Переустановка Windows", 1500.0),
         PresetService("Чистка от пыли", 800.0),
@@ -309,13 +395,13 @@ class OrderDetailFragment : Fragment() {
         PresetService("Замена блока питания", 1200.0),
         PresetService("Сборка компьютера", 2000.0)
     )
-    
+
     private fun showAddServiceDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_service, null)
         val etDesc = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDescription)
         val etPrice = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etPrice)
         val recyclerViewPreset = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recyclerViewPresetServices)
-        
+
         // Настраиваем RecyclerView для предустановленных услуг
         recyclerViewPreset.layoutManager = LinearLayoutManager(requireContext())
         val presetAdapter = PresetServiceAdapter(presetServices) { preset ->
@@ -330,7 +416,7 @@ class OrderDetailFragment : Fragment() {
             .setPositiveButton("Добавить", null) // Устанавливаем null, чтобы обработать клик позже
             .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss() }
             .create()
-        
+
         // Обрабатываем клик по кнопке "Добавить" после создания диалога
         dialog.setOnShowListener {
             val positiveButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
@@ -348,10 +434,10 @@ class OrderDetailFragment : Fragment() {
                 }
             }
         }
-        
+
         dialog.show()
     }
-    
+
     /**
      * Адаптер для предустановленных услуг
      */
@@ -359,9 +445,9 @@ class OrderDetailFragment : Fragment() {
         private val services: List<PresetService>,
         private val onItemClick: (PresetService) -> Unit
     ) : RecyclerView.Adapter<PresetServiceAdapter.ViewHolder>() {
-        
+
         class ViewHolder(val binding: ItemPresetServiceBinding) : RecyclerView.ViewHolder(binding.root)
-        
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val binding = ItemPresetServiceBinding.inflate(
                 LayoutInflater.from(parent.context),
@@ -370,23 +456,23 @@ class OrderDetailFragment : Fragment() {
             )
             return ViewHolder(binding)
         }
-        
+
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val service = services[position]
             holder.binding.tvServiceName.text = service.name
             holder.binding.tvServicePrice.text = "${service.price.toInt()} ₽"
-            
+
             holder.itemView.setOnClickListener {
                 onItemClick(service)
             }
         }
-        
+
         override fun getItemCount() = services.size
     }
 
     /**
      * Добавить услугу к заказу
-     * 
+     *
      * ВАЖНО: Приоритет на локальность
      * 1. Сохраняет услугу СРАЗУ в локальную БД
      * 2. Обновляет UI СРАЗУ
@@ -401,13 +487,13 @@ class OrderDetailFragment : Fragment() {
                     repository.getOrderEntityByServerId(currentOrder.id!!)
                 } else if (currentOrder.orderNumber != null) {
                     val allEntities = repository.getAllOrderEntities()
-                    allEntities.firstOrNull { 
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    allEntities.firstOrNull {
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
                     }
                 } else {
                     null
                 }
-                
+
                 if (orderEntity != null) {
                     // ВАЖНО: Добавляем услугу СРАЗУ в локальную БД
                     repository.addServiceToOrder(
@@ -416,12 +502,12 @@ class OrderDetailFragment : Fragment() {
                         description = description,
                         price = price
                     )
-                    
+
                     // Обновляем UI СРАЗУ из локальной БД
                     loadFromLocalDatabase()
-                    
+
                     showToast("Услуга добавлена")
-                    
+
                     // ВАЖНО: Синхронизация происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
                     if (currentOrder.id != null) {
@@ -462,7 +548,7 @@ class OrderDetailFragment : Fragment() {
 
     /**
      * Удалить услугу из заказа по описанию и цене
-     * 
+     *
      * ВАЖНО: Приоритет на локальность
      * 1. Удаляет услугу СРАЗУ из локальной БД
      * 2. Обновляет UI СРАЗУ
@@ -484,13 +570,13 @@ class OrderDetailFragment : Fragment() {
                 } else if (currentOrder.orderNumber != null) {
                     // Если нет serverId, ищем по orderNumber
                     val allEntities = repository.getAllOrderEntities()
-                    allEntities.firstOrNull { 
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    allEntities.firstOrNull {
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
                     }
                 } else {
                     null
                 }
-                
+
                 if (orderEntity != null) {
                     // Находим услугу в локальной БД
                     val serviceEntity = if (serviceId > 0) {
@@ -502,8 +588,8 @@ class OrderDetailFragment : Fragment() {
                         val servicesFlow = serviceDao.getServicesByOrderLocalId(orderEntity.localId)
                         val allServiceEntities = servicesFlow.first()
                         // Ищем услугу по описанию и цене (может быть несколько одинаковых, берем по индексу)
-                        val matchingServices = allServiceEntities.filter { 
-                            it.description == description && it.price == price 
+                        val matchingServices = allServiceEntities.filter {
+                            it.description == description && it.price == price
                         }
                         if (serviceIndex < matchingServices.size) {
                             matchingServices[serviceIndex]
@@ -511,16 +597,16 @@ class OrderDetailFragment : Fragment() {
                             matchingServices.firstOrNull()
                         }
                     }
-                    
+
                     if (serviceEntity != null) {
                         // ВАЖНО: Удаляем услугу СРАЗУ из локальной БД
                         repository.deleteService(serviceEntity.localId, orderEntity.localId)
-                        
+
                         // Обновляем UI СРАЗУ из локальной БД
                         loadFromLocalDatabase()
-                        
+
                         showToast("Услуга удалена")
-                        
+
                         // ВАЖНО: Синхронизация удаления происходит в ФОНОВОМ режиме
                         // Не блокируем UI и не ждем ответа
                         if (orderId != null && orderId > 0 && serviceId > 0) {
@@ -539,7 +625,7 @@ class OrderDetailFragment : Fragment() {
                                                 // Ошибка - это нормально, продолжаем работать с локальными данными
                                             }
                                         }
-                                        
+
                                         override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
                                             android.util.Log.d("OrderDetail", "Не удалось удалить услугу на сервере (офлайн режим): ${t.message}")
                                             // Ошибка - это нормально, продолжаем работать с локальными данными
@@ -566,7 +652,7 @@ class OrderDetailFragment : Fragment() {
 
     /**
      * Загрузить обновления с сервера в ФОНОВОМ режиме
-     * 
+     *
      * ВАЖНО: Это НЕ блокирует отображение - пользователь уже видит локальные данные
      * Используется только для обновления данных в фоне
      */
@@ -578,11 +664,11 @@ class OrderDetailFragment : Fragment() {
                     val updatedOrder = withContext(Dispatchers.IO) {
                         RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
                     }
-                    
+
                     // Сохраняем обновленный заказ в локальную БД
                     // ВАЖНО: saveOrderFromServer не перезапишет локальные изменения (PENDING статус)
                     repository.saveOrderFromServer(updatedOrder)
-                    
+
                     // Обновляем UI только если фрагмент еще прикреплен
                     if (isAdded) {
                         // Загружаем обновленные данные из локальной БД
@@ -596,13 +682,13 @@ class OrderDetailFragment : Fragment() {
             }
         }
     }
-    
+
     /**
      * Загрузить заказ из локальной БД
-     * 
+     *
      * ВАЖНО: Приоритет на локальность - это основной метод загрузки данных
      * Поддерживает поиск как по serverId, так и по orderNumber (для несинхронизированных заказов)
-     * 
+     *
      * Логика поиска:
      * 1. Если есть serverId - ищем по serverId
      * 2. Если нет serverId, но есть orderNumber - ищем по orderNumber
@@ -614,7 +700,7 @@ class OrderDetailFragment : Fragment() {
         try {
             var orderEntity: egx.relab_app.database.entity.OrderEntity? = null
             var localOrder: Order? = null
-            
+
             if (currentOrder.id != null) {
                 // Ищем по serverId
                 orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
@@ -630,15 +716,15 @@ class OrderDetailFragment : Fragment() {
                     // Если не нашли по serverId, ищем по orderNumber в Entity
                     // Нужно получить все Entity и найти по orderNumber
                     val allEntities = repository.getAllOrderEntities()
-                    orderEntity = allEntities.firstOrNull { 
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    orderEntity = allEntities.firstOrNull {
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
                     }
                     if (orderEntity != null) {
                         localOrder = orderEntity.toOrder()
                     }
                 }
             }
-            
+
             if (localOrder != null && isAdded) {
                 // Загружаем услуги для заказа
                 if (orderEntity != null) {
@@ -668,7 +754,7 @@ class OrderDetailFragment : Fragment() {
 
     /**
      * Генерация PDF отчета локально
-     * 
+     *
      * ВАЖНО: Приоритет на локальность
      * - Генерирует PDF локально из данных заказа
      * - Не требует подключения к серверу
@@ -682,7 +768,7 @@ class OrderDetailFragment : Fragment() {
                 val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
                 val userRank = tokenManager.rank ?: "employee"
                 val isEmployee = userRank == "admin" || userRank == "employee" || userRank == "employee_2"
-                
+
                 // Генерируем PDF локально
                 val pdfBytes = withContext(Dispatchers.IO) {
                     generatePdfLocally(currentOrder, isEmployee)
@@ -712,10 +798,10 @@ class OrderDetailFragment : Fragment() {
             }
         }
     }
-    
+
     /**
      * Генерация PDF локально из данных заказа
-     * 
+     *
      * @param order - заказ для генерации PDF
      * @param isEmployee - true если пользователь сотрудник (показывать статус), false если клиент (скрывать статус)
      * @return массив байтов PDF файла
@@ -723,32 +809,32 @@ class OrderDetailFragment : Fragment() {
     private fun generatePdfLocally(order: Order, isEmployee: Boolean): ByteArray {
         val outputStream = java.io.ByteArrayOutputStream()
         val document = android.graphics.pdf.PdfDocument()
-        
+
         // Размер страницы A4 в пикселях (при 72 DPI)
         val pageWidth = 595
         val pageHeight = 842
         val margin = 40
         val contentWidth = pageWidth - 2 * margin
-        
+
         val pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
         val page = document.startPage(pageInfo)
         val canvas = page.canvas
         val paint = android.graphics.Paint()
-        
+
         var yPos = margin + 30
-        
+
         // Заголовок
         paint.textSize = 20f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         paint.color = android.graphics.Color.BLACK
         canvas.drawText("Отчёт по заказу №${order.orderNumber ?: "-"}", margin.toFloat(), yPos.toFloat(), paint)
         yPos += 40
-        
+
         // Основная информация о заказе
         paint.textSize = 12f
         paint.typeface = android.graphics.Typeface.DEFAULT
         paint.isFakeBoldText = false
-        
+
         val orderFields = mutableListOf<Pair<String, String>>().apply {
             add("Имя клиента" to (order.customer ?: "—"))
             add("Контакты" to (order.contactInfo ?: "—"))
@@ -760,7 +846,7 @@ class OrderDetailFragment : Fragment() {
             if (!order.description.isNullOrEmpty()) add("Описание проблемы" to order.description)
             if (!order.extraInfo.isNullOrEmpty()) add("Доп. информация" to order.extraInfo)
             if (!order.date.isNullOrEmpty()) add("Дата" to order.date)
-            
+
             // Тип заказа
             val orderTypeText = when (order.orderType) {
                 "repair" -> "Починка"
@@ -768,7 +854,7 @@ class OrderDetailFragment : Fragment() {
                 else -> order.orderType ?: "—"
             }
             add("Тип заказа" to orderTypeText)
-            
+
             // ВАЖНО: Статус показываем только сотрудникам
             if (isEmployee) {
                 val statusText = when (order.status) {
@@ -781,13 +867,13 @@ class OrderDetailFragment : Fragment() {
                 add("Статус" to statusText)
             }
         }
-        
+
         // Рисуем поля заказа
         for ((label, value) in orderFields) {
             paint.isFakeBoldText = true
             canvas.drawText("$label:", margin.toFloat(), yPos.toFloat(), paint)
             paint.isFakeBoldText = false
-            
+
             // Переносим текст на новую строку, если он слишком длинный
             val text = " $value"
             val textWidth = paint.measureText(text)
@@ -815,25 +901,25 @@ class OrderDetailFragment : Fragment() {
             }
             yPos += 25
         }
-        
+
         yPos += 20
-        
+
         // Таблица услуг
         if (order.services.isNotEmpty()) {
             paint.isFakeBoldText = true
             paint.textSize = 14f
             canvas.drawText("Услуги:", margin.toFloat(), yPos.toFloat(), paint)
             yPos += 30
-            
+
             paint.textSize = 12f
             paint.isFakeBoldText = false
-            
+
             // Заголовок таблицы
             paint.isFakeBoldText = true
             canvas.drawText("Услуга", margin.toFloat(), yPos.toFloat(), paint)
             canvas.drawText("Цена (руб)", (pageWidth - margin - 100).toFloat(), yPos.toFloat(), paint)
             yPos += 25
-            
+
             // Линия под заголовком
             paint.strokeWidth = 1f
             paint.color = android.graphics.Color.GRAY
@@ -841,27 +927,27 @@ class OrderDetailFragment : Fragment() {
             yPos += 10
             paint.color = android.graphics.Color.BLACK
             paint.isFakeBoldText = false
-            
+
             var totalPrice = 0.0
             for (service in order.services) {
                 totalPrice += service.price
-                
+
                 // Описание услуги
                 canvas.drawText(service.description, margin.toFloat(), yPos.toFloat(), paint)
-                
+
                 // Цена (выровнена по правому краю)
                 val priceText = String.format("%.2f", service.price)
                 val priceX = pageWidth - margin - paint.measureText(priceText)
                 canvas.drawText(priceText, priceX, yPos.toFloat(), paint)
-                
+
                 yPos += 20
             }
-            
+
             yPos += 5
             // Линия перед итогом
             canvas.drawLine(margin.toFloat(), yPos.toFloat(), (pageWidth - margin).toFloat(), yPos.toFloat(), paint)
             yPos += 15
-            
+
             // Итого
             paint.isFakeBoldText = true
             canvas.drawText("Итого", margin.toFloat(), yPos.toFloat(), paint)
@@ -869,11 +955,11 @@ class OrderDetailFragment : Fragment() {
             val totalX = pageWidth - margin - paint.measureText(totalText)
             canvas.drawText(totalText, totalX, yPos.toFloat(), paint)
         }
-        
+
         document.finishPage(page)
         document.writeTo(outputStream)
         document.close()
-        
+
         return outputStream.toByteArray()
     }
 
@@ -892,10 +978,10 @@ class OrderDetailFragment : Fragment() {
             }
             .show()
     }
-    
+
     /**
      * Удалить заказ
-     * 
+     *
      * ВАЖНО: Приоритет на локальность
      * 1. Удаляет заказ СРАЗУ в локальной БД (мягкое удаление)
      * 2. Закрывает экран СРАЗУ
@@ -911,22 +997,22 @@ class OrderDetailFragment : Fragment() {
                 } else if (currentOrder.orderNumber != null) {
                     // Если нет serverId, ищем по orderNumber
                     val allEntities = repository.getAllOrderEntities()
-                    allEntities.firstOrNull { 
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted 
+                    allEntities.firstOrNull {
+                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
                     }
                 } else {
                     null
                 }
-                
+
                 if (orderEntity != null) {
                     // ВАЖНО: Удаляем СРАЗУ в локальной БД (мягкое удаление)
                     repository.deleteOrder(orderEntity.localId)
                     android.util.Log.d("OrderDetail", "Заказ удален локально. localId: ${orderEntity.localId}")
-                    
+
                     // Закрываем экран СРАЗУ - не ждем сервера
                     showToast("Заказ удалён")
                     findNavController().popBackStack()
-                    
+
                     // ВАЖНО: Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
                     val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext())
@@ -952,10 +1038,10 @@ class OrderDetailFragment : Fragment() {
     /**
      * Настраивает RecyclerView для отображения фото заказа
      * Поддерживает как одно фото (строка), так и несколько фото (JSON массив)
-     */
+
     private fun setupPhotosRecyclerView(photoString: String?) {
         val photoUris = mutableListOf<String>()
-        
+
         if (!photoString.isNullOrEmpty() && photoString != "null") {
             try {
                 // Проверяем, начинается ли строка с "[" - это JSON массив
@@ -975,35 +1061,37 @@ class OrderDetailFragment : Fragment() {
                 photoUris.add(photoString)
             }
         }
-        
+
         // Если нет фото, добавляем placeholder
         if (photoUris.isEmpty()) {
             photoUris.add("") // Пустая строка для placeholder
         }
-        
+
         val adapter = PhotoAdapter(photoUris)
         binding.photosRecyclerView.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding.photosRecyclerView.adapter = adapter
     }
-    
+
+
+
     /**
      * Адаптер для отображения фото в горизонтальном RecyclerView
      */
     private inner class PhotoAdapter(private val photoUris: List<String>) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
-        
+
         inner class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
         }
-        
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
             val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_photo, parent, false)
             return PhotoViewHolder(view)
         }
-        
+
         override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
             val photoUri = photoUris[position]
-            
+
             if (photoUri.isEmpty()) {
                 // Placeholder
                 Glide.with(holder.imageView.context)
@@ -1019,7 +1107,7 @@ class OrderDetailFragment : Fragment() {
                     // Локальный файл - используем File для загрузки
                     File(photoUri)
                 }
-                
+
                 Glide.with(holder.imageView.context)
                     .load(imageSource)
                     .placeholder(R.drawable.placeholder_image)
@@ -1029,10 +1117,10 @@ class OrderDetailFragment : Fragment() {
                     .into(holder.imageView)
             }
         }
-        
+
         override fun getItemCount() = photoUris.size
     }
-
+     */
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
