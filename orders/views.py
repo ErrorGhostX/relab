@@ -225,7 +225,8 @@ from django.utils.timezone import now
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -264,3 +265,39 @@ class AnalyticsViewSet(viewsets.ViewSet):
         return Response({
             "message": f"Вы выполнили заказов: {count}"
         })
+
+    @action(detail=False, methods=['get'])
+    def daily_earnings(self, request):
+        """Возвращает заработок по дням месяца"""
+        user = request.user
+        today = now().date()
+        first_day = today.replace(day=1)
+        
+        # Получаем все услуги из завершенных заказов за месяц
+        services = Service.objects.filter(
+            order__created_by=user,
+            order__status='done',
+            order__date__gte=first_day,
+            order__date__lte=today
+        ).select_related('order')
+        
+        # Группируем по дням
+        daily_earnings = defaultdict(float)
+        for service in services:
+            day = service.order.date
+            if day:
+                daily_earnings[day.strftime('%Y-%m-%d')] += float(service.price)
+        
+        # Формируем список всех дней месяца
+        result = []
+        current_day = first_day
+        while current_day <= today:
+            day_str = current_day.strftime('%Y-%m-%d')
+            result.append({
+                'date': day_str,
+                'day': current_day.day,
+                'earnings': daily_earnings.get(day_str, 0.0)
+            })
+            current_day += timedelta(days=1)
+        
+        return Response(result)

@@ -93,7 +93,7 @@ class Service(models.Model):
 
 class UserProfile(models.Model):
     """
-    Расширенный профиль пользователя с ФИО, аватаром и рангом
+    Расширенный профиль пользователя с ФИО, аватаром, рангом и телефоном
     """
     RANK_CHOICES = (
         ('admin', 'Администратор'),
@@ -104,6 +104,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, default='', verbose_name='ФИО')
     avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
+    phone = models.CharField(max_length=20, blank=True, default='', verbose_name='Номер телефона')
     rank = models.CharField(
         max_length=20,
         choices=RANK_CHOICES,

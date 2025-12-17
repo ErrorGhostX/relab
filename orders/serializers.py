@@ -43,19 +43,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
     rank_display = serializers.CharField(source='get_rank_display', read_only=True)
     class Meta:
         model = UserProfile
-        fields = ('full_name', 'avatar', 'rank', 'rank_display')
+        fields = ('full_name', 'avatar', 'phone', 'rank', 'rank_display')
 
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
     full_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
     rank = serializers.SerializerMethodField()
     rank_display = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'rank', 'rank_display', 'profile')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'phone', 'rank', 'rank_display', 'profile')
     
     def get_full_name(self, obj):
         """Получить ФИО из профиля"""
@@ -82,19 +83,26 @@ class UserSerializer(serializers.ModelSerializer):
         """Получить отображаемое название ранга"""
         profile, created = UserProfile.objects.get_or_create(user=obj)
         return profile.get_rank_display() if profile else 'Сотрудник'
+    
+    def get_phone(self, obj):
+        """Получить номер телефона из профиля"""
+        profile, created = UserProfile.objects.get_or_create(user=obj)
+        return profile.phone if profile else None
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
     avatar = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    phone = serializers.CharField(write_only=True, required=False, allow_blank=True)
     
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'full_name', 'avatar')
+        fields = ('first_name', 'last_name', 'full_name', 'avatar', 'phone')
     
     def update(self, instance, validated_data):
         full_name = validated_data.pop('full_name', None)
         avatar = validated_data.pop('avatar', None)
+        phone = validated_data.pop('phone', None)
         
         # Обновляем стандартные поля User
         instance.first_name = validated_data.get('first_name', instance.first_name)
@@ -107,6 +115,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             profile.full_name = full_name
         if avatar is not None:
             profile.avatar = avatar
+        if phone is not None:
+            profile.phone = phone
         profile.save()
         
         return instance
