@@ -75,12 +75,14 @@
                         android:layout_height="wrap_content"
                         android:minHeight="56dp"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
+                        android:textColor="@color/gray_900"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Имя клиента -->
+        <!-- Основная информация -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -97,39 +99,29 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_myplaces"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-                        android:text="ФИО *"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                    android:text="Основная информация"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp" />
 
+                <!-- ФИО -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/inputLayoutCustomerName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите ФИО"
+                    android:hint="ФИО *"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextCustomerName"
@@ -138,60 +130,24 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="textPersonName"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Контактная информация -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_call"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Контактная информация"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Контактная информация -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите контактные данные"
+                    android:hint="Контактная информация"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextContactInfo"
@@ -200,60 +156,24 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="phone"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Дополнительная информация -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_info_details"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Дополнительная информация"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Дополнительная информация -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите дополнительную информацию"
+                    android:hint="Дополнительная информация"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editTextExtraInfo"
@@ -262,53 +182,18 @@
                         android:minHeight="56dp"
                         android:inputType="textMultiLine"
                         android:minLines="2"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Мэссэджер -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_dialog_email"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Мэссэджер"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Мэссэджер -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите свой Мэссэджер"
+                    android:hint="Мэссэджер"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
@@ -320,16 +205,18 @@
                     <AutoCompleteTextView
                         android:id="@+id/editTextTelegram"
                         android:layout_width="match_parent"
-                        android:layout_height="47dp"
+                        android:layout_height="wrap_content"
                         android:completionThreshold="1"
                         android:inputType="text"
                         android:minHeight="56dp"
-                        android:textColor="@color/gray_900" />
+                        android:textColor="@color/gray_900"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Название устройства -->
+        <!-- Информация об устройстве -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -346,39 +233,29 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_call"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-                        android:text="Название устройства *"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                    android:text="Информация об устройстве"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp" />
 
+                <!-- Название устройства -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/inputLayoutDeviceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите название устройства"
+                    android:hint="Название устройства *"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextDeviceName"
@@ -387,60 +264,24 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Тип устройства -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_manage"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Тип устройства"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Тип устройства -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите тип устройства"
+                    android:hint="Тип устройства"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextDeviceType"
@@ -449,60 +290,24 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Производитель -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_compass"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Производитель"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Производитель -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите производителя"
+                    android:hint="Производитель"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextManufacturer"
@@ -511,60 +316,24 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Модель устройства -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_agenda"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Модель устройства"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Модель устройства -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите модель устройства"
+                    android:hint="Модель устройства"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
         <AutoCompleteTextView
             android:id="@+id/editTextModel"
@@ -573,53 +342,16 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Комплектация -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_agenda"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Комплектация"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Комплектация -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите комплектацию"
+                    android:hint="Комплектация"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
@@ -635,12 +367,14 @@
                         android:minHeight="56dp"
             android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900" />
+                        android:textColor="@color/gray_900"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Описание -->
+        <!-- Описание и статус -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -657,38 +391,28 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_edit"
-                        android:tint="@color/gray_900"
-                        android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Описание"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                    android:text="Описание и статус"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp" />
 
+                <!-- Описание -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-            android:hint="Введите описание устройства"
+            android:hint="Описание"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
                     app:boxCornerRadiusBottomStart="8dp"
                     app:boxCornerRadiusBottomEnd="8dp"
                     app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400">
+                    app:boxStrokeColor="@color/gray_400"
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/editTextDescription"
@@ -697,49 +421,14 @@
                         android:minHeight="56dp"
                         android:inputType="textMultiLine"
                         android:minLines="3"
-                        android:textColor="@color/gray_900" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Дата -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_today"
-                        android:tint="@color/gray_600"
-                        android:layout_marginEnd="8dp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Дата"
                         android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Дата -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSelectDate"
                     android:layout_width="match_parent"
@@ -748,7 +437,8 @@
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     app:cornerRadius="8dp"
                     app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="8dp" />
 
         <TextView
             android:id="@+id/textViewSelectedDate"
@@ -757,48 +447,9 @@
             android:text="Дата не выбрана"
                     android:textColor="@color/gray_700"
                     android:textStyle="italic"
-                    android:layout_marginTop="8dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:layout_marginBottom="12dp" />
 
-        <!-- Тип заказа и Статус -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_marginEnd="8dp"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        android:tint="@color/black" />
-                <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Тип заказа"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                <!-- Тип заказа -->
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
@@ -911,7 +562,7 @@
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonChoosePhoto"
+                    android:id="@+id/buttonChoosePhotos"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:text="Выбрать фото"
@@ -921,7 +572,7 @@
                     android:textColor="@color/gray_900" />
 
         <TextView
-            android:id="@+id/textPhotoChosen"
+            android:id="@+id/textPhotosChosen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Фото не выбрано"
@@ -934,15 +585,17 @@
     </LinearLayout>
 </ScrollView>
 
-    <!-- Плавающая кнопка сохранения -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <!-- Кнопка сохранения -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSave"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:src="@android:drawable/ic_menu_save"
-        android:tint="@color/white"
-        app:backgroundTint="@android:color/holo_green_dark" />
+        android:text="Сохранить"
+        android:textColor="@color/white"
+        app:backgroundTint="@android:color/holo_green_dark"
+        app:cornerRadius="8dp"
+        app:elevation="4dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

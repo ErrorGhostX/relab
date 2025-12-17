@@ -154,6 +154,7 @@ class ProfileFragment : Fragment() {
         binding.tvUserName.text = displayName ?: "Загрузка..."
         binding.tvEmail.text = tokenManager.email ?: "Загрузка..."
         binding.editTextFullName.setText(tokenManager.fullName ?: "")
+        binding.editTextPhone.setText(tokenManager.phone ?: "")
         
         // Показываем ранг
         val rankDisplay = tokenManager.rankDisplay ?: "Сотрудник"
@@ -182,6 +183,7 @@ class ProfileFragment : Fragment() {
         binding.tvEmail.text = user.email ?: "Не указан"
         // ВАЖНО: Отображаем ФИО в поле редактирования
         binding.editTextFullName.setText(user.full_name ?: "")
+        binding.editTextPhone.setText(user.phone ?: "")
         
         // Показываем ранг
         val rankDisplay = user.rank_display ?: "Сотрудник"
@@ -203,6 +205,7 @@ class ProfileFragment : Fragment() {
         // ВАЖНО: Сохраняем в TokenManager ПЕРЕД обновлением навигации
         tokenManager.fullName = user.full_name
         tokenManager.avatarUrl = user.avatar
+        tokenManager.phone = user.phone
         user.rank?.let { tokenManager.rank = it }
         user.rank_display?.let { tokenManager.rankDisplay = it }
         
@@ -236,9 +239,11 @@ class ProfileFragment : Fragment() {
      */
     private fun saveProfile() {
         val fullName = binding.editTextFullName.text.toString().trim()
+        val phone = binding.editTextPhone.text.toString().trim()
         
         // ВАЖНО: Сохраняем СРАЗУ в локальное хранилище (TokenManager)
         tokenManager.fullName = fullName
+        tokenManager.phone = phone
         
         // Обновляем UI СРАЗУ с локальными данными
         binding.tvUserName.text = fullName.ifEmpty { tokenManager.username ?: "Пользователь" }
@@ -248,9 +253,10 @@ class ProfileFragment : Fragment() {
                 // ВАЖНО: Синхронизация с сервером происходит в ФОНОВОМ режиме
                 // Не блокируем UI и не ждем ответа
                 
-                // Обновляем ФИО на сервере в фоне
+                // Обновляем ФИО и телефон на сервере в фоне
                 val updateRequest = ApiService.UpdateProfileRequest(
-                    full_name = fullName
+                    full_name = fullName,
+                    phone = phone.ifEmpty { null }
                 )
                 try {
                     val updatedUser = RetrofitClient.apiService.updateUserProfile(updateRequest)
@@ -258,6 +264,7 @@ class ProfileFragment : Fragment() {
                     // Обновляем локальное хранилище с данными с сервера
                     updatedUser.full_name?.let { tokenManager.fullName = it }
                     updatedUser.avatar?.let { tokenManager.avatarUrl = it }
+                    updatedUser.phone?.let { tokenManager.phone = it }
                     
                     // Обновляем UI
                     updateUI(updatedUser)

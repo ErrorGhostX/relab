@@ -82,9 +82,18 @@ object RetrofitClient {
         callback: (success: Boolean, code: Int, errorBody: String?, createdOrder: Order?)->Unit
     ) {
         val photoPart = selectedPhotoUri?.let { uri ->
-            val f = File(getRealPath(context, uri))
-            val rb = f.asRequestBody("image/*".toMediaType())
-            MultipartBody.Part.createFormData("photo", f.name, rb)
+            // Если uri имеет схему "file", используем путь напрямую
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            if (file.exists()) {
+                val rb = file.asRequestBody("image/*".toMediaType())
+                MultipartBody.Part.createFormData("photo", file.name, rb)
+            } else {
+                null
+            }
         }
         val parts = makeParts(order)
         apiService.createOrder(
@@ -125,9 +134,18 @@ object RetrofitClient {
             return@updateOrder
         }
         val photoPart = selectedPhotoUri?.let { uri ->
-            val f = File(getRealPath(context, uri))
-            val rb = f.asRequestBody("image/*".toMediaType())
-            MultipartBody.Part.createFormData("photo", f.name, rb)
+            // Если uri имеет схему "file", используем путь напрямую
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            if (file.exists()) {
+                val rb = file.asRequestBody("image/*".toMediaType())
+                MultipartBody.Part.createFormData("photo", file.name, rb)
+            } else {
+                null
+            }
         }
         val parts = makeParts(order)
         apiService.updateOrder(
@@ -236,6 +254,12 @@ object RetrofitClient {
     }
 
     private fun getRealPath(ctx: Context, uri: Uri): String {
+        // Если uri имеет схему "file", возвращаем путь напрямую
+        if (uri.scheme == "file") {
+            return uri.path ?: ""
+        }
+        
+        // Для других схем (content://) используем MediaStore
         val c = ctx.contentResolver.query(uri, arrayOf(MediaStore.Images.Media.DATA), null,null,null)
         c?.moveToFirst()
         val idx = c?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)

@@ -1,6 +1,7 @@
 package egx.relab_app.ui.orders
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -24,9 +25,15 @@ import egx.relab_app.storage.TokenManager
 import egx.relab_app.sync.SyncManager
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import org.json.JSONArray
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 import java.util.Calendar
 
 class OrderFormFragment : Fragment() {
@@ -34,7 +41,7 @@ class OrderFormFragment : Fragment() {
     private var _binding: FragmentOrderCreateBinding? = null
     private val binding get() = _binding!!
 
-    private var selectedPhotoUri: Uri? = null
+    private var selectedPhotoUris: MutableList<Uri> = mutableListOf()
     private var selectedDate: String? = null
     private val args: OrderFormFragmentArgs by navArgs()
     private val isEditMode get() = args.order != null
@@ -124,11 +131,12 @@ class OrderFormFragment : Fragment() {
 
 
 
-        val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            selectedPhotoUri = uri
-            binding.textPhotoChosen.text = if (uri != null) "Фото выбрано" else "Фото не выбрано"
+        val pickImages = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+            selectedPhotoUris.clear()
+            selectedPhotoUris.addAll(uris)
+            binding.textPhotosChosen.text = if (uris.isNotEmpty()) "Выбрано фото: ${uris.size}" else "Фото не выбрано"
         }
-        binding.buttonChoosePhoto.setOnClickListener { pickImage.launch("image/*") }
+        binding.buttonChoosePhotos.setOnClickListener { pickImages.launch("image/*") }
 
         // В режиме редактирования загружаем localId заказа
         if (isEditMode) {
@@ -340,7 +348,7 @@ class OrderFormFragment : Fragment() {
     ) {
         val adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
+            R.layout.item_spinner_black,
             suggestions
         )
         autoCompleteTextView.setAdapter(adapter)
@@ -353,7 +361,7 @@ class OrderFormFragment : Fragment() {
         // Создаем адаптер, который будет динамически фильтровать результаты
         val adapter = object : ArrayAdapter<String>(
             requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
+            R.layout.item_spinner_black,
             mutableListOf()
         ) {
             override fun getFilter(): android.widget.Filter {
@@ -501,8 +509,16 @@ class OrderFormFragment : Fragment() {
                         foundId ?: throw Exception("Не найден локальный ID заказа")
                     }
                     
+                    // Сохраняем фото локально перед обновлением заказа
+                    val orderWithPhoto = if (selectedPhotoUris.isNotEmpty()) {
+                        val photoPath = savePhotosLocally(selectedPhotoUris)
+                        filledOrder.copy(photo = photoPath)
+                    } else {
+                        filledOrder
+                    }
+                    
                     // ВАЖНО: Обновляем СРАЗУ в локальной БД (статус PENDING)
-                    repository.updateOrder(localId, filledOrder)
+                    repository.updateOrder(localId, orderWithPhoto)
                     android.util.Log.d("OrderForm", "Заказ обновлен локально. localId: $localId")
                     
                     // Закрываем форму СРАЗУ - не ждем сервера
@@ -517,8 +533,16 @@ class OrderFormFragment : Fragment() {
                     
                 } else {
                     // ========== РЕЖИМ СОЗДАНИЯ ==========
+                    // Сохраняем фото локально перед созданием заказа
+                    val orderWithPhoto = if (selectedPhotoUris.isNotEmpty()) {
+                        val photoPath = savePhotosLocally(selectedPhotoUris)
+                        filledOrder.copy(photo = photoPath)
+                    } else {
+                        filledOrder
+                    }
+                    
                     // ВАЖНО: Создаем СРАЗУ в локальной БД (статус PENDING, временный отрицательный serverId)
-                    val localId = repository.createOrder(filledOrder)
+                    val localId = repository.createOrder(orderWithPhoto)
                     android.util.Log.d("OrderForm", "Заказ создан локально. localId: $localId")
                     
                     // Закрываем форму СРАЗУ - не ждем сервера
@@ -658,6 +682,55 @@ class OrderFormFragment : Fragment() {
         }
     }
 
+
+    /**
+     * Сохраняет фото локально и возвращает путь к первому фото (или JSON с путями для нескольких фото)
+     */
+    private suspend fun savePhotosLocally(uris: List<Uri>): String = withContext(Dispatchers.IO) {
+        if (uris.isEmpty()) return@withContext ""
+        
+        val context = requireContext()
+        val photosDir = File(context.filesDir, "order_photos")
+        if (!photosDir.exists()) {
+            photosDir.mkdirs()
+        }
+        
+        val photoPaths = mutableListOf<String>()
+        
+        uris.forEachIndexed { index, uri ->
+            try {
+                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    val timestamp = System.currentTimeMillis()
+                    val fileName = "photo_${timestamp}_$index.jpg"
+                    val photoFile = File(photosDir, fileName)
+                    
+                    FileOutputStream(photoFile).use { output ->
+                        inputStream.copyTo(output)
+                    }
+                    
+                    // Сохраняем абсолютный путь к файлу для локального доступа
+                    // Используем file:// URI для корректной загрузки в Glide
+                    photoPaths.add(photoFile.absolutePath)
+                    inputStream.close()
+                }
+            } catch (e: Exception) {
+                Log.e("OrderForm", "Ошибка при сохранении фото $index", e)
+            }
+        }
+        
+        // Если одно фото - возвращаем путь, если несколько - JSON массив
+        if (photoPaths.size == 1) {
+            photoPaths[0]
+        } else if (photoPaths.size > 1) {
+            // Сохраняем как JSON массив для нескольких фото
+            JSONArray().apply {
+                photoPaths.forEach { put(it) }
+            }.toString()
+        } else {
+            ""
+        }
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

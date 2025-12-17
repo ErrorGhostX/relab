@@ -10,6 +10,7 @@ data class UserResponse(
     val email: String? = null,
     val full_name: String? = null,
     val avatar: String? = null,
+    val phone: String? = null,
     val first_name: String? = null,
     val last_name: String? = null,
     val rank: String? = null,

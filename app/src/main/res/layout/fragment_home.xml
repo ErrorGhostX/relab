@@ -252,7 +252,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:contentDescription="Настройки"
-                    android:src="@android:drawable/ic_menu_preferences"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
                     android:tint="@color/white" />
 
                 <TextView
@@ -305,6 +305,8 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -2,6 +2,7 @@ package egx.relab_app.ui.settings
 
 import android.app.AlertDialog
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -31,6 +32,9 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         tokenManager = TokenManager(requireContext())
+        
+        // Отображаем информацию об устройстве
+        displayDeviceInfo()
         
         // Загружаем текущий URL сервера
         val currentUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
@@ -109,6 +113,18 @@ class SettingsFragment : Fragment() {
                 Toast.makeText(requireContext(), "Ошибка получения информации", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    private fun displayDeviceInfo() {
+        val deviceInfo = buildString {
+            append("Модель: ${Build.MODEL}\n")
+            append("Производитель: ${Build.MANUFACTURER}\n")
+            append("Версия Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})\n")
+            append("Серийный номер: ${Build.SERIAL}\n")
+            append("ID устройства: ${Build.ID}\n")
+            append("Аппаратная платформа: ${Build.HARDWARE}")
+        }
+        binding.textDeviceInfo.text = deviceInfo
     }
     
     private fun deleteDir(dir: File?): Boolean {

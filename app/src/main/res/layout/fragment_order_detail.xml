@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Карточка с изображением -->
+        <!-- Карточка с изображениями -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,12 +26,12 @@
             app:strokeWidth="2dp"
             android:layout_marginBottom="16dp">
 
-            <ImageView
-                android:id="@+id/orderImage"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/photosRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="350dp"
-                android:scaleType="centerCrop"
-                android:background="@color/gray_300" />
+                android:background="@color/gray_300"
+                android:scrollbars="horizontal" />
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Блок с ID и кнопками -->
@@ -127,7 +127,10 @@
                         android:text="Номер заказа: 12345"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="@color/gray_900" />
+                        android:textColor="@color/gray_900"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground" />
                 </LinearLayout>
 
 
@@ -207,7 +210,10 @@
                     style="@style/DetailTextStyleBlack"
                     android:id="@+id/contactInfo"
                     android:text="Контакты: 888-123-45-67"
-                    android:textColor="@color/gray_900"/>
+                    android:textColor="@color/gray_900"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"/>
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
@@ -218,8 +224,14 @@
                 <TextView
                     style="@style/DetailTextStyleBlack"
                     android:id="@+id/telegram"
-                    android:text="Мэссэджер: @ivan_telegram"
-                    android:textColor="@color/gray_900"/>
+                    android:text="Мессенджер: @ivan_telegram"
+                    android:textColor="@android:color/holo_blue_dark"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:paddingBottom="2dp"
+                    android:drawablePadding="4dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

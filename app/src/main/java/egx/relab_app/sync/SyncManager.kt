@@ -181,20 +181,30 @@ class SyncManager(
             // Обрабатываем удаление заказов на сервере
             for (orderEntity in deletedOrders) {
                 try {
-                    if (orderEntity.serverId != null) {
-                        // Удаляем на сервере только если заказ был синхронизирован
+                    // ВАЖНО: Проверяем, что serverId не отрицательный (временный ID)
+                    // Отрицательные ID - это временные локальные ID, их не нужно удалять на сервере
+                    if (orderEntity.serverId != null && orderEntity.serverId!! > 0) {
+                        // Удаляем на сервере только если заказ был синхронизирован (положительный serverId)
                         deleteOrderOnServer(orderEntity.serverId!!)
                         // Помечаем как полностью удаленный (можно физически удалить из БД)
                         repository.markAsFullyDeleted(orderEntity.localId)
                         deletedCount++
                     } else {
-                        // Заказ не был синхронизирован - просто помечаем как полностью удаленный
+                        // Заказ не был синхронизирован (serverId = null или отрицательный) - просто помечаем как полностью удаленный
                         repository.markAsFullyDeleted(orderEntity.localId)
                         deletedCount++
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Ошибка при удалении заказа ${orderEntity.localId} на сервере", e)
-                    errorCount++
+                    // ВАЖНО: Даже при ошибке удаления на сервере помечаем как удаленный локально
+                    // Это предотвращает бесконечные попытки удаления
+                    try {
+                        repository.markAsFullyDeleted(orderEntity.localId)
+                        deletedCount++
+                    } catch (e2: Exception) {
+                        Log.e(TAG, "Критическая ошибка при пометке заказа как удаленного", e2)
+                        errorCount++
+                    }
                 }
             }
             
@@ -290,10 +300,20 @@ class SyncManager(
         order: Order
     ) = withContext(Dispatchers.IO) {
         // Конвертируем локальный photo путь в Uri, если есть
-        val photoUri = orderEntity.photo?.let { 
-            // Если photo - это путь к локальному файлу, создаем Uri
-            // В реальности нужно сохранять Uri при создании заказа
-            null  // Пока пропускаем фото при синхронизации
+        val photoUri = orderEntity.photo?.let { photoPath ->
+            // Извлекаем первый путь к фото (может быть JSON массив или просто путь)
+            val firstPhotoPath = getFirstPhotoPath(photoPath)
+            if (firstPhotoPath != null && !firstPhotoPath.startsWith("http://") && !firstPhotoPath.startsWith("https://")) {
+                // Это локальный файл - конвертируем в Uri
+                val file = java.io.File(firstPhotoPath)
+                if (file.exists()) {
+                    android.net.Uri.fromFile(file)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
         }
         
         // Конвертируем callback в suspend функцию
@@ -335,7 +355,22 @@ class SyncManager(
         orderEntity: OrderEntity,
         order: Order
     ) = withContext(Dispatchers.IO) {
-        val photoUri = orderEntity.photo?.let { null }  // Пока пропускаем фото
+        // Конвертируем локальный photo путь в Uri, если есть
+        val photoUri = orderEntity.photo?.let { photoPath ->
+            // Извлекаем первый путь к фото (может быть JSON массив или просто путь)
+            val firstPhotoPath = getFirstPhotoPath(photoPath)
+            if (firstPhotoPath != null && !firstPhotoPath.startsWith("http://") && !firstPhotoPath.startsWith("https://")) {
+                // Это локальный файл - конвертируем в Uri
+                val file = java.io.File(firstPhotoPath)
+                if (file.exists()) {
+                    android.net.Uri.fromFile(file)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        }
         
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
@@ -403,5 +438,34 @@ class SyncManager(
         val syncedCount: Int = 0,
         val error: String? = null
     )
+    
+    /**
+     * Извлекает первый путь к фото из строки (может быть JSON массив или просто путь)
+     */
+    private fun getFirstPhotoPath(photoString: String?): String? {
+        if (photoString.isNullOrEmpty() || photoString == "null") {
+            return null
+        }
+        
+        try {
+            // Проверяем, начинается ли строка с "[" - это JSON массив
+            val trimmed = photoString.trim()
+            if (trimmed.startsWith("[")) {
+                // Пытаемся распарсить как JSON массив
+                val jsonArray = org.json.JSONArray(trimmed)
+                if (jsonArray.length() > 0) {
+                    return jsonArray.getString(0)
+                }
+            } else {
+                // Если не JSON, значит это одно фото (строка)
+                return photoString
+            }
+        } catch (e: Exception) {
+            // Если не удалось распарсить, пробуем как одно фото
+            return photoString
+        }
+        
+        return null
+    }
 }
 

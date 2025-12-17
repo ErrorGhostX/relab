@@ -1,8 +1,16 @@
 package egx.relab_app.ui.orders
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.StyleSpan
 import android.util.Log
 import android.view.*
 import android.view.LayoutInflater
@@ -27,6 +35,7 @@ import egx.relab_app.repository.OrderRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import org.json.JSONArray
 import java.io.File
 import java.io.FileOutputStream
 
@@ -132,31 +141,108 @@ class OrderDetailFragment : Fragment() {
             binding.createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
         }
 
-        customer.text       = "Клиент: ${order.customer}"
-        contactInfo.text    = "Контакты: ${order.contactInfo}"
-        extraInfo.text      = "Доп. инфо: ${order.extraInfo}"
-        telegram.text       = "Мэссэджер: ${order.telegram}"
-        deviceName.text     = "Устройство: ${order.deviceName}"
-        deviceType.text     = "Тип: ${order.deviceType}"
-        manufacturer.text   = "Производитель: ${order.manufacturer}"
-        model.text          = "Модель: ${order.model}"
-        kit.text            = "Комплектация: ${order.kit}"
-        description.text    = "Описание: ${order.description}"
-        date.text           = "Дата: ${order.date}"
-        orderType.text      = "Тип: ${orderTypeMap[order.orderType] ?: order.orderType}"
-        status.text         = "Статус: ${statusMap[order.status] ?: order.status}"
+// Форматируем текст: жирный до двоеточия, обычный после
+        val customerText = "Клиент: ${order.customer}"
+        val customerSpannable = SpannableString(customerText)
 
-        // Фото заказа - обрабатываем 404 ошибки
-        if (!order.photo.isNullOrEmpty() && order.photo != "null") {
-            Glide.with(this@OrderDetailFragment)
-                .load(order.photo)
-                .placeholder(R.drawable.placeholder_image)
-                .error(R.drawable.placeholder_image)
-                .fallback(R.drawable.placeholder_image)
-                .into(orderImage)
-        } else {
-            orderImage.setImageResource(R.drawable.placeholder_image)
+        val customerColonIndex = customerText.indexOf(":")
+        if (customerColonIndex > 0) {
+            customerSpannable.setSpan(
+                StyleSpan(Typeface.BOLD),
+                0,
+                customerColonIndex + 1,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
         }
+
+        customer.text = customerSpannable
+
+        
+        // Контактная информация - делаем кликабельным только текст контакта
+        val contactText = order.contactInfo ?: "—"
+        val contactInfoText = "Контакты: $contactText"
+        val contactInfoSpannable = android.text.SpannableString(contactInfoText)
+        val contactColonIndex = contactInfoText.indexOf(":")
+        if (contactColonIndex > 0) {
+            contactInfoSpannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, contactColonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        contactInfo.text = contactInfoSpannable
+        
+        val extraInfoText = "Доп. инфо: ${order.extraInfo}"
+        val extraInfoSpannable = android.text.SpannableString(extraInfoText)
+        val extraColonIndex = extraInfoText.indexOf(":")
+        if (extraColonIndex > 0) {
+            extraInfoSpannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, extraColonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        extraInfo.text = extraInfoSpannable
+        
+        // Мессенджер - префикс жирный, значение подчеркнуто и синее
+        val telegramText = order.telegram ?: "—"
+        val fullTelegramText = "Мессенджер: $telegramText"
+        val spannable = android.text.SpannableString(fullTelegramText)
+        val colonIndex = fullTelegramText.indexOf(":")
+        // Префикс (до двоеточия включительно) делаем жирным
+        if (colonIndex > 0) {
+            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, colonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        // Значение (после "Мессенджер: ") подчеркиваем и делаем синим
+        val prefixLength = "Мессенджер: ".length
+        if (telegramText != "—") {
+            spannable.setSpan(android.text.style.UnderlineSpan(), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(android.graphics.Color.parseColor("#1976D2")), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        telegram.text = spannable
+        
+        // Делаем номер заказа, контакты и мессенджер кликабельными для копирования
+        orderNumber.setOnClickListener {
+            val text = order.orderNumber ?: "-"
+            val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Номер заказа", text)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "Номер заказа скопирован: $text", Toast.LENGTH_SHORT).show()
+        }
+        
+        contactInfo.setOnClickListener {
+            // Копируем только текст контакта без префикса "Контакты: "
+            val text = contactText
+            val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Контакты", text)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "Контакты скопированы: $text", Toast.LENGTH_SHORT).show()
+        }
+        
+        telegram.setOnClickListener {
+            // Копируем только текст мессенджера без префикса "Мессенджер: "
+            val text = telegramText
+            val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Мессенджер", text)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "Мессенджер скопирован: $text", Toast.LENGTH_SHORT).show()
+        }
+        
+        // Загружаем фото в RecyclerView
+        setupPhotosRecyclerView(order.photo)
+        
+        // Вспомогательная функция для форматирования текста (жирный до двоеточия)
+        fun formatText(text: String): android.text.SpannableString {
+            val spannable = android.text.SpannableString(text)
+            val colonIndex = text.indexOf(":")
+            if (colonIndex > 0) {
+                spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, colonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            return spannable
+        }
+        
+        deviceName.text = formatText("Устройство: ${order.deviceName}")
+        deviceType.text = formatText("Тип: ${order.deviceType}")
+        manufacturer.text = formatText("Производитель: ${order.manufacturer}")
+        model.text = formatText("Модель: ${order.model}")
+        kit.text = formatText("Комплектация: ${order.kit}")
+        description.text = formatText("Описание: ${order.description}")
+        date.text = formatText("Дата: ${order.date}")
+        orderType.text = formatText("Тип заказа: ${orderTypeMap[order.orderType] ?: order.orderType}")
+        status.text = formatText("Статус: ${statusMap[order.status] ?: order.status}")
 
         displayServices(order)
     }
@@ -861,6 +947,90 @@ class OrderDetailFragment : Fragment() {
         if (isAdded && context != null) {
             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /**
+     * Настраивает RecyclerView для отображения фото заказа
+     * Поддерживает как одно фото (строка), так и несколько фото (JSON массив)
+     */
+    private fun setupPhotosRecyclerView(photoString: String?) {
+        val photoUris = mutableListOf<String>()
+        
+        if (!photoString.isNullOrEmpty() && photoString != "null") {
+            try {
+                // Проверяем, начинается ли строка с "[" - это JSON массив
+                val trimmed = photoString.trim()
+                if (trimmed.startsWith("[")) {
+                    // Пытаемся распарсить как JSON массив
+                    val jsonArray = JSONArray(trimmed)
+                    for (i in 0 until jsonArray.length()) {
+                        photoUris.add(jsonArray.getString(i))
+                    }
+                } else {
+                    // Если не JSON, значит это одно фото (строка)
+                    photoUris.add(photoString)
+                }
+            } catch (e: Exception) {
+                // Если не удалось распарсить, пробуем как одно фото
+                photoUris.add(photoString)
+            }
+        }
+        
+        // Если нет фото, добавляем placeholder
+        if (photoUris.isEmpty()) {
+            photoUris.add("") // Пустая строка для placeholder
+        }
+        
+        val adapter = PhotoAdapter(photoUris)
+        binding.photosRecyclerView.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        binding.photosRecyclerView.adapter = adapter
+    }
+    
+    /**
+     * Адаптер для отображения фото в горизонтальном RecyclerView
+     */
+    private inner class PhotoAdapter(private val photoUris: List<String>) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
+        
+        inner class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
+        }
+        
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_photo, parent, false)
+            return PhotoViewHolder(view)
+        }
+        
+        override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
+            val photoUri = photoUris[position]
+            
+            if (photoUri.isEmpty()) {
+                // Placeholder
+                Glide.with(holder.imageView.context)
+                    .load(R.drawable.placeholder_image)
+                    .into(holder.imageView)
+            } else {
+                // Загружаем фото
+                // Проверяем, является ли путь локальным файлом или URL
+                val imageSource = if (photoUri.startsWith("http://") || photoUri.startsWith("https://")) {
+                    // URL с сервера
+                    photoUri
+                } else {
+                    // Локальный файл - используем File для загрузки
+                    File(photoUri)
+                }
+                
+                Glide.with(holder.imageView.context)
+                    .load(imageSource)
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.placeholder_image)
+                    .fallback(R.drawable.placeholder_image)
+                    .centerCrop()
+                    .into(holder.imageView)
+            }
+        }
+        
+        override fun getItemCount() = photoUris.size
     }
 
     override fun onDestroyView() {

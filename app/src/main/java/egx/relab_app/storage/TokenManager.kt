@@ -55,4 +55,9 @@ class TokenManager(context: Context) {
     var rankDisplay: String?
         get() = prefs.getString("RANK_DISPLAY", null)
         set(value) = prefs.edit().putString("RANK_DISPLAY", value).apply()
+    
+    // Номер телефона пользователя
+    var phone: String?
+        get() = prefs.getString("PHONE", null)
+        set(value) = prefs.edit().putString("PHONE", value).apply()
 }

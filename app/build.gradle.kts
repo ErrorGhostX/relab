@@ -15,8 +15,8 @@ android {
         applicationId = "egx.relab_app"
         minSdk = 25
         targetSdk = 34
-        versionCode = 4
-        versionName = "v.F2.5-B2.5 Alpha"
+        versionCode = 5
+        versionName = "v.F3-B3 Alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

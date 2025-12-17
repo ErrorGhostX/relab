@@ -29,7 +29,8 @@ interface ApiService {
     data class UpdateProfileRequest(
         val first_name: String? = null,
         val last_name: String? = null,
-        val full_name: String? = null
+        val full_name: String? = null,
+        val phone: String? = null
     )
 
     @Multipart
@@ -95,6 +96,15 @@ interface ApiService {
 
     @GET("analytics/monthly_completed_orders/")
     fun getMonthlyCompletedOrders(): Call<OrdersCountResponse>
+    
+    @GET("analytics/daily_earnings/")
+    fun getDailyEarnings(): Call<List<DailyEarningsResponse>>
+    
+    data class DailyEarningsResponse(
+        val date: String,
+        val day: Int,
+        val earnings: Double
+    )
     data class OrdersCountResponse(
         val message: String
     )

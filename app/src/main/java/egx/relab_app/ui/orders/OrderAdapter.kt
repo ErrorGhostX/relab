@@ -7,6 +7,7 @@ import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.databinding.ItemOrderBinding
 import egx.relab_app.models.Order
+import org.json.JSONArray
 
 
 class OrderAdapter(
@@ -36,6 +37,28 @@ class OrderAdapter(
     }
 
     override fun getItemCount(): Int = orders.size
+    
+    /**
+     * Извлекает первый путь к фото из строки (может быть JSON массив или просто путь)
+     */
+    private fun getFirstPhotoPath(photoString: String?): String? {
+        if (photoString.isNullOrEmpty() || photoString == "null") {
+            return null
+        }
+        
+        try {
+            // Пытаемся распарсить как JSON массив
+            val jsonArray = JSONArray(photoString)
+            if (jsonArray.length() > 0) {
+                return jsonArray.getString(0)
+            }
+        } catch (e: Exception) {
+            // Если не JSON, значит это одно фото (строка)
+            return photoString
+        }
+        
+        return null
+    }
 
     inner class OrderViewHolder(
         private val binding: ItemOrderBinding
@@ -77,10 +100,19 @@ class OrderAdapter(
             // Статус внизу
             binding.orderStatusText.text = "Статус: ${order.status}"
             
-            // Фото заказа - обрабатываем 404 ошибки
-            if (!order.photo.isNullOrEmpty() && order.photo != "null") {
+            // Фото заказа - обрабатываем 404 ошибки и JSON массивы
+            val firstPhotoPath = getFirstPhotoPath(order.photo)
+            if (!firstPhotoPath.isNullOrEmpty()) {
+                val imageSource = if (firstPhotoPath.startsWith("http://") || firstPhotoPath.startsWith("https://")) {
+                    // URL с сервера
+                    firstPhotoPath
+                } else {
+                    // Локальный файл - используем File для загрузки
+                    java.io.File(firstPhotoPath)
+                }
+                
                 Glide.with(binding.root.context)
-                    .load(order.photo)
+                    .load(imageSource)
                     .placeholder(R.drawable.placeholder_image)
                     .error(R.drawable.placeholder_image)
                     .fallback(R.drawable.placeholder_image)

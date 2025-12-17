@@ -29,9 +29,6 @@ class ToolsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        // Отображаем информацию об устройстве
-        displayDeviceInfo()
-        
         // Интерактивная инструкция по пультам
         binding.buttonOpenRemoteGuide.setOnClickListener {
             openRemoteGuideDialog()
@@ -91,18 +88,6 @@ class ToolsFragment : Fragment() {
     private fun openRemoteGuideDialog() {
         val dialog = RemoteControlGuideDialog()
         dialog.show(parentFragmentManager, "RemoteControlGuide")
-    }
-    
-    private fun displayDeviceInfo() {
-        val deviceInfo = buildString {
-            append("Модель: ${Build.MODEL}\n")
-            append("Производитель: ${Build.MANUFACTURER}\n")
-            append("Версия Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})\n")
-            append("Серийный номер: ${Build.SERIAL}\n")
-            append("ID устройства: ${Build.ID}\n")
-            append("Аппаратная платформа: ${Build.HARDWARE}")
-        }
-        binding.textDeviceInfo.text = deviceInfo
     }
 
     override fun onDestroyView() {

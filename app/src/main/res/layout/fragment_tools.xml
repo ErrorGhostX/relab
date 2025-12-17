@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Инструкции по установке драйверов -->
+        <!-- ADB инструменты -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -34,7 +34,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Установка драйверов"
+                    android:text="ADB инструменты"
                     android:textColor="@color/gray_900"
                     android:textStyle="bold"
                     android:textSize="18sp"
@@ -43,11 +43,21 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="1. Подключите телефон к компьютеру через USB\n2. Включите режим разработчика на телефоне\n3. Включите отладку по USB\n4. Скачайте и установите драйверы с официального сайта производителя"
+                    android:text="Инструменты для работы с Android Debug Bridge (ADB). Скачайте драйверы, изучите руководство и настройте отладку по USB."
                     android:textColor="@color/gray_700"
                     android:textSize="14sp"
                     android:lineSpacingExtra="4dp"
                     android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadDrivers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Скачать драйверы ADB"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="@color/gray_900"
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonOpenDeveloperOptions"
@@ -60,50 +70,23 @@
                     android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonDownloadDrivers"
+                    android:id="@+id/buttonAdbGuide"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Скачать драйверы (ADB)"
-                    style="@style/Widget.MaterialComponents.Button"
-                    app:backgroundTint="@color/gray_900"
-                    android:textColor="@color/white" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Информация о подключении -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Информация об устройстве"
+                    android:text="Руководство по ADB"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/gray_400"
                     android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_marginBottom="8dp" />
 
-                <TextView
-                    android:id="@+id/textDeviceInfo"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonUsbDebugging"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Загрузка информации..."
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:fontFamily="monospace" />
+                    android:text="Как включить отладку по USB"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/gray_400"
+                    android:textColor="@color/gray_900" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -153,51 +136,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Полезные ссылки -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Полезные ссылки"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonAdbGuide"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Руководство по ADB"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonUsbDebugging"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Как включить отладку по USB"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>
 

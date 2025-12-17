@@ -308,12 +308,24 @@ class OrderRepository(
                     android.util.Log.d("OrderRepository", "Обновление заказа localId=$localId с serverId=${order.id}")
                     android.util.Log.d("OrderRepository", "До обновления: serverId=${existing.serverId}, syncStatus=${existing.syncStatus}")
                     
+                    // ВАЖНО: Сохраняем локальные фото, если они есть (JSON массив)
+                    // Сервер возвращает только одно фото, но локально может быть несколько
+                    val photoToSave = if (!existing.photo.isNullOrEmpty() && existing.photo.trim().startsWith("[")) {
+                        // Локальный photo - это JSON массив с несколькими фото, сохраняем его
+                        android.util.Log.d("OrderRepository", "Сохранение локальных фото (JSON массив) вместо серверного")
+                        existing.photo
+                    } else {
+                        // Используем фото с сервера (может быть одно фото или null)
+                        order.photo
+                    }
+                    
                     // Создаем Entity из заказа с сервера с правильным serverId
                     val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
-                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID
+                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID и локальные фото
                     val updated = entity.copy(
                         localId = existing.localId,  // Сохраняем локальный ID
                         serverId = order.id,  // ВАЖНО: Обновляем serverId с сервера
+                        photo = photoToSave,  // ВАЖНО: Сохраняем локальные фото или серверное
                         syncStatus = OrderEntity.SyncStatus.SYNCED,  // Обновляем статус
                         lastSynced = System.currentTimeMillis()  // Обновляем время синхронизации
                     )
@@ -365,8 +377,21 @@ class OrderRepository(
             }
             
             // Обновляем только если заказ не был изменен локально
+            // ВАЖНО: Сохраняем локальные фото, если они есть (JSON массив)
+            val photoToSave = if (!existing.photo.isNullOrEmpty() && existing.photo.trim().startsWith("[")) {
+                // Локальный photo - это JSON массив с несколькими фото, сохраняем его
+                android.util.Log.d("OrderRepository", "Сохранение локальных фото (JSON массив) вместо серверного для заказа ${order.id}")
+                existing.photo
+            } else {
+                // Используем фото с сервера
+                order.photo
+            }
+            
             val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
-            val updated = entity.copy(localId = existing.localId)
+            val updated = entity.copy(
+                localId = existing.localId,
+                photo = photoToSave  // ВАЖНО: Сохраняем локальные фото или серверное
+            )
             orderDao.updateOrder(updated)
             
             // Сохраняем услуги заказа
