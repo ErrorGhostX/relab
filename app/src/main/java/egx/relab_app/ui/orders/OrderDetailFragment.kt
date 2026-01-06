@@ -713,7 +713,7 @@ class OrderDetailFragment : Fragment() {
     /**
      * Загрузить обновления с сервера в ФОНОВОМ режиме
      *
-     * ВАЖНО: Это НЕ блокирует отображение - пользователь уже видит локальные данные
+     * Это НЕ блокирует отображение - пользователь уже видит локальные данные
      * Используется только для обновления данных в фоне
      */
     private fun loadOrderDetailsFromServer() {
@@ -852,27 +852,28 @@ class OrderDetailFragment : Fragment() {
                         android.util.Log.d("OrderDetail", "Не удалось загрузить фото с сервера (офлайн режим): ${e.message}")
                     }
                 }
-                
-                // Загружаем услуги для заказа
-                if (orderEntity != null) {
-                    val servicesFlow = repository.getServicesForOrder(orderEntity.localId)
-                    // Получаем первое значение из Flow
-                    val servicesList = try {
-                        servicesFlow.first()
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                    val orderWithServices = orderWithPhotos.copy(services = servicesList)
-                    if (isAdded) {
-                        currentOrder = orderWithServices
-                        bindOrderToUI(orderWithServices)
-                        updatePhotosList()
-                    }
-                } else {
-                    if (isAdded) {
-                        currentOrder = orderWithPhotos
-                        bindOrderToUI(orderWithPhotos)
-                        updatePhotosList()
+                orderWithPhotos?.let { order ->
+                    // Загружаем услуги для заказа
+                    if (orderEntity != null) {
+                        val servicesList = try {
+                            repository.getServicesForOrder(orderEntity.localId).first()
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+
+                        val orderWithServices = order.copy(services = servicesList)
+
+                        if (isAdded) {
+                            currentOrder = orderWithServices
+                            bindOrderToUI(orderWithServices)
+                            updatePhotosList()
+                        }
+                    } else {
+                        if (isAdded) {
+                            currentOrder = order
+                            bindOrderToUI(order)
+                            updatePhotosList()
+                        }
                     }
                 }
             }
@@ -984,7 +985,6 @@ class OrderDetailFragment : Fragment() {
             }
             add("Тип заказа" to orderTypeText)
 
-            // ВАЖНО: Статус показываем только сотрудникам
             if (isEmployee) {
                 val statusText = when (order.status) {
                     "new" -> "Новый"
@@ -1161,7 +1161,7 @@ class OrderDetailFragment : Fragment() {
                 // Удаляем фото из локального списка
                 val updatedPhotos = currentOrder.photos.filter { it.photoUrl != photo.photoUrl }
                 
-                // ВАЖНО: Обновляем поле photo в Order, конвертируя список фото в JSON
+                // Обновляем поле photo в Order, конвертируя список фото в JSON
                 val updatedPhotoJson = if (updatedPhotos.isNotEmpty()) {
                     val jsonArray = org.json.JSONArray()
                     updatedPhotos.forEach { photoItem ->
@@ -1293,12 +1293,6 @@ class OrderDetailFragment : Fragment() {
 
     /**
      * Удалить заказ
-     *
-     * ВАЖНО: Приоритет на локальность
-     * 1. Удаляет заказ СРАЗУ в локальной БД (мягкое удаление)
-     * 2. Закрывает экран СРАЗУ
-     * 3. Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
-     * 4. Не ждет ответа от сервера - приложение работает автономно
      */
     private fun deleteOrder() {
         lifecycleScope.launch {
@@ -1317,7 +1311,7 @@ class OrderDetailFragment : Fragment() {
                 }
 
                 if (orderEntity != null) {
-                    // ВАЖНО: Удаляем СРАЗУ в локальной БД (мягкое удаление)
+                    //
                     repository.deleteOrder(orderEntity.localId)
                     android.util.Log.d("OrderDetail", "Заказ удален локально. localId: ${orderEntity.localId}")
 
@@ -1325,7 +1319,7 @@ class OrderDetailFragment : Fragment() {
                     showToast("Заказ удалён")
                     findNavController().popBackStack()
 
-                    // ВАЖНО: Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
+                    // Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
                     val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext())
                     lifecycleScope.launch {
@@ -1445,6 +1439,8 @@ class OrderDetailFragment : Fragment() {
         override fun getItemCount() = photoUris.size
     }
      */
+
+    // Фух конец
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

@@ -66,19 +66,6 @@ class OrderListFragment : Fragment() {
         setupFilterSpinner()
         setupFab()
         setupSyncButton()
-        
-        // ========== ВАЖНО: Приоритет на локальность ==========
-        // Загружаем заказы СРАЗУ из локальной БД (реактивно через Flow)
-        // UI автоматически обновится при изменении данных в БД
-        observeOrders()
-        
-        // ВАЖНО: Автоматическая синхронизация отключена
-        // Синхронизация происходит только при нажатии кнопки синхронизации
-        
-        // Показываем количество несинхронизированных заказов
-        updateSyncStatus()
-        
-        // Проверяем подключение и обновляем индикатор
         checkConnectionAndUpdateIndicator()
     }
     
@@ -222,21 +209,15 @@ class OrderListFragment : Fragment() {
     
     /**
      * Ручная синхронизация с индикацией статуса
-     * 
-     * ВАЖНО: 
-     * - Синхронизация происходит ТОЛЬКО при нажатии кнопки
-     * - Проверяет подключение перед синхронизацией
-     * - Показывает уведомление если нет подключения
-     * - Добавлены проверки isAdded и _binding для предотвращения NullPointerException
      */
     private fun performManualSync() {
-        // ВАЖНО: Проверяем, что фрагмент еще прикреплен и binding доступен
+        // Проверяем, что фрагмент еще прикреплен и binding доступен
         if (!isAdded || _binding == null) return
         
         val ctx = context ?: return
         val activity = activity as? egx.relab_app.MainActivity
         
-        // ВАЖНО: Проверяем подключение перед синхронизацией
+        // Проверяем подключение перед синхронизацией
         lifecycleScope.launch {
             try {
                 // Проверяем подключение к серверу
@@ -250,7 +231,7 @@ class OrderListFragment : Fragment() {
                 // Обновляем индикатор подключения
                 activity?.updateConnectionIndicator(isConnected)
                 
-                // ВАЖНО: Если нет подключения, показываем уведомление и не синхронизируем
+                // Если нет подключения, показываем уведомление и не синхронизируем
                 if (!isConnected) {
                     if (isAdded && _binding != null) {
                         binding.syncStatusCard.visibility = View.VISIBLE
@@ -276,7 +257,7 @@ class OrderListFragment : Fragment() {
                 
                 val result = syncManager.fullSync()
                 
-                // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+                // Проверяем, что фрагмент еще прикреплен перед обновлением UI
                 if (!isAdded || _binding == null) return@launch
                 
                 if (result.success) {
@@ -304,13 +285,13 @@ class OrderListFragment : Fragment() {
                 // Обновляем статус через 3 секунды
                 lifecycleScope.launch {
                     kotlinx.coroutines.delay(3000)
-                    // ВАЖНО: Проверяем, что фрагмент еще прикреплен
+                    // Проверяем, что фрагмент еще прикреплен
                     if (isAdded && _binding != null) {
                         updateSyncStatus()
                     }
                 }
             } catch (e: Exception) {
-                // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+                // Проверяем, что фрагмент еще прикреплен перед обновлением UI
                 if (!isAdded || _binding == null) return@launch
                 
                 val ctx = context ?: return@launch
@@ -327,14 +308,13 @@ class OrderListFragment : Fragment() {
     
     /**
      * Обновить индикатор статуса синхронизации
-     * 
-     * ВАЖНО: Добавлены проверки isAdded и _binding для предотвращения NullPointerException
+
      */
     private fun updateSyncStatus() {
         lifecycleScope.launch {
             val pendingCount = repository.getPendingCount()
             
-            // ВАЖНО: Проверяем, что фрагмент еще прикреплен перед обновлением UI
+            // Проверяем, что фрагмент еще прикреплен перед обновлением UI
             if (!isAdded || _binding == null) return@launch
             
             val ctx = context ?: return@launch
@@ -350,8 +330,6 @@ class OrderListFragment : Fragment() {
 
     /**
      * Наблюдаем за всеми заказами из локальной БД (реактивно)
-     * 
-     * ВАЖНО: Приоритет на локальность
      * - Показывает заказы ТОЛЬКО из локальной БД
      * - Flow автоматически обновит UI при изменении данных в БД
      * - Не делает запросов к серверу - работает полностью автономно
@@ -360,7 +338,7 @@ class OrderListFragment : Fragment() {
     private fun observeOrders() {
         lifecycleScope.launch {
             repository.getAllOrders().collect { orders ->
-                // ВАЖНО: orders - это данные из локальной БД
+                // orders - это данные из локальной БД
                 // UI автоматически обновится при любых изменениях в БД
                 showOrders(orders)
             }
@@ -378,11 +356,10 @@ class OrderListFragment : Fragment() {
         }
     }
     
-    // ВАЖНО: Автоматическая синхронизация отключена
+    // Автоматическая синхронизация отключена
     // Синхронизация происходит только при нажатии кнопки синхронизации
 
     private fun showOrders(orders: List<Order>) {
-        // Преобразуем статус из кода в русское значение
         val displayOrders = orders.map { order ->
             order.copy(
                 status = statusMap[order.status] ?: order.status,

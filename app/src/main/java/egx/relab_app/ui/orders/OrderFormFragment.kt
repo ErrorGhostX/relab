@@ -656,12 +656,12 @@ class OrderFormFragment : Fragment() {
 
     private fun buildNewOrder(): Order {
         // Форматируем дату в формат YYYY-MM-DD
-        // ВАЖНО: Если дата не выбрана, возвращаем null вместо текущей даты
+        // Если дата не выбрана, возвращаем null вместо текущей даты
         val dateText = binding.textViewSelectedDate.text.toString()
         val dateString = if (dateText.isNotBlank() && dateText != "Выберите дату") {
             formatDateForServer(dateText)
         } else {
-            null  // Не выбрана дата
+            null
         }
 
         // Получаем выбранные значения из MaterialAutoCompleteTextView
@@ -684,9 +684,9 @@ class OrderFormFragment : Fragment() {
             date = dateString,
             status = statusMap[statusSelected] ?: "new",
             orderType = orderTypeMap[typeSelected] ?: "repair",
-            createdByUsername = tokenManager.username,  // Сохраняем username текущего пользователя
-            createdByFullName = tokenManager.fullName,  // Сохраняем ФИО текущего пользователя
-            createdByAvatar = tokenManager.avatarUrl    // Сохраняем аватар текущего пользователя
+            createdByUsername = tokenManager.username,
+            createdByFullName = tokenManager.fullName,
+            createdByAvatar = tokenManager.avatarUrl
         )
     }
 
@@ -696,7 +696,6 @@ class OrderFormFragment : Fragment() {
      */
     private fun formatDateForServer(dateString: String?): String {
         if (dateString.isNullOrBlank() || dateString == "Выберите дату") {
-            // Если дата не выбрана, используем текущую дату
             val calendar = Calendar.getInstance()
             return "%04d-%02d-%02d".format(
                 calendar.get(Calendar.YEAR),

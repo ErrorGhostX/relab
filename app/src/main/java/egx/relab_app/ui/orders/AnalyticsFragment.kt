@@ -39,7 +39,7 @@ class AnalyticsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         analyticsCache = AnalyticsCache(requireContext())
         
-        // ВАЖНО: Сначала загружаем данные из кэша для быстрого отображения
+        // Сначала загружаем данные из кэша для быстрого отображения
         loadFromCache()
         
         // Затем загружаем свежие данные с сервера

@@ -79,26 +79,21 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        // ВАЖНО: Приоритет на локальность - загружаем СРАЗУ из локального хранилища
         loadUserProfile()
     }
 
     /**
      * Загрузить профиль пользователя
-     * 
-     * ВАЖНО: Приоритет на локальность
+
      * 1. СНАЧАЛА показываем данные из TokenManager (локальное хранилище)
      * 2. ЗАТЕМ пытаемся обновить с сервера в ФОНОВОМ режиме
      * 3. При отсутствии сети продолжаем работать с локальными данными
      */
     private fun loadUserProfile() {
         if (!isAdded || _binding == null) return
-        
-        // ВАЖНО: Показываем СРАЗУ сохраненные данные из локального хранилища
-        // Пользователь видит данные мгновенно, без ожидания сервера
         loadFromLocalStorage()
         
-        // ВАЖНО: Обновление с сервера происходит в ФОНОВОМ режиме
+        // Обновление с сервера происходит в ФОНОВОМ режиме
         // Не блокирует отображение - пользователь уже видит локальные данные
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -108,38 +103,25 @@ class ProfileFragment : Fragment() {
                 
                 if (!isAdded || _binding == null) return@launch
                 
-                // ВАЖНО: Обновляем TokenManager только если сервер вернул непустые значения
+                // Обновляем TokenManager только если сервер вернул непустые значения
                 // Не перезаписываем локальные данные пустыми значениями
                 user.username?.let { tokenManager.username = it }
                 user.email?.let { tokenManager.email = it }
-                
-                // Обновляем full_name только если сервер вернул непустое значение
                 if (!user.full_name.isNullOrBlank()) {
                     tokenManager.fullName = user.full_name
                 }
-                
-                // Обновляем avatar только если сервер вернул непустое значение
                 if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
                     tokenManager.avatarUrl = user.avatar
                 }
-                
-                // Обновляем ранг
                 user.rank?.let { tokenManager.rank = it }
                 user.rank_display?.let { tokenManager.rankDisplay = it }
-                
-                // Обновляем UI с данными с сервера
                 updateUI(user)
                 
                 // Обновляем навигацию
                 val activity = activity as? egx.relab_app.MainActivity
                 activity?.refreshNavBar()
             } catch (e: Exception) {
-                // ВАЖНО: Если нет подключения, используем локальные данные
-                // Они уже загружены в loadFromLocalStorage()
-                // Приложение продолжает работать автономно
                 android.util.Log.d("ProfileFragment", "Не удалось загрузить с сервера (офлайн режим): ${e.message}")
-                // Не показываем ошибку пользователю - приложение работает автономно
-                // Убеждаемся, что UI обновлен из локального хранилища
                 if (isAdded && _binding != null) {
                     loadFromLocalStorage()
                 }
@@ -149,8 +131,6 @@ class ProfileFragment : Fragment() {
     
     /**
      * Загрузить данные из локального хранилища (TokenManager)
-     * 
-     * ВАЖНО: Приоритет на локальность
      * - Показывает данные СРАЗУ из локального хранилища
      * - Не делает запросов к серверу
      * - Работает полностью автономно
@@ -201,7 +181,6 @@ class ProfileFragment : Fragment() {
             binding.tvUserName.text = displayName ?: "Пользователь"
             val emailDisplay = user.email ?: "Почты нет"
             binding.tvEmail.text = "Почта: $emailDisplay"
-            // ВАЖНО: Отображаем ФИО в поле редактирования
             binding.editTextFullName.setText(user.full_name ?: "")
             binding.editTextPhone.setText(user.phone ?: "")
             
@@ -222,7 +201,7 @@ class ProfileFragment : Fragment() {
                 binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
             }
             
-            // ВАЖНО: Сохраняем в TokenManager ПЕРЕД обновлением навигации
+            // Сохраняем в TokenManager ПЕРЕД обновлением навигации
             tokenManager.fullName = user.full_name
             tokenManager.avatarUrl = user.avatar
             tokenManager.phone = user.phone
@@ -254,12 +233,9 @@ class ProfileFragment : Fragment() {
 
     /**
      * Сохранить профиль пользователя
-     * 
-     * ВАЖНО: Приоритет на локальность
      * 1. Сохраняет изменения СРАЗУ в TokenManager (локальное хранилище)
      * 2. Обновляет UI СРАЗУ
      * 3. Синхронизирует с сервером в ФОНОВОМ режиме
-     * 4. Не ждет ответа от сервера - приложение работает автономно
      */
     private fun saveProfile() {
         if (!isAdded || _binding == null) return
@@ -277,11 +253,6 @@ class ProfileFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 if (!isAdded || _binding == null) return@launch
-                
-                // ВАЖНО: Синхронизация с сервером происходит в ФОНОВОМ режиме
-                // Не блокируем UI и не ждем ответа
-                
-                // Обновляем ФИО и телефон на сервере в фоне
                 val updateRequest = ApiService.UpdateProfileRequest(
                     full_name = fullName,
                     phone = phone.ifEmpty { null }
