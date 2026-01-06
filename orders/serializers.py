@@ -1,6 +1,6 @@
 from djoser.conf import User
 from rest_framework import serializers
-from .models import Order, Service, UserProfile
+from .models import Order, Service, UserProfile, OrderPhoto
 
 
 
@@ -8,11 +8,35 @@ class ServiceSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
     class Meta:
         model = Service
-        fields = ['id', 'description', 'price', 'created_at']
+        fields = ['id', 'description', 'price', 'complexity_points', 'created_at']
+
+
+class OrderPhotoSerializer(serializers.ModelSerializer):
+    """Сериализатор для фотографий заказа"""
+    photo_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = OrderPhoto
+        fields = ['id', 'photo_url', 'order_index', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def get_photo_url(self, obj):
+        """Получить полный URL фотографии"""
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
+        return None
+
 
 class OrderSerializer(serializers.ModelSerializer):
 
     services = ServiceSerializer(many=True, read_only=True)
+    photos = OrderPhotoSerializer(many=True, read_only=True)
+    # Для обратной совместимости оставляем поле photo (первое фото или старое значение)
+    photo = serializers.SerializerMethodField()
+    # Вычисляемые поля сложности
+    complexity_percentage = serializers.SerializerMethodField()
+    complexity_level = serializers.SerializerMethodField()
 
     created_by = serializers.SlugRelatedField(
         read_only=True,
@@ -24,6 +48,29 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
+    
+    def get_complexity_percentage(self, obj):
+        """Получить процент сложности заказа"""
+        return obj.get_complexity_percentage()
+    
+    def get_complexity_level(self, obj):
+        """Получить уровень сложности заказа"""
+        return obj.get_complexity_level()
+    
+    def get_photo(self, obj):
+        """Получить первое фото для обратной совместимости"""
+        # Сначала пытаемся получить из новой модели OrderPhoto
+        first_photo = obj.photos.first()
+        if first_photo and first_photo.photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(first_photo.photo.url)
+        # Если нет фото в OrderPhoto, возвращаем старое поле photo
+        if obj.photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.photo.url)
+        return None
     
     def get_created_by_full_name(self, obj):
         """Получить ФИО создателя заказа"""
