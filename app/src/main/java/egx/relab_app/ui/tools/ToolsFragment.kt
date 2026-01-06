@@ -29,9 +29,9 @@ class ToolsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         //Драйвера
-        binding.btnDrivers.setOnClickListener {
-            startDriversDownload()
-        }
+       // binding.btnDrivers.setOnClickListener {
+       //     startDriversDownload()
+       // }
 
         // Интерактивная инструкция по пультам
         binding.buttonOpenRemoteGuide.setOnClickListener {
