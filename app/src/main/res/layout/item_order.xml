@@ -8,8 +8,10 @@
     app:cardCornerRadius="15dp"
     app:cardElevation="0dp"
     app:cardBackgroundColor="@android:color/system_accent1_50"
-    app:strokeColor="@color/black"
-    app:strokeWidth="1dp">
+    app:strokeColor="@color/black_40"
+    android:clipToOutline="true"
+    app:strokeWidth="1dp"
+    app:cardPreventCornerOverlap="false">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,18 +19,20 @@
         android:orientation="vertical">
 
         <!-- Картинка сверху, растягиваем до краев карточки -->
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/orderImage"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="200dp"
             android:scaleType="centerCrop"
-            android:adjustViewBounds="true" />
+            app:shapeAppearanceOverlay="@style/RoundedImage" />
+
+
 
         <!-- Блок текста с padding -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-
+            app:cardCornerRadius="150dp"
             android:orientation="vertical"
             android:padding="8dp">
 
@@ -84,7 +88,7 @@
             <LinearLayout
                 android:id="@+id/createdByLayout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_marginTop="0dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">

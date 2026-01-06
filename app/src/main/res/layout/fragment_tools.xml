@@ -146,12 +146,7 @@
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
-        <Button
-            android:id="@+id/btnDrivers"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Скачать драйвера"
-            android:layout_margin="16dp"/>
+
 
     </LinearLayout>
 </ScrollView>

@@ -1,5 +1,6 @@
 package egx.relab_app.ui.orders
 
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
@@ -29,6 +31,9 @@ class OrderListFragment : Fragment() {
 
     private var _binding: FragmentOrdersBinding? = null
     private val binding get() = _binding!!
+    private var ordersJob: kotlinx.coroutines.Job? = null
+    private var selectedStatus: String = "Все"
+    private lateinit var statusOptions: List<String>
 
     private lateinit var adapter: OrderAdapter
     
@@ -64,9 +69,20 @@ class OrderListFragment : Fragment() {
 
         setupRecyclerView()
         setupFilterSpinner()
+        binding.statusFilterSpinner.setText(selectedStatus, false)
+
+        if (selectedStatus == "Все") {
+            observeOrders()
+        } else {
+            reverseStatusMap[selectedStatus]?.let {
+                observeOrdersByStatus(it)
+            }
+        }
+
         setupFab()
         setupSyncButton()
         checkConnectionAndUpdateIndicator()
+        observeOrders()
     }
     
     private fun checkConnectionAndUpdateIndicator() {
@@ -122,13 +138,21 @@ class OrderListFragment : Fragment() {
             }
             .setNegativeButton("Отмена", null)
             .create()
-        
         dialog.setOnShowListener {
-            // Устанавливаем черный цвет текста для кнопок
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(resources.getColor(R.color.gray_900, null))
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(resources.getColor(R.color.gray_900, null))
+            dialog.findViewById<TextView>(android.R.id.message)
+                ?.setTextColor(Color.BLACK)
+
+            dialog.findViewById<TextView>(android.R.id.title)
+                ?.setTextColor(Color.BLACK)
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                ?.setTextColor(Color.BLACK)
+
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                ?.setTextColor(Color.BLACK)
         }
-        
+
+
         dialog.show()
     }
     
@@ -163,33 +187,35 @@ class OrderListFragment : Fragment() {
     }
 
     private fun setupFilterSpinner() {
-        val options = listOf("Все") + statusMap.values.toList()
+        statusOptions = listOf("Все") + statusMap.values.toList()
 
-        val adapter = ArrayAdapter(
+        val spinnerAdapter = ArrayAdapter(
             requireContext(),
             R.layout.item_spinner_black,
-            options
+            statusOptions
         )
-        adapter.setDropDownViewResource(R.layout.item_spinner_black)
 
-        binding.statusFilterSpinner.setAdapter(adapter)
+        binding.statusFilterSpinner.setAdapter(spinnerAdapter)
 
-        // значение по умолчанию
-        binding.statusFilterSpinner.setText("Все", false)
+        spinnerAdapter.filter.filter(null)
+
+        binding.statusFilterSpinner.setText(selectedStatus, false)
 
         binding.statusFilterSpinner.setOnItemClickListener { _, _, position, _ ->
-            val selected = options[position]
-            Log.d("OrderListFragment", "Filter selected: $selected")
+            selectedStatus = statusOptions[position]
 
-            if (selected == "Все") {
+            if (selectedStatus == "Все") {
                 observeOrders()
             } else {
-                reverseStatusMap[selected]?.let {
+                reverseStatusMap[selectedStatus]?.let {
                     observeOrdersByStatus(it)
                 }
             }
         }
     }
+
+
+
 
 
     private fun setupFab() {
@@ -336,26 +362,24 @@ class OrderListFragment : Fragment() {
      * - Данные с сервера попадают в БД только через SyncManager
      */
     private fun observeOrders() {
-        lifecycleScope.launch {
+        ordersJob?.cancel()
+        ordersJob = lifecycleScope.launch {
             repository.getAllOrders().collect { orders ->
-                // orders - это данные из локальной БД
-                // UI автоматически обновится при любых изменениях в БД
                 showOrders(orders)
             }
         }
     }
-    
     /**
      * Наблюдаем за заказами по статусу
      */
     private fun observeOrdersByStatus(status: String) {
-        lifecycleScope.launch {
+        ordersJob?.cancel()
+        ordersJob = lifecycleScope.launch {
             repository.getOrdersByStatus(status).collect { orders ->
                 showOrders(orders)
             }
         }
     }
-    
     // Автоматическая синхронизация отключена
     // Синхронизация происходит только при нажатии кнопки синхронизации
 
@@ -367,6 +391,19 @@ class OrderListFragment : Fragment() {
             )
         }
         adapter.updateList(displayOrders)
+    }
+    override fun onResume() {
+        super.onResume()
+
+        if (_binding == null) return
+
+        val spinnerAdapter =
+            binding.statusFilterSpinner.adapter as? ArrayAdapter<*>
+
+        spinnerAdapter?.filter?.filter(null)
+
+
+        binding.statusFilterSpinner.setText(selectedStatus, false)
     }
 
     override fun onDestroyView() {

@@ -394,16 +394,9 @@ class OrderFormFragment : Fragment() {
             .distinct()
             .sorted()
 
-        // Настраиваем адаптеры для каждого поля
-        // Для полей с базой данных устройств используем динамическую фильтрацию
-        // Это позволяет эффективно фильтровать большие списки устройств по мере ввода
         setupAutocompleteWithDeviceDB(binding.editTextManufacturer, AutocompleteFieldType.MANUFACTURER)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceType, AutocompleteFieldType.DEVICE_TYPE)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceName, AutocompleteFieldType.DEVICE_NAME)
-        //setupAutocompleteWithDeviceDB(binding.editTextModel, AutocompleteFieldType.MODEL)
-        
-        // Для остальных полей используем статический список из существующих заказов
-        setupAutocompleteAdapter(binding.editTextCustomerName, customers)
         setupAutocompleteAdapter(binding.editTextContactInfo, contactInfos)
         setupAutocompleteAdapter(binding.editTextTelegram, telegrams)
         setupAutocompleteAdapter(binding.editTextKit, kits)
@@ -511,10 +504,10 @@ class OrderFormFragment : Fragment() {
         binding.editTextKit.setText(o.kit)
         binding.editTextDescription.setText(o.description)
         selectedDate = o.date
-        // ВАЖНО: Если дата есть, показываем её, иначе показываем "Выберите дату"
+        //  Если дата есть, показываем её, иначе показываем "Выберите дату"
         binding.textViewSelectedDate.text = o.date ?: "Выберите дату"
         reverseOrderTypeMap[o.orderType]?.let { orderTypeText ->
-            // ВАЖНО: Для AutoCompleteTextView используем только setText, не setSelection
+            //  Для AutoCompleteTextView используем только setText, не setSelection
             // setSelection может вызвать IndexOutOfBoundsException если текст пустой
             try {
                 binding.orderTypeSpinner.setText(orderTypeText, false)
@@ -525,7 +518,7 @@ class OrderFormFragment : Fragment() {
             }
         }
         reverseStatusMap[o.status]?.let { statusText ->
-            // ВАЖНО: Для AutoCompleteTextView используем только setText, не setSelection
+            //  Для AutoCompleteTextView используем только setText, не setSelection
             // setSelection может вызвать IndexOutOfBoundsException если текст пустой
             try {
                 binding.statusSpinner.setText(statusText, false)
@@ -539,8 +532,7 @@ class OrderFormFragment : Fragment() {
 
     /**
      * Сохранить или обновить заказ
-     * 
-     * ВАЖНО: Приоритет на локальность
+     *
      * 1. Сохраняет заказ в локальную БД СРАЗУ
      * 2. Закрывает форму СРАЗУ после локального сохранения
      * 3. Синхронизация с сервером происходит в ФОНОВОМ режиме через SyncManager
@@ -569,7 +561,7 @@ class OrderFormFragment : Fragment() {
 
         val filledOrder = if (isEditMode) buildUpdatedOrder() else buildNewOrder()
 
-        // ВАЖНО: Сохраняем СРАЗУ в локальную БД (приоритет на локальность)
+        // Сохраняем СРАЗУ в локальную БД (приоритет на локальность)
         lifecycleScope.launch {
             try {
                 if (isEditMode) {
@@ -617,7 +609,7 @@ class OrderFormFragment : Fragment() {
                         findNavController().popBackStack()
                     }
                     
-                    // ВАЖНО: Автоматическая синхронизация отключена
+                    //  Автоматическая синхронизация отключена
                     // Синхронизация происходит только при нажатии кнопки синхронизации
                     
                 } else {
@@ -629,8 +621,7 @@ class OrderFormFragment : Fragment() {
                     } else {
                         filledOrder
                     }
-                    
-                    // ВАЖНО: Создаем СРАЗУ в локальной БД (статус PENDING, временный отрицательный serverId)
+
                     val localId = repository.createOrder(orderWithPhoto)
                     android.util.Log.d("OrderForm", "Заказ создан локально. localId: $localId")
                     
@@ -640,8 +631,7 @@ class OrderFormFragment : Fragment() {
                         Toast.makeText(ctx, "Заказ создан", Toast.LENGTH_SHORT).show()
                         findNavController().popBackStack()
                     }
-                    
-                    // ВАЖНО: Автоматическая синхронизация отключена
+
                     // Синхронизация происходит только при нажатии кнопки синхронизации
                 }
             } catch (e: Exception) {
