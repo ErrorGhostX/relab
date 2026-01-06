@@ -25,12 +25,12 @@ class RemoteControlGuideDialog : DialogFragment() {
         "ok" to "Кнопка OK",
         "back" to "Кнопка Назад",
         "home" to "Кнопка Меню",
-        "volUp" to "Кнопка увеличения громкости",
-        "volDown" to "Кнопка уменьшения громкости",
+        "vol+" to "Кнопка увеличения громкости",
+        "vol-" to "Кнопка уменьшения громкости",
         "source" to "Кнопка Source (Источник)",
         "mute" to "Кнопка Mute (Без звука)",
-        "channelUp" to "Кнопка переключения канала вверх",
-        "channelDown" to "Кнопка переключения канала вниз",
+        "ch+" to "Кнопка переключения канала вверх",
+        "ch-" to "Кнопка переключения канала вниз",
         "input" to "Кнопка Input (Вход)"
     )
 
@@ -73,20 +73,19 @@ class RemoteControlGuideDialog : DialogFragment() {
         binding.btnOk.setOnClickListener { addButtonToSequence("ok") }
         binding.btnBack.setOnClickListener { addButtonToSequence("back") }
         binding.btnHome.setOnClickListener { addButtonToSequence("home") }
-        binding.btnVolUp.setOnClickListener { addButtonToSequence("volUp") }
-        binding.btnVolDown.setOnClickListener { addButtonToSequence("volDown") }
+        binding.btnVolUp.setOnClickListener { addButtonToSequence("vol+") }
+        binding.btnVolDown.setOnClickListener { addButtonToSequence("vol-") }
         
         // Кнопки управления
         binding.btnClearSequence.setOnClickListener { clearSequence() }
         binding.btnGenerateInstruction.setOnClickListener { generateInstruction() }
         binding.btnShareInstruction.setOnClickListener { shareInstruction() }
-        binding.btnDownloadRemoteApp.setOnClickListener { openPlayMarket() }
         
         // Дополнительные кнопки пульта
         binding.btnSource.setOnClickListener { addButtonToSequence("source") }
         binding.btnMute.setOnClickListener { addButtonToSequence("mute") }
-        binding.btnChannelUp.setOnClickListener { addButtonToSequence("channelUp") }
-        binding.btnChannelDown.setOnClickListener { addButtonToSequence("channelDown") }
+        binding.btnChannelUp.setOnClickListener { addButtonToSequence("ch+") }
+        binding.btnChannelDown.setOnClickListener { addButtonToSequence("ch-") }
         binding.btnInput.setOnClickListener { addButtonToSequence("input") }
     }
     
@@ -146,11 +145,11 @@ class RemoteControlGuideDialog : DialogFragment() {
                     "ok" -> "Нажмите кнопку «OK», чтобы подтвердить выбор."
                     "back" -> "Нажмите кнопку «Назад», чтобы вернуться на предыдущий экран."
                     "home" -> "Нажмите кнопку «Меню», чтобы открыть главное меню телевизора."
-                    "volUp" -> "Нажмите кнопку увеличения громкости («+»), чтобы сделать звук громче."
-                    "volDown" -> "Нажмите кнопку уменьшения громкости («−»), чтобы сделать звук тише."
+                    "vol+" -> "Нажмите кнопку увеличения громкости (vol+), чтобы сделать звук громче."
+                    "vol-" -> "Нажмите кнопку уменьшения громкости (vol-), чтобы сделать звук тише."
                     "mute" -> "Нажмите кнопку «Без звука», чтобы временно выключить звук."
-                    "channelUp" -> "Нажмите кнопку «Канал +», чтобы переключить канал вверх."
-                    "channelDown" -> "Нажмите кнопку «Канал −», чтобы переключить канал вниз."
+                    "ch+" -> "Нажмите кнопку переключения канала вверх (ch+), чтобы переключить канал вверх."
+                    "ch-" -> "Нажмите кнопку переключения канала вниз (ch-), чтобы переключить канал вниз."
                     "source" -> "Нажмите кнопку «Источник», чтобы выбрать, откуда идёт сигнал (например, HDMI)."
                     "input" -> "Нажмите кнопку «Вход», чтобы выбрать подключённое устройство."
                     else -> "Нажмите нужную кнопку."
@@ -190,26 +189,6 @@ class RemoteControlGuideDialog : DialogFragment() {
         }
     }
 
-    private fun openPlayMarket() {
-        try {
-            // Пытаемся открыть через Play Market приложение
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("market://details?id=com.tiqiaa.remote")
-                setPackage("com.android.vending")
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
-            // Если Play Market не установлен, открываем через браузер
-            try {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("https://play.google.com/store/apps/details?id=com.tiqiaa.remote")
-                }
-                startActivity(intent)
-            } catch (e2: Exception) {
-                Toast.makeText(requireContext(), "Не удалось открыть Play Market", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

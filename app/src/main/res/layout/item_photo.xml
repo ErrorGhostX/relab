@@ -6,3 +6,4 @@
     android:scaleType="centerCrop"
     android:background="@color/gray_200"
     android:contentDescription="Фото заказа" />
+

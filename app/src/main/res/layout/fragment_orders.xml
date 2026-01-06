@@ -11,40 +11,40 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingHorizontal="5dp"
+        android:paddingHorizontal="0dp"
         android:paddingTop="?attr/actionBarSize">
 
         <!-- Карточка с фильтром и статусом -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/filterCard"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="0dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="5dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:strokeColor="@color/gray_500"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp"
-                android:spacing="8dp">
+                android:padding="2dp"
+                android:spacing="2dp">
 
-                <!-- Горизонтальный ряд: фильтр + кнопка -->
+                <!-- Ряд: фильтр + кнопка -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="2dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <!-- Spinner фильтра (половина ширины) -->
+                    <!-- Фильтр по статусу -->
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="0dp"
@@ -62,41 +62,40 @@
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/statusFilterSpinner"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="wrap_content"
                             android:focusable="false"
                             android:inputType="none"
                             android:textColor="@color/black"
                             app:iconTint="@color/black" />
-
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Кнопка синхронизации (половина ширины) -->
+                    <!-- Кнопка синхронизации -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonSync"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+
                         android:layout_width="0dp"
-                        android:layout_height="57dp"
-                        android:layout_marginStart="3dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5dp"
                         android:layout_weight="1"
                         android:text="Синхронизация"
                         android:textAllCaps="false"
-                        android:textColor="@color/black"
-                        app:icon="@android:drawable/ic_menu_rotate"
-                        app:iconGravity="textStart"
-                        app:iconTint="@color/black" />
+
+                        app:icon="@android:drawable/stat_notify_sync">
+
+                    </com.google.android.material.button.MaterialButton>
+
                 </LinearLayout>
 
-                <!-- Вертикальный мини-блок для текста -->
+                <!-- Статус синхронизации -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/syncStatusCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:visibility="gone"
                     app:cardBackgroundColor="@color/gray_800"
                     app:cardCornerRadius="8dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp">
+                    app:cardElevation="0dp">
 
                     <TextView
                         android:id="@+id/syncStatusText"
@@ -114,7 +113,6 @@
 
 
 
-
         <!-- RecyclerView с заказами -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ordersRecyclerView"
@@ -124,10 +122,10 @@
             android:paddingTop="2dp"
             android:paddingBottom="80dp"
             android:scrollbars="vertical"
-            app:layout_constraintTop_toBottomOf="@id/filterCard"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/filterCard" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -17,6 +17,12 @@ interface ServiceDao {
     fun getServicesByOrderLocalId(orderLocalId: Long): Flow<List<ServiceEntity>>
     
     /**
+     * Получить все услуги для конкретного заказа (по локальному ID) - suspend версия
+     */
+    @Query("SELECT * FROM services WHERE orderLocalId = :orderLocalId ORDER BY createdAt DESC")
+    suspend fun getServicesByOrderLocalIdSync(orderLocalId: Long): List<ServiceEntity>
+    
+    /**
      * Получить все услуги для конкретного заказа (по серверному ID)
      */
     @Query("SELECT * FROM services WHERE orderServerId = :orderServerId ORDER BY createdAt DESC")

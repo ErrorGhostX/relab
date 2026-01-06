@@ -22,7 +22,7 @@ import egx.relab_app.database.entity.ServiceEntity
  */
 @Database(
     entities = [OrderEntity::class, ServiceEntity::class],
-    version = 2,  // Увеличена версия для добавления полей createdByFullName и createdByAvatar
+    version = 4,  // Увеличена версия для добавления полей complexityPercentage и complexityLevel
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 abstract class AppDatabase : RoomDatabase() {

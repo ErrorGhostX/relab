@@ -353,17 +353,6 @@
             android:layout_marginBottom="16dp"
             android:enabled="false" />
 
-        <!-- Кнопка скачать приложение пульта -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDownloadRemoteApp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="📱 Скачать приложение пульта (Play Market)"
-            style="@style/Widget.MaterialComponents.Button"
-            app:backgroundTint="@color/gray_900"
-            android:textColor="@color/white"
-            app:icon="@android:drawable/ic_menu_view"
-            app:iconTint="@color/white" />
     </LinearLayout>
 </ScrollView>
 

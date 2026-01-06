@@ -92,6 +92,8 @@ class ProfileFragment : Fragment() {
      * 3. При отсутствии сети продолжаем работать с локальными данными
      */
     private fun loadUserProfile() {
+        if (!isAdded || _binding == null) return
+        
         // ВАЖНО: Показываем СРАЗУ сохраненные данные из локального хранилища
         // Пользователь видит данные мгновенно, без ожидания сервера
         loadFromLocalStorage()
@@ -100,7 +102,11 @@ class ProfileFragment : Fragment() {
         // Не блокирует отображение - пользователь уже видит локальные данные
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                if (!isAdded || _binding == null) return@launch
+                
                 val user = RetrofitClient.apiService.getCurrentUser()
+                
+                if (!isAdded || _binding == null) return@launch
                 
                 // ВАЖНО: Обновляем TokenManager только если сервер вернул непустые значения
                 // Не перезаписываем локальные данные пустыми значениями
@@ -133,6 +139,10 @@ class ProfileFragment : Fragment() {
                 // Приложение продолжает работать автономно
                 android.util.Log.d("ProfileFragment", "Не удалось загрузить с сервера (офлайн режим): ${e.message}")
                 // Не показываем ошибку пользователю - приложение работает автономно
+                // Убеждаемся, что UI обновлен из локального хранилища
+                if (isAdded && _binding != null) {
+                    loadFromLocalStorage()
+                }
             }
         }
     }
@@ -146,73 +156,85 @@ class ProfileFragment : Fragment() {
      * - Работает полностью автономно
      */
     private fun loadFromLocalStorage() {
-        // Показываем сохраненные данные из TokenManager (локальное хранилище)
-        binding.tvUserId.text = "ID: ${tokenManager.username?.hashCode() ?: "-"}"
+        if (!isAdded || _binding == null) return
         
-        // Показываем ФИО если есть, иначе username
-        val displayName = tokenManager.fullName ?: tokenManager.username
-        binding.tvUserName.text = displayName ?: "Загрузка..."
-        binding.tvEmail.text = tokenManager.email ?: "Загрузка..."
-        binding.editTextFullName.setText(tokenManager.fullName ?: "")
-        binding.editTextPhone.setText(tokenManager.phone ?: "")
-        
-        // Показываем ранг
-        val rankDisplay = tokenManager.rankDisplay ?: "Сотрудник"
-        binding.tvRank.text = "Ранг: $rankDisplay"
-        
-        // Загружаем аватар из локального хранилища
-        val savedAvatarUrl = tokenManager.avatarUrl
-        if (!savedAvatarUrl.isNullOrEmpty() && savedAvatarUrl != "null") {
-            Glide.with(this)
-                .load(savedAvatarUrl)
-                .placeholder(R.mipmap.ic_launcher_round)
-                .error(R.mipmap.ic_launcher_round)
-                .circleCrop()
-                .into(binding.profileImage)
-        } else {
-            // Если нет сохраненного аватара, показываем placeholder
-            binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+        try {
+            // Показываем сохраненные данные из TokenManager (локальное хранилище)
+            binding.tvUserId.text = "ID: ${tokenManager.username?.hashCode() ?: "-"}"
+            
+            // Показываем ФИО если есть, иначе username
+            val displayName = tokenManager.fullName ?: tokenManager.username
+            binding.tvUserName.text = displayName ?: "Загрузка..."
+            binding.tvEmail.text = "Почта: ${tokenManager.email ?: "Не указана"}"
+            binding.editTextFullName.setText(tokenManager.fullName ?: "")
+            binding.editTextPhone.setText(tokenManager.phone ?: "")
+            
+            // Показываем ранг
+            val rankDisplay = tokenManager.rankDisplay ?: "Сотрудник"
+            binding.tvRank.text = "Ранг: $rankDisplay"
+            
+            // Загружаем аватар из локального хранилища
+            val savedAvatarUrl = tokenManager.avatarUrl
+            if (!savedAvatarUrl.isNullOrEmpty() && savedAvatarUrl != "null") {
+                Glide.with(this)
+                    .load(savedAvatarUrl)
+                    .placeholder(R.mipmap.ic_launcher_round)
+                    .error(R.mipmap.ic_launcher_round)
+                    .circleCrop()
+                    .into(binding.profileImage)
+            } else {
+                // Если нет сохраненного аватара, показываем placeholder
+                binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileFragment", "Ошибка при загрузке из локального хранилища", e)
         }
     }
 
     private fun updateUI(user: egx.relab_app.models.UserResponse) {
-        binding.tvUserId.text = "ID: ${user.id}"
-        // Показываем ФИО если есть, иначе username
-        val displayName = user.full_name ?: user.username
-        binding.tvUserName.text = displayName ?: "Пользователь"
-        val emailDisplay = user.email ?: "Почты нет"
-        binding.tvEmail.text = "Почта: $emailDisplay"
-        // ВАЖНО: Отображаем ФИО в поле редактирования
-        binding.editTextFullName.setText(user.full_name ?: "ФИО нет")
-        binding.editTextPhone.setText(user.phone ?: "Номер не указан")
+        if (!isAdded || _binding == null) return
         
-        // Показываем ранг
-        val rankDisplay = user.rank_display ?: "Не указан"
-        binding.tvRank.text = "Ранг: $rankDisplay"
-        
-        // Загружаем аватар
-        val avatarUrl = user.avatar
-        if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
-            Glide.with(this)
-                .load(avatarUrl)
-                .placeholder(R.mipmap.ic_launcher_round)
-                .error(R.mipmap.ic_launcher_round)
-                .circleCrop()
-                .into(binding.profileImage)
-        } else {
-            binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+        try {
+            binding.tvUserId.text = "ID: ${user.id}"
+            // Показываем ФИО если есть, иначе username
+            val displayName = user.full_name ?: user.username
+            binding.tvUserName.text = displayName ?: "Пользователь"
+            val emailDisplay = user.email ?: "Почты нет"
+            binding.tvEmail.text = "Почта: $emailDisplay"
+            // ВАЖНО: Отображаем ФИО в поле редактирования
+            binding.editTextFullName.setText(user.full_name ?: "")
+            binding.editTextPhone.setText(user.phone ?: "")
+            
+            // Показываем ранг
+            val rankDisplay = user.rank_display ?: "Не указан"
+            binding.tvRank.text = "Ранг: $rankDisplay"
+            
+            // Загружаем аватар
+            val avatarUrl = user.avatar
+            if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
+                Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.mipmap.ic_launcher_round)
+                    .error(R.mipmap.ic_launcher_round)
+                    .circleCrop()
+                    .into(binding.profileImage)
+            } else {
+                binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+            }
+            
+            // ВАЖНО: Сохраняем в TokenManager ПЕРЕД обновлением навигации
+            tokenManager.fullName = user.full_name
+            tokenManager.avatarUrl = user.avatar
+            tokenManager.phone = user.phone
+            user.rank?.let { tokenManager.rank = it }
+            user.rank_display?.let { tokenManager.rankDisplay = it }
+            
+            // Обновляем навигацию в MainActivity сразу после загрузки
+            val activity = activity as? egx.relab_app.MainActivity
+            activity?.refreshNavBar()
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileFragment", "Ошибка при обновлении UI", e)
         }
-        
-        // ВАЖНО: Сохраняем в TokenManager ПЕРЕД обновлением навигации
-        tokenManager.fullName = user.full_name
-        tokenManager.avatarUrl = user.avatar
-        tokenManager.phone = user.phone
-        user.rank?.let { tokenManager.rank = it }
-        user.rank_display?.let { tokenManager.rankDisplay = it }
-        
-        // Обновляем навигацию в MainActivity сразу после загрузки
-        val activity = activity as? egx.relab_app.MainActivity
-        activity?.refreshNavBar()
     }
 
     private fun openImagePicker() {
@@ -221,10 +243,11 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadImageFromUri(uri: Uri) {
+        if (!isAdded) return
         Glide.with(this)
             .load(uri)
-            .placeholder(R.drawable.placeholder_image)
-            .error(R.drawable.placeholder_image)
+            .placeholder(R.mipmap.ic_launcher_round)
+            .error(R.mipmap.ic_launcher_round)
             .circleCrop()
             .into(binding.profileImage)
     }
@@ -239,6 +262,8 @@ class ProfileFragment : Fragment() {
      * 4. Не ждет ответа от сервера - приложение работает автономно
      */
     private fun saveProfile() {
+        if (!isAdded || _binding == null) return
+        
         val fullName = binding.editTextFullName.text.toString().trim()
         val phone = binding.editTextPhone.text.toString().trim()
         
@@ -251,6 +276,8 @@ class ProfileFragment : Fragment() {
         
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                if (!isAdded || _binding == null) return@launch
+                
                 // ВАЖНО: Синхронизация с сервером происходит в ФОНОВОМ режиме
                 // Не блокируем UI и не ждем ответа
                 
@@ -261,6 +288,8 @@ class ProfileFragment : Fragment() {
                 )
                 try {
                     val updatedUser = RetrofitClient.apiService.updateUserProfile(updateRequest)
+                    
+                    if (!isAdded || _binding == null) return@launch
                     
                     // Обновляем локальное хранилище с данными с сервера
                     updatedUser.full_name?.let { tokenManager.fullName = it }
@@ -291,8 +320,10 @@ class ProfileFragment : Fragment() {
                 }
                 
                 // Если выбран новый аватар, загружаем его в фоне
-                selectedAvatarUri?.let { uri ->
-                    uploadAvatar(uri)
+                if (isAdded) {
+                    selectedAvatarUri?.let { uri ->
+                        uploadAvatar(uri)
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("ProfileFragment", "Ошибка при сохранении профиля", e)
@@ -306,6 +337,8 @@ class ProfileFragment : Fragment() {
     }
 
     private suspend fun uploadAvatar(uri: Uri) {
+        if (!isAdded || _binding == null) return
+        
         try {
             val context = requireContext()
             val inputStream = context.contentResolver.openInputStream(uri)
@@ -323,10 +356,15 @@ class ProfileFragment : Fragment() {
                 return
             }
             
+            if (!isAdded || _binding == null) return
+            
             val requestFile = file.asRequestBody("image/jpeg".toMediaType())
             val avatarPart = MultipartBody.Part.createFormData("avatar", file.name, requestFile)
             
             val updatedUser = RetrofitClient.apiService.uploadAvatar(avatarPart)
+            
+            if (!isAdded || _binding == null) return
+            
             updateUI(updatedUser)
             
             tokenManager.fullName = updatedUser.full_name
@@ -343,6 +381,7 @@ class ProfileFragment : Fragment() {
                 Toast.makeText(requireContext(), "Профиль и аватар обновлены", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
+            android.util.Log.e("ProfileFragment", "Ошибка загрузки аватара", e)
             if (isAdded) {
                 Toast.makeText(requireContext(),
                     "Ошибка загрузки аватара: ${e.localizedMessage}",

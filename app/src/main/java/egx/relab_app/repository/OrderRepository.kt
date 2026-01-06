@@ -138,18 +138,23 @@ class OrderRepository(
         orderLocalId: Long,
         orderServerId: Int?,
         description: String,
-        price: Double
+        price: Double,
+        complexityPoints: Int = 1
     ): Long {
         // Создаем Entity для новой услуги (serverId = null)
         val serviceEntity = egx.relab_app.database.entity.ServiceEntity.fromNewService(
             description = description,
             price = price,
             orderLocalId = orderLocalId,
-            orderServerId = orderServerId
+            orderServerId = orderServerId,
+            complexityPoints = complexityPoints
         )
         
         // Вставляем в локальную БД
         val serviceLocalId = serviceDao.insertService(serviceEntity)
+        
+        // ВАЖНО: Пересчитываем сложность заказа локально
+        recalculateOrderComplexity(orderLocalId)
         
         // ВАЖНО: Помечаем заказ как требующий синхронизации
         val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
@@ -160,6 +165,53 @@ class OrderRepository(
         
         android.util.Log.d("OrderRepository", "Услуга добавлена локально. localId: $serviceLocalId, orderLocalId: $orderLocalId")
         return serviceLocalId
+    }
+    
+    /**
+     * Пересчитать сложность заказа на основе услуг
+     */
+    suspend fun recalculateOrderComplexity(orderLocalId: Long) {
+        val orderEntity = orderDao.getOrderByLocalId(orderLocalId) ?: return
+        
+        // Получаем услуги для заказа
+        val services = serviceDao.getServicesByOrderLocalIdSync(orderLocalId)
+        
+        if (services.isEmpty()) {
+            // Если нет услуг, сложность 0%
+            val updated = orderEntity.copy(
+                complexityPercentage = 0.0,
+                complexityLevel = "Нет данных"
+            )
+            orderDao.updateOrder(updated)
+            return
+        }
+        
+        // Суммируем баллы сложности
+        val totalPoints = services.sumOf { it.complexityPoints }
+        // Максимальная сложность = 10 баллов * количество услуг
+        val maxPossiblePoints = services.size * 10
+        val percentage = if (maxPossiblePoints > 0) {
+            (totalPoints.toDouble() / maxPossiblePoints) * 100
+        } else {
+            0.0
+        }
+        
+        // Определяем уровень сложности
+        val level = when {
+            percentage >= 80 -> "Высокая"
+            percentage >= 50 -> "Средняя"
+            percentage > 0 -> "Низкая"
+            else -> "Нет данных"
+        }
+        
+        // Обновляем заказ с новой сложностью
+        val updated = orderEntity.copy(
+            complexityPercentage = percentage,
+            complexityLevel = level
+        )
+        orderDao.updateOrder(updated)
+        
+        android.util.Log.d("OrderRepository", "Сложность пересчитана: $percentage% ($level) для заказа $orderLocalId")
     }
     
     /**
@@ -180,6 +232,9 @@ class OrderRepository(
         if (serviceEntity != null) {
             serviceDao.deleteService(serviceEntity)
             android.util.Log.d("OrderRepository", "Услуга удалена локально. localId: $serviceLocalId")
+            
+            // ВАЖНО: Пересчитываем сложность заказа локально
+            recalculateOrderComplexity(orderLocalId)
             
             // ВАЖНО: Помечаем заказ как требующий синхронизации
             val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
@@ -308,24 +363,18 @@ class OrderRepository(
                     android.util.Log.d("OrderRepository", "Обновление заказа localId=$localId с serverId=${order.id}")
                     android.util.Log.d("OrderRepository", "До обновления: serverId=${existing.serverId}, syncStatus=${existing.syncStatus}")
                     
-                    // ВАЖНО: Сохраняем локальные фото, если они есть (JSON массив)
-                    // Сервер возвращает только одно фото, но локально может быть несколько
-                    val photoToSave = if (!existing.photo.isNullOrEmpty() && existing.photo.trim().startsWith("[")) {
-                        // Локальный photo - это JSON массив с несколькими фото, сохраняем его
-                        android.util.Log.d("OrderRepository", "Сохранение локальных фото (JSON массив) вместо серверного")
-                        existing.photo
-                    } else {
-                        // Используем фото с сервера (может быть одно фото или null)
-                        order.photo
-                    }
+                    // ВАЖНО: Всегда используем фото с сервера при синхронизации
+                    // Локальные фото уже должны быть загружены на сервер
+                    android.util.Log.d("OrderRepository", "Используем фото с сервера для заказа ${order.id}: ${order.photos.size} фото")
+                    val photoToSave = null  // fromOrder сам конвертирует photos в JSON
                     
                     // Создаем Entity из заказа с сервера с правильным serverId
                     val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
-                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID и локальные фото
+                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID и фото
                     val updated = entity.copy(
                         localId = existing.localId,  // Сохраняем локальный ID
                         serverId = order.id,  // ВАЖНО: Обновляем serverId с сервера
-                        photo = photoToSave,  // ВАЖНО: Сохраняем локальные фото или серверное
+                        photo = photoToSave ?: entity.photo,  // ВАЖНО: Используем фото с сервера или локальные
                         syncStatus = OrderEntity.SyncStatus.SYNCED,  // Обновляем статус
                         lastSynced = System.currentTimeMillis()  // Обновляем время синхронизации
                     )
@@ -377,20 +426,13 @@ class OrderRepository(
             }
             
             // Обновляем только если заказ не был изменен локально
-            // ВАЖНО: Сохраняем локальные фото, если они есть (JSON массив)
-            val photoToSave = if (!existing.photo.isNullOrEmpty() && existing.photo.trim().startsWith("[")) {
-                // Локальный photo - это JSON массив с несколькими фото, сохраняем его
-                android.util.Log.d("OrderRepository", "Сохранение локальных фото (JSON массив) вместо серверного для заказа ${order.id}")
-                existing.photo
-            } else {
-                // Используем фото с сервера
-                order.photo
-            }
+            // ВАЖНО: Всегда используем фото с сервера при синхронизации
+            android.util.Log.d("OrderRepository", "Используем фото с сервера для заказа ${order.id}: ${order.photos.size} фото")
             
             val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
             val updated = entity.copy(
-                localId = existing.localId,
-                photo = photoToSave  // ВАЖНО: Сохраняем локальные фото или серверное
+                localId = existing.localId
+                // ВАЖНО: Используем фото с сервера (уже конвертировано в JSON в fromOrder)
             )
             orderDao.updateOrder(updated)
             

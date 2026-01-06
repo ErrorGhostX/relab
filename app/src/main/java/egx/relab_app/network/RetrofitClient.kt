@@ -6,6 +6,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import egx.relab_app.models.Order
+import egx.relab_app.models.OrderPhoto
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -29,7 +30,7 @@ import okhttp3.Interceptor
 
 
 object RetrofitClient {
-    private const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/api/"
+    private const val DEFAULT_BASE_URL = "http://10.8.0.18:8000/api/"
 
 
     lateinit var tokenManager: TokenManager
@@ -78,11 +79,23 @@ object RetrofitClient {
     fun createOrder(
         context: Context,
         order: Order,
-        selectedPhotoUri: Uri?,
+        selectedPhotoUris: List<Uri>,
         callback: (success: Boolean, code: Int, errorBody: String?, createdOrder: Order?)->Unit
     ) {
-        val photoPart = selectedPhotoUri?.let { uri ->
-            // Если uri имеет схему "file", используем путь напрямую
+        // ВАЖНО: Убираем дубликаты перед загрузкой
+        val uniqueUris = selectedPhotoUris.distinctBy { uri ->
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            file.absolutePath
+        }
+        
+        android.util.Log.d("RetrofitClient", "Создание заказа с ${uniqueUris.size} уникальными фото (было ${selectedPhotoUris.size})")
+        
+        // Создаем список фото для загрузки
+        val photoParts = uniqueUris.mapIndexedNotNull { index, uri ->
             val file = if (uri.scheme == "file") {
                 File(uri.path ?: "")
             } else {
@@ -90,18 +103,20 @@ object RetrofitClient {
             }
             if (file.exists()) {
                 val rb = file.asRequestBody("image/*".toMediaType())
-                MultipartBody.Part.createFormData("photo", file.name, rb)
+                // ВАЖНО: Используем формат "photos" для всех фото, сервер обработает как массив
+                MultipartBody.Part.createFormData("photos", file.name, rb)
             } else {
                 null
             }
         }
+        
         val parts = makeParts(order)
         apiService.createOrder(
             parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
             parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, photoPart
+            parts["status"]!!, parts["order_type"]!!, photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -126,15 +141,28 @@ object RetrofitClient {
     fun updateOrder(
         context: Context,
         order: Order,
-        selectedPhotoUri: Uri?,
+        selectedPhotoUris: List<Uri>,
         callback: (success: Boolean, code: Int, errorBody: String?, updatedOrder: Order?) -> Unit
     ) {
         val id = order.id?.toString() ?: run {  // Преобразуем id в String
             callback(false, -1, "Order ID is null", null)
             return@updateOrder
         }
-        val photoPart = selectedPhotoUri?.let { uri ->
-            // Если uri имеет схему "file", используем путь напрямую
+        
+        // ВАЖНО: Убираем дубликаты перед загрузкой
+        val uniqueUris = selectedPhotoUris.distinctBy { uri ->
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            file.absolutePath
+        }
+        
+        android.util.Log.d("RetrofitClient", "Обновление заказа с ${uniqueUris.size} уникальными фото (было ${selectedPhotoUris.size})")
+        
+        // Создаем список фото для загрузки
+        val photoParts = uniqueUris.mapIndexedNotNull { index, uri ->
             val file = if (uri.scheme == "file") {
                 File(uri.path ?: "")
             } else {
@@ -142,7 +170,8 @@ object RetrofitClient {
             }
             if (file.exists()) {
                 val rb = file.asRequestBody("image/*".toMediaType())
-                MultipartBody.Part.createFormData("photo", file.name, rb)
+                // ВАЖНО: Используем формат "photos" для всех фото, сервер обработает как массив
+                MultipartBody.Part.createFormData("photos", file.name, rb)
             } else {
                 null
             }
@@ -154,7 +183,7 @@ object RetrofitClient {
             parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, photoPart
+            parts["status"]!!, parts["order_type"]!!, photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -272,9 +301,10 @@ object RetrofitClient {
         orderId: String,
         description: String,
         price: Double,
+        complexityPoints: Int = 1,
         onResult: (success: Boolean, service: Service?, error: String?) -> Unit
     ) {
-        val body = ApiService.AddServiceRequest(description, price)
+        val body = ApiService.AddServiceRequest(description, price, complexityPoints)
         apiService.addService(orderId, body).enqueue(object : Callback<Service> {
             override fun onResponse(call: Call<Service>, response: Response<Service>) {
                 if (response.isSuccessful) {
@@ -291,6 +321,118 @@ object RetrofitClient {
 
             override fun onFailure(call: Call<Service>, t: Throwable) {
                 onResult(false, null, "")
+            }
+        })
+    }
+
+    /**
+     * Загрузить несколько фотографий к заказу
+     */
+    fun uploadPhotos(
+        context: Context,
+        orderId: String,
+        photoUris: List<Uri>,
+        callback: (success: Boolean, photos: List<OrderPhoto>?, error: String?) -> Unit
+    ) {
+        // ВАЖНО: Убираем дубликаты перед загрузкой
+        val uniqueUris = photoUris.distinctBy { uri ->
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            file.absolutePath
+        }
+        
+        android.util.Log.d("RetrofitClient", "Загрузка ${uniqueUris.size} уникальных фото (было ${photoUris.size})")
+        
+        val photoParts = uniqueUris.mapIndexedNotNull { index, uri ->
+            val file = if (uri.scheme == "file") {
+                File(uri.path ?: "")
+            } else {
+                File(getRealPath(context, uri))
+            }
+            if (file.exists()) {
+                val rb = file.asRequestBody("image/*".toMediaType())
+                // ВАЖНО: Сервер ожидает ключи, начинающиеся с "photo" (photo[], photo[0], photo[1] и т.д.)
+                // Используем формат "photos" для всех фото - сервер обработает как массив
+                // Если это не работает, можно использовать "photo[]" или "photo[$index]"
+                MultipartBody.Part.createFormData("photos", file.name, rb)
+            } else {
+                null
+            }
+        }
+
+        if (photoParts.isEmpty()) {
+            callback(false, null, "Нет файлов для загрузки")
+            return
+        }
+
+        apiService.uploadPhotos(orderId, *photoParts.toTypedArray()).enqueue(object : Callback<List<OrderPhoto>> {
+            override fun onResponse(
+                call: Call<List<OrderPhoto>>,
+                response: Response<List<OrderPhoto>>
+            ) {
+                if (response.isSuccessful) {
+                    callback(true, response.body(), null)
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    callback(false, null, errorBody ?: "Ошибка загрузки фото")
+                }
+            }
+
+            override fun onFailure(call: Call<List<OrderPhoto>>, t: Throwable) {
+                callback(false, null, t.localizedMessage ?: "Ошибка сети")
+            }
+        })
+    }
+
+    /**
+     * Получить список фотографий заказа
+     */
+    fun getOrderPhotos(
+        orderId: String,
+        callback: (success: Boolean, photos: List<OrderPhoto>?, error: String?) -> Unit
+    ) {
+        apiService.getOrderPhotos(orderId).enqueue(object : Callback<List<OrderPhoto>> {
+            override fun onResponse(
+                call: Call<List<OrderPhoto>>,
+                response: Response<List<OrderPhoto>>
+            ) {
+                if (response.isSuccessful) {
+                    callback(true, response.body(), null)
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    callback(false, null, errorBody ?: "Ошибка получения фото")
+                }
+            }
+
+            override fun onFailure(call: Call<List<OrderPhoto>>, t: Throwable) {
+                callback(false, null, t.localizedMessage ?: "Ошибка сети")
+            }
+        })
+    }
+
+    /**
+     * Удалить фотографию заказа
+     */
+    fun deletePhoto(
+        orderId: String,
+        photoId: String,
+        callback: (success: Boolean, error: String?) -> Unit
+    ) {
+        apiService.deletePhoto(orderId, photoId).enqueue(object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                if (response.isSuccessful) {
+                    callback(true, null)
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    callback(false, errorBody ?: "Ошибка удаления фото")
+                }
+            }
+
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                callback(false, t.localizedMessage ?: "Ошибка сети")
             }
         })
     }

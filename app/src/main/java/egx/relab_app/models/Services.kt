@@ -14,6 +14,9 @@ data class Service(
     val description: String,
 
     @SerializedName("price")
-    val price: Double
+    val price: Double,
+
+    @SerializedName("complexity_points")
+    val complexityPoints: Int = 1
 ) : Parcelable
 

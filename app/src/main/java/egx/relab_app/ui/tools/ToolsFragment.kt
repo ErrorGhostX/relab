@@ -28,10 +28,19 @@ class ToolsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+        //Драйвера
+        binding.btnDrivers.setOnClickListener {
+            startDriversDownload()
+        }
+
         // Интерактивная инструкция по пультам
         binding.buttonOpenRemoteGuide.setOnClickListener {
             openRemoteGuideDialog()
+        }
+        
+        // Скачать приложение пульта
+        binding.buttonDownloadRemoteApp.setOnClickListener {
+            openPlayMarket()
         }
         
         // Открыть настройки разработчика
@@ -89,6 +98,33 @@ class ToolsFragment : Fragment() {
         val dialog = RemoteControlGuideDialog()
         dialog.show(parentFragmentManager, "RemoteControlGuide")
     }
+    
+    private fun openPlayMarket() {
+        try {
+            // Пытаемся открыть через Play Market приложение
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("market://details?id=com.tiqiaa.remote")
+                setPackage("com.android.vending")
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Если Play Market не установлен, открываем через браузер
+            try {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://play.google.com/store/apps/details?id=com.tiqiaa.remote")
+                }
+                startActivity(intent)
+            } catch (e2: Exception) {
+                Toast.makeText(requireContext(), "Не удалось открыть Play Market", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun startDriversDownload() {
+        val intent = Intent(requireContext(), DriversDownloadService::class.java)
+        requireContext().startForegroundService(intent)
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

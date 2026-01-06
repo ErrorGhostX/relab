@@ -66,9 +66,32 @@ data class Order(
     val createdByAvatar: String? = null,
 
     @SerializedName("services")
-    val services: List<Service> = emptyList()
+    val services: List<Service> = emptyList(),
 
+    @SerializedName("photos")
+    val photos: List<OrderPhoto> = emptyList(),
 
+    @SerializedName("complexity_percentage")
+    val complexityPercentage: Double? = null,
+
+    @SerializedName("complexity_level")
+    val complexityLevel: String? = null
+
+) : Parcelable
+
+@Parcelize
+data class OrderPhoto(
+    @SerializedName("id")
+    val id: Int? = null,
+    
+    @SerializedName("photo_url")
+    val photoUrl: String? = null,
+    
+    @SerializedName("order_index")
+    val orderIndex: Int = 0,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null
 ) : Parcelable
 
 @Parcelize

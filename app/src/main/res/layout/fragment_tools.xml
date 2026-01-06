@@ -22,7 +22,7 @@
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
+            app:strokeColor="@color/black"
             app:strokeWidth="2dp">
 
             <LinearLayout
@@ -132,9 +132,26 @@
                     android:text="Открыть виртуальный пульт"
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="@color/gray_900"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="8dp" />
+                
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadRemoteApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📱 Скачать приложение пульта (Play Market)"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/gray_400"
+                    android:textColor="@color/gray_900" />
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
+        <Button
+            android:id="@+id/btnDrivers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Скачать драйвера"
+            android:layout_margin="16dp"/>
 
     </LinearLayout>
 </ScrollView>

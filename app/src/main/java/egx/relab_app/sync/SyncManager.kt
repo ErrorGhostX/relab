@@ -299,26 +299,23 @@ class SyncManager(
         orderEntity: OrderEntity,
         order: Order
     ) = withContext(Dispatchers.IO) {
-        // Конвертируем локальный photo путь в Uri, если есть
-        val photoUri = orderEntity.photo?.let { photoPath ->
-            // Извлекаем первый путь к фото (может быть JSON массив или просто путь)
-            val firstPhotoPath = getFirstPhotoPath(photoPath)
-            if (firstPhotoPath != null && !firstPhotoPath.startsWith("http://") && !firstPhotoPath.startsWith("https://")) {
-                // Это локальный файл - конвертируем в Uri
-                val file = java.io.File(firstPhotoPath)
+        // ВАЖНО: Конвертируем все локальные фото в Uri для загрузки
+        val photoUris = getPhotoPathsList(orderEntity.photo)
+            .filter { path -> !path.startsWith("http://") && !path.startsWith("https://") }
+            .mapNotNull { path ->
+                val file = java.io.File(path)
                 if (file.exists()) {
                     android.net.Uri.fromFile(file)
                 } else {
                     null
                 }
-            } else {
-                null
             }
-        }
+        
+        Log.d(TAG, "Создание заказа на сервере с ${photoUris.size} фото")
         
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
-            RetrofitClient.createOrder(context, order, photoUri) { success, code, errorBody, createdOrder ->
+            RetrofitClient.createOrder(context, order, photoUris) { success, code, errorBody, createdOrder ->
                 if (success && createdOrder != null) {
                     continuation.resume(true to createdOrder)
                 } else {
@@ -333,7 +330,11 @@ class SyncManager(
             // ВАЖНО: Обновляем локальный заказ с данными с сервера (включая serverId и статус синхронизации)
             // Передаем localId, чтобы гарантированно обновить правильный заказ
             Log.d(TAG, "Заказ успешно создан на сервере. localId=${orderEntity.localId}, serverId=${serverOrder.id}")
+            Log.d(TAG, "Фото уже загружены при создании заказа: ${serverOrder.photos.size} фото")
             repository.saveOrderFromServer(serverOrder, orderEntity.localId)
+            
+            // ВАЖНО: Фото уже загружены при создании заказа, не нужно загружать повторно
+            // uploadPhotosToServer больше не нужен здесь
             
             // ВАЖНО: Проверяем, что serverId действительно обновлен
             val verify = repository.getOrderEntityByServerId(serverOrder.id!!)
@@ -349,32 +350,142 @@ class SyncManager(
     }
     
     /**
+     * Загрузить все локальные фото на сервер
+     */
+    private suspend fun uploadPhotosToServer(orderEntity: OrderEntity, serverOrderId: Int) = withContext(Dispatchers.IO) {
+        try {
+            val photoPaths = getPhotoPathsList(orderEntity.photo)
+            if (photoPaths.isEmpty()) {
+                Log.d(TAG, "Нет фото для загрузки для заказа $serverOrderId")
+                return@withContext
+            }
+            
+            // Конвертируем пути в Uri (только локальные файлы)
+            val photoUris = photoPaths.mapNotNull { path ->
+                if (!path.startsWith("http://") && !path.startsWith("https://")) {
+                    val file = java.io.File(path)
+                    if (file.exists()) {
+                        android.net.Uri.fromFile(file)
+                    } else {
+                        null
+                    }
+                } else {
+                    null // Уже загружено на сервер
+                }
+            }
+            
+            if (photoUris.isNotEmpty()) {
+                val result = suspendCancellableCoroutine<Pair<Boolean, List<egx.relab_app.models.OrderPhoto>?>> { continuation ->
+                    RetrofitClient.uploadPhotos(context, serverOrderId.toString(), photoUris) { success, photos, error ->
+                        if (success) {
+                            continuation.resume(true to photos)
+                        } else {
+                            continuation.resumeWithException(Exception("Ошибка загрузки фото: $error"))
+                        }
+                    }
+                }
+                Log.d(TAG, "Фото загружены на сервер для заказа $serverOrderId: ${result.second?.size ?: 0} фото")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Ошибка при загрузке фото на сервер для заказа $serverOrderId", e)
+            // Не прерываем синхронизацию из-за ошибки загрузки фото
+        }
+    }
+    
+    /**
+     * Получить список путей к фото из строки (может быть JSON массив или один путь)
+     */
+    private fun getPhotoPathsList(photoString: String?): List<String> {
+        if (photoString.isNullOrEmpty() || photoString == "null") {
+            return emptyList()
+        }
+        
+        try {
+            val trimmed = photoString.trim()
+            if (trimmed.startsWith("[")) {
+                // JSON массив
+                val jsonArray = org.json.JSONArray(trimmed)
+                return List(jsonArray.length()) { index -> jsonArray.getString(index) }
+            } else {
+                // Одно фото
+                return listOf(photoString)
+            }
+        } catch (e: Exception) {
+            // Если не удалось распарсить, пробуем как одно фото
+            return listOf(photoString)
+        }
+    }
+    
+    /**
      * Обновление заказа на сервере
      */
     private suspend fun updateOrderOnServer(
         orderEntity: OrderEntity,
         order: Order
     ) = withContext(Dispatchers.IO) {
-        // Конвертируем локальный photo путь в Uri, если есть
-        val photoUri = orderEntity.photo?.let { photoPath ->
-            // Извлекаем первый путь к фото (может быть JSON массив или просто путь)
-            val firstPhotoPath = getFirstPhotoPath(photoPath)
-            if (firstPhotoPath != null && !firstPhotoPath.startsWith("http://") && !firstPhotoPath.startsWith("https://")) {
-                // Это локальный файл - конвертируем в Uri
-                val file = java.io.File(firstPhotoPath)
+        // ВАЖНО: Приоритет на локальную БД - удаляем фото с сервера, которых нет локально
+        // Сначала получаем текущие фото с сервера
+        val serverPhotos = try {
+            if (order.id != null) {
+                val serverOrder = RetrofitClient.apiService.getOrderById(order.id!!.toString())
+                serverOrder.photos
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка получения фото с сервера: ${e.message}")
+            emptyList()
+        }
+        
+        // Получаем локальные фото из orderEntity.photo (JSON массив URL)
+        val localPhotoUrls = getPhotoPathsList(orderEntity.photo)
+            .filter { path -> path.startsWith("http://") || path.startsWith("https://") }
+            .toSet()
+        
+        Log.d(TAG, "Локальные фото: ${localPhotoUrls.size}, фото на сервере: ${serverPhotos.size}")
+        
+        // Удаляем фото с сервера, которых нет в локальной БД
+        for (serverPhoto in serverPhotos) {
+            if (serverPhoto.id != null && serverPhoto.photoUrl != null) {
+                val photoUrl = serverPhoto.photoUrl!!
+                if (!localPhotoUrls.contains(photoUrl)) {
+                    // Фото есть на сервере, но нет локально - удаляем с сервера
+                    try {
+                        val deleteResult = suspendCancellableCoroutine<Boolean> { continuation ->
+                            RetrofitClient.deletePhoto(order.id!!.toString(), serverPhoto.id!!.toString()) { success, error ->
+                                if (success) {
+                                    Log.d(TAG, "Фото $photoUrl удалено с сервера")
+                                    continuation.resume(true)
+                                } else {
+                                    Log.e(TAG, "Ошибка удаления фото с сервера: $error")
+                                    continuation.resume(false)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ошибка при удалении фото с сервера: ${e.message}")
+                    }
+                }
+            }
+        }
+        
+        // ВАЖНО: Загружаем только новые локальные фото (не URL)
+        val photoUris = getPhotoPathsList(orderEntity.photo)
+            .filter { path -> !path.startsWith("http://") && !path.startsWith("https://") }
+            .mapNotNull { path ->
+                val file = java.io.File(path)
                 if (file.exists()) {
                     android.net.Uri.fromFile(file)
                 } else {
                     null
                 }
-            } else {
-                null
             }
-        }
+        
+        Log.d(TAG, "Обновление заказа на сервере с ${photoUris.size} новыми локальными фото")
         
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
-            RetrofitClient.updateOrder(context, order, photoUri) { isSuccess, code, errorBody, updatedOrder ->
+            RetrofitClient.updateOrder(context, order, photoUris) { isSuccess, code, errorBody, updatedOrder ->
                 if (isSuccess) {
                     continuation.resume(true to updatedOrder)
                 } else {
@@ -388,7 +499,8 @@ class SyncManager(
         val (success, updatedOrder) = result
         if (success) {
             // Обновляем локальный заказ с данными с сервера, сохраняя локальные изменения
-            if (updatedOrder != null) {
+            if (updatedOrder != null && updatedOrder.id != null) {
+                Log.d(TAG, "Заказ обновлен на сервере: ${updatedOrder.photos.size} фото")
                 repository.saveOrderFromServer(updatedOrder, orderEntity.localId)
             } else {
                 // Если сервер не вернул обновленный заказ, просто помечаем как синхронизированный

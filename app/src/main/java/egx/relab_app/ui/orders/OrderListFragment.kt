@@ -110,10 +110,10 @@ class OrderListFragment : Fragment() {
     
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_sync -> {
-                performManualSync()
-                true
-            }
+         //   R.id.action_sync -> {
+         //       performManualSync()
+          //      true
+//          //  }
             R.id.action_clear_database -> {
                 showClearDatabaseDialog()
                 true
@@ -127,14 +127,22 @@ class OrderListFragment : Fragment() {
      */
     private fun showClearDatabaseDialog() {
         val ctx = context ?: return
-        AlertDialog.Builder(ctx)
+        val dialog = AlertDialog.Builder(ctx)
             .setTitle("Очистить базу данных")
-            .setMessage("Вы уверены, что хотите удалить все локальные данные? Это действие нельзя отменить.")
+            .setMessage("Вы точно хотите очистить БД? Вы уверены, что хотите удалить все локальные данные? Это действие нельзя отменить.")
             .setPositiveButton("Очистить") { _, _ ->
                 clearDatabase()
             }
             .setNegativeButton("Отмена", null)
-            .show()
+            .create()
+        
+        dialog.setOnShowListener {
+            // Устанавливаем черный цвет текста для кнопок
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(resources.getColor(R.color.gray_900, null))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(resources.getColor(R.color.gray_900, null))
+        }
+        
+        dialog.show()
     }
     
     /**

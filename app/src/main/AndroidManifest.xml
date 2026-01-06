@@ -17,6 +17,10 @@
         android:theme="@style/Theme.Relab"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
+        <service
+            android:name=".service.DriversDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
 
         <!-- MainActivity -->
         <activity

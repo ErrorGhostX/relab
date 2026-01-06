@@ -19,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
+            app:cardCornerRadius="13dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/gray_200"
             app:strokeColor="@color/gray_900"
@@ -41,7 +41,7 @@
                     app:cardCornerRadius="16dp"
                     app:cardElevation="3dp"
                     app:cardBackgroundColor="@color/gray_200"
-                    app:strokeColor="@color/gray_900"
+                    app:strokeColor="@color/gray_500"
                     app:strokeWidth="2dp">
 
                     <LinearLayout
@@ -53,8 +53,8 @@
 
                         <ImageView
                             android:id="@+id/profileImage"
-                            android:layout_width="106dp"
-                            android:layout_height="100dp"
+                            android:layout_width="104dp"
+                            android:layout_height="103dp"
                             android:background="@drawable/relab"
                             android:clickable="true"
                             android:clipToOutline="true"
@@ -149,21 +149,6 @@
                         android:paddingHorizontal="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Email -->
-                <TextView
-                    android:id="@+id/tvEmail"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Почта: email@example.com"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray_700" />
-                <TextView
-                    android:id="@+id/tvRank"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ранг: —"
-                    android:textSize="16sp"
-                    android:textColor="@color/gray_700" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -194,6 +179,21 @@
                     android:layout_marginBottom="12dp" />
 
 
+                <!-- Email -->
+                <TextView
+                    android:id="@+id/tvEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Почта: email@example.com"
+                    android:textSize="16sp"
+                    android:textColor="@color/gray_900" />
+                <TextView
+                    android:id="@+id/tvRank"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ранг: —"
+                    android:textSize="16sp"
+                    android:textColor="@color/gray_900" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -202,18 +202,19 @@
             android:id="@+id/buttonSaveProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:text="Сохранить изменения"
             android:textColor="@color/white"
-            app:backgroundTint="@color/gray_900"
+            app:backgroundTint="@android:color/holo_green_dark"
             android:layout_marginBottom="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="Выйти из аккаунта"
-            android:textColor="@color/white"
+            android:textColor="@color/error_red"
             app:backgroundTint="@color/gray_900" />
 
     </LinearLayout>

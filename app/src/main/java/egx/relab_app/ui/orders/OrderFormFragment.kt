@@ -96,9 +96,14 @@ class OrderFormFragment : Fragment() {
         binding.orderTypeSpinner.setAdapter(typeAdapter)
         binding.statusSpinner.setAdapter(statusAdapter)
 
-        // значения по умолчанию (чтобы hint не прыгал)
-        binding.orderTypeSpinner.setText(types.first(), false)
-        binding.statusSpinner.setText(statuses.first(), false)
+        // ВАЖНО: В режиме редактирования не устанавливаем значения по умолчанию
+        // Они будут установлены в populateEditFields()
+        if (!isEditMode) {
+            // значения по умолчанию только для нового заказа (чтобы hint не прыгал)
+            binding.orderTypeSpinner.setText(types.first(), false)
+            binding.statusSpinner.setText(statuses.first(), false)
+            binding.textViewSelectedDate.text = "Выберите дату"
+        }
 
         binding.orderTypeSpinner.setOnItemClickListener { _, _, position, _ ->
             val selectedType = types[position]
@@ -118,6 +123,7 @@ class OrderFormFragment : Fragment() {
             val calendar = Calendar.getInstance()
             val datePicker = DatePickerDialog(
                 requireContext(),
+                android.R.style.Theme_Material_Light_Dialog,
                 { _, year, month, day ->
                     selectedDate = "%04d-%02d-%02d".format(year, month + 1, day)
                     binding.textViewSelectedDate.text = selectedDate
@@ -126,6 +132,67 @@ class OrderFormFragment : Fragment() {
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
             )
+            // Устанавливаем черный цвет текста для DatePickerDialog
+            datePicker.setOnShowListener {
+                try {
+                    val blackColor = resources.getColor(R.color.gray_900, null)
+                    
+                    // Получаем корневой view диалога
+                    val dialogView = datePicker.window?.decorView
+                    val datePickerView = datePicker.datePicker
+                    
+                    // Устанавливаем черный цвет текста для всех найденных TextView рекурсивно
+                    fun setTextColorRecursive(view: View?) {
+                        if (view == null) return
+                        
+                        when (view) {
+                            is android.widget.TextView -> {
+                                view.setTextColor(blackColor)
+                                // Также устанавливаем цвет hint, если есть
+                                if (view.hint != null) {
+                                    view.setHintTextColor(blackColor)
+                                }
+                            }
+                            is android.view.ViewGroup -> {
+                                for (i in 0 until view.childCount) {
+                                    setTextColorRecursive(view.getChildAt(i))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Применяем ко всему диалогу и DatePicker
+                    dialogView?.let { setTextColorRecursive(it) }
+                    setTextColorRecursive(datePickerView)
+                    
+                    // Дополнительно: устанавливаем цвет для кнопок диалога
+                    datePicker.getButton(DatePickerDialog.BUTTON_POSITIVE)?.setTextColor(blackColor)
+                    datePicker.getButton(DatePickerDialog.BUTTON_NEGATIVE)?.setTextColor(blackColor)
+                    
+                    // Используем рефлексию для установки цвета в NumberPicker (используется внутри DatePicker)
+                    try {
+                        val numberPickerFields = datePickerView.javaClass.declaredFields
+                        for (field in numberPickerFields) {
+                            if (field.type.name.contains("NumberPicker")) {
+                                field.isAccessible = true
+                                val numberPicker = field.get(datePickerView) as? android.widget.NumberPicker
+                                numberPicker?.let { np ->
+                                    // Устанавливаем цвет для всех TextView в NumberPicker
+                                    for (i in 0 until np.childCount) {
+                                        val child = np.getChildAt(i)
+                                        setTextColorRecursive(child)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.d("OrderForm", "Не удалось установить цвет через рефлексию: ${e.message}")
+                    }
+                } catch (e: Exception) {
+                    // Игнорируем ошибки, если не удалось установить цвет
+                    android.util.Log.d("OrderForm", "Не удалось установить цвет текста для DatePicker: ${e.message}")
+                }
+            }
             datePicker.show()
         }
 
@@ -333,7 +400,7 @@ class OrderFormFragment : Fragment() {
         setupAutocompleteWithDeviceDB(binding.editTextManufacturer, AutocompleteFieldType.MANUFACTURER)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceType, AutocompleteFieldType.DEVICE_TYPE)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceName, AutocompleteFieldType.DEVICE_NAME)
-        setupAutocompleteWithDeviceDB(binding.editTextModel, AutocompleteFieldType.MODEL)
+        //setupAutocompleteWithDeviceDB(binding.editTextModel, AutocompleteFieldType.MODEL)
         
         // Для остальных полей используем статический список из существующих заказов
         setupAutocompleteAdapter(binding.editTextCustomerName, customers)
@@ -440,16 +507,33 @@ class OrderFormFragment : Fragment() {
         binding.editTextDeviceName.setText(o.deviceName)
         binding.editTextDeviceType.setText(o.deviceType)
         binding.editTextManufacturer.setText(o.manufacturer)
-        binding.editTextModel.setText(o.model)
+        //binding.editTextModel.setText(o.model)
         binding.editTextKit.setText(o.kit)
         binding.editTextDescription.setText(o.description)
         selectedDate = o.date
-        binding.textViewSelectedDate.text = o.date
-        reverseOrderTypeMap[o.orderType]?.let {
-            binding.orderTypeSpinner.setSelection((binding.orderTypeSpinner.adapter as ArrayAdapter<String>).getPosition(it))
+        // ВАЖНО: Если дата есть, показываем её, иначе показываем "Выберите дату"
+        binding.textViewSelectedDate.text = o.date ?: "Выберите дату"
+        reverseOrderTypeMap[o.orderType]?.let { orderTypeText ->
+            // ВАЖНО: Для AutoCompleteTextView используем только setText, не setSelection
+            // setSelection может вызвать IndexOutOfBoundsException если текст пустой
+            try {
+                binding.orderTypeSpinner.setText(orderTypeText, false)
+            } catch (e: Exception) {
+                android.util.Log.e("OrderForm", "Ошибка установки orderType: ${e.message}")
+                // Пробуем установить текст без фильтрации
+                binding.orderTypeSpinner.setText(orderTypeText)
+            }
         }
-        reverseStatusMap[o.status]?.let {
-            binding.statusSpinner.setSelection((binding.statusSpinner.adapter as ArrayAdapter<String>).getPosition(it))
+        reverseStatusMap[o.status]?.let { statusText ->
+            // ВАЖНО: Для AutoCompleteTextView используем только setText, не setSelection
+            // setSelection может вызвать IndexOutOfBoundsException если текст пустой
+            try {
+                binding.statusSpinner.setText(statusText, false)
+            } catch (e: Exception) {
+                android.util.Log.e("OrderForm", "Ошибка установки status: ${e.message}")
+                // Пробуем установить текст без фильтрации
+                binding.statusSpinner.setText(statusText)
+            }
         }
     }
 
@@ -499,8 +583,8 @@ class OrderFormFragment : Fragment() {
                             // Если нет serverId, ищем по orderNumber
                             if (filledOrder.orderNumber != null) {
                                 val allEntities = repository.getAllOrderEntities()
-                                allEntities.firstOrNull { 
-                                    it.orderNumber == filledOrder.orderNumber && !it.isDeleted 
+                                allEntities.firstOrNull {
+                                    it.orderNumber == filledOrder.orderNumber && !it.isDeleted
                                 }?.localId
                             } else {
                                 null
@@ -508,15 +592,20 @@ class OrderFormFragment : Fragment() {
                         }
                         foundId ?: throw Exception("Не найден локальный ID заказа")
                     }
-                    
+
                     // Сохраняем фото локально перед обновлением заказа
                     val orderWithPhoto = if (selectedPhotoUris.isNotEmpty()) {
+                        // Пользователь выбрал новые фото — пересохраняем их
                         val photoPath = savePhotosLocally(selectedPhotoUris)
                         filledOrder.copy(photo = photoPath)
                     } else {
-                        filledOrder
+                        // Фото не менялись — сохраняем уже существующие пути к фото,
+                        // чтобы не потерять локальные несколько фотографий
+                        val existingEntity = repository.getOrderByServerId(filledOrder.id ?: 0)
+                        val existingPhoto = existingEntity?.photo ?: args.order?.photo
+                        filledOrder.copy(photo = existingPhoto)
                     }
-                    
+
                     // ВАЖНО: Обновляем СРАЗУ в локальной БД (статус PENDING)
                     repository.updateOrder(localId, orderWithPhoto)
                     android.util.Log.d("OrderForm", "Заказ обновлен локально. localId: $localId")
@@ -567,7 +656,13 @@ class OrderFormFragment : Fragment() {
 
     private fun buildNewOrder(): Order {
         // Форматируем дату в формат YYYY-MM-DD
-        val dateString = formatDateForServer(binding.textViewSelectedDate.text.toString())
+        // ВАЖНО: Если дата не выбрана, возвращаем null вместо текущей даты
+        val dateText = binding.textViewSelectedDate.text.toString()
+        val dateString = if (dateText.isNotBlank() && dateText != "Выберите дату") {
+            formatDateForServer(dateText)
+        } else {
+            null  // Не выбрана дата
+        }
 
         // Получаем выбранные значения из MaterialAutoCompleteTextView
         val statusSelected = binding.statusSpinner.text.toString()
@@ -583,7 +678,7 @@ class OrderFormFragment : Fragment() {
             deviceName = binding.editTextDeviceName.text.toString(),
             deviceType = binding.editTextDeviceType.text.toString(),
             manufacturer = binding.editTextManufacturer.text.toString(),
-            model = binding.editTextModel.text.toString(),
+            //model = binding.editTextModel.text.toString(),
             kit = binding.editTextKit.text.toString(),
             description = binding.editTextDescription.text.toString(),
             date = dateString,
@@ -656,10 +751,31 @@ class OrderFormFragment : Fragment() {
 
     private fun buildUpdatedOrder(): Order {
         val originalOrder = args.order!!
+        val newOrder = buildNewOrder()
+        
+        // ВАЖНО: При обновлении сохраняем старые значения даты и статуса, если они не были изменены
+        val finalDate = if (newOrder.date.isNullOrBlank() || newOrder.date == "Выберите дату") {
+            // Если дата не выбрана, используем старую дату
+            originalOrder.date
+        } else {
+            // Если дата выбрана, используем новую
+            newOrder.date
+        }
+        
+        val finalStatus = if (newOrder.status == "new" && originalOrder.status != "new") {
+            // Если статус не был изменен (остался "new"), используем старый статус
+            originalOrder.status
+        } else {
+            // Если статус был изменен, используем новый
+            newOrder.status
+        }
+        
         // При обновлении сохраняем данные создателя из оригинального заказа, если они есть
         // Иначе используем данные текущего пользователя
-        return buildNewOrder().copy(
+        return newOrder.copy(
             id = originalOrder.id,
+            date = finalDate,
+            status = finalStatus,
             createdByUsername = originalOrder.createdByUsername ?: tokenManager.username,
             createdByFullName = originalOrder.createdByFullName ?: tokenManager.fullName,
             createdByAvatar = originalOrder.createdByAvatar ?: tokenManager.avatarUrl

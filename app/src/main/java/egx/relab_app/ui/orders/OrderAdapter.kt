@@ -73,7 +73,7 @@ class OrderAdapter(
             }
             
             // ВАЖНО: Показываем номер заказа
-            binding.orderNumberText.text = "Номер: ${order.orderNumber ?: "-"}"
+            // binding.orderNumberText.text = "Номер: ${order.orderNumber ?: "-"}"
             
             binding.deviceNameText.text = "Устройство: ${order.deviceName}"
 
@@ -100,6 +100,15 @@ class OrderAdapter(
             // Статус внизу
             binding.orderStatusText.text = "Статус: ${order.status}"
             
+            // Отображение сложности заказа
+            val complexityText = if (order.complexityPercentage != null) {
+                val level = order.complexityLevel ?: getComplexityLevel(order.complexityPercentage!!)
+                "Сложность: ${"%.0f".format(order.complexityPercentage)}% ($level)"
+            } else {
+                "Сложность: не рассчитана"
+            }
+            binding.orderComplexityText.text = complexityText
+            
             // Фото заказа - обрабатываем 404 ошибки и JSON массивы
             val firstPhotoPath = getFirstPhotoPath(order.photo)
             if (!firstPhotoPath.isNullOrEmpty()) {
@@ -113,16 +122,28 @@ class OrderAdapter(
                 
                 Glide.with(binding.root.context)
                     .load(imageSource)
-                    .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.placeholder_image)
-                    .fallback(R.drawable.placeholder_image)
+                    .placeholder(R.drawable.ic_menu_camera)
+                    .error(android.R.drawable.dark_header)
+                    .fallback(R.drawable.ic_menu_camera)
                     .into(binding.orderImage)
             } else {
-                binding.orderImage.setImageResource(R.drawable.placeholder_image)
+                binding.orderImage.setImageResource(R.drawable.ic_menu_camera)
             }
 
             binding.root.setOnClickListener {
                 onClick(order)
+            }
+        }
+        
+        /**
+         * Получить текстовый уровень сложности на основе процента
+         */
+        private fun getComplexityLevel(percentage: Double): String {
+            return when {
+                percentage < 30 -> "Простая"
+                percentage < 60 -> "Средняя"
+                percentage < 80 -> "Высокая"
+                else -> "Очень высокая"
             }
         }
     }

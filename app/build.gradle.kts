@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "egx.relab_app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "egx.relab_app"
         minSdk = 25
-        targetSdk = 34
-        versionCode = 6
-        versionName = "alpha.6.0.0"
+        targetSdk = 36
+        versionCode = 7
+        versionName = "alpha.7.3.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -34,6 +34,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -58,6 +59,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.room.common.jvm)
+    implementation(libs.firebase.crashlytics.buildtools)
     kapt(libs.compiler)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -72,5 +74,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
 }

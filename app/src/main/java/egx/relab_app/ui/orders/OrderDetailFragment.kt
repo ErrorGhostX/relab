@@ -82,18 +82,52 @@ class OrderDetailFragment : Fragment() {
 
 
 
-// Преобразуем JSON-массив строк в List<String>
-        val photosJson = currentOrder.photo // это строка типа '["path1","path2"]'
+// Получаем список фото: сначала из photos (с сервера), затем из photo (локально или старое поле)
         val photos: List<String> = try {
-            if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
-                val jsonArray = JSONArray(photosJson)
-                List(jsonArray.length()) { index -> jsonArray.getString(index) }
-            } else if (!photosJson.isNullOrEmpty()) {
-                listOf(photosJson) // просто один URL
+            android.util.Log.d("OrderDetail", "Загрузка фото: photos.size = ${currentOrder.photos.size}, photo = ${currentOrder.photo}")
+            
+            // ВАЖНО: Приоритет на фото с сервера (photos)
+            if (currentOrder.photos.isNotEmpty()) {
+                // Фото с сервера - используем photoUrl, убираем дубликаты
+                val photoUrls = currentOrder.photos
+                    .mapNotNull { it.photoUrl }
+                    .distinct() // ВАЖНО: Убираем дубликаты URL
+                android.util.Log.d("OrderDetail", "Используем фото из photos: ${photoUrls.size} уникальных фото (было ${currentOrder.photos.size})")
+                photoUrls.forEachIndexed { index, url -> 
+                    android.util.Log.d("OrderDetail", "Фото $index: $url")
+                }
+                photoUrls
             } else {
-                emptyList()
+                // Fallback на локальные фото или старое поле photo
+                val photosJson = currentOrder.photo // это строка типа '["path1","path2"]' или URL
+                android.util.Log.d("OrderDetail", "Используем fallback photo: $photosJson")
+                
+                if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
+                    // JSON массив локальных путей - убираем дубликаты
+                    val jsonArray = JSONArray(photosJson)
+                    val photoList = mutableListOf<String>()
+                    val seenUrls = mutableSetOf<String>()
+                    
+                    for (i in 0 until jsonArray.length()) {
+                        val url = jsonArray.getString(i)
+                        if (!seenUrls.contains(url)) {
+                            seenUrls.add(url)
+                            photoList.add(url)
+                        }
+                    }
+                    android.util.Log.d("OrderDetail", "Извлечено ${photoList.size} уникальных фото из JSON массива (было ${jsonArray.length()})")
+                    photoList
+                } else if (!photosJson.isNullOrEmpty()) {
+                    // Одно фото (URL или локальный путь)
+                    android.util.Log.d("OrderDetail", "Одно фото: $photosJson")
+                    listOf(photosJson)
+                } else {
+                    android.util.Log.d("OrderDetail", "Нет фото")
+                    emptyList()
+                }
             }
         } catch (e: Exception) {
+            android.util.Log.e("OrderDetail", "Ошибка при загрузке фото: ${e.message}", e)
             emptyList()
         }
 
@@ -114,6 +148,8 @@ class OrderDetailFragment : Fragment() {
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 updateArrows()
+                // Обновляем видимость кнопки удаления
+                binding.btnDeletePhoto.visibility = if (photos.isEmpty()) View.GONE else View.VISIBLE
             }
         })
 
@@ -126,6 +162,15 @@ class OrderDetailFragment : Fragment() {
             val next = viewPager.currentItem + 1
             if (next < photoAdapter.itemCount) viewPager.currentItem = next
         }
+        
+        // Кнопка удаления текущего фото
+        binding.btnDeletePhoto.setOnClickListener {
+            val currentPosition = viewPager.currentItem
+            if (currentPosition >= 0) {
+                showDeletePhotoDialog(currentPosition)
+            }
+        }
+        
 
         // Загрузка заказа из локальной БД
         lifecycleScope.launch {
@@ -136,9 +181,6 @@ class OrderDetailFragment : Fragment() {
                 if (currentOrder.id != null) {
                     loadOrderDetailsFromServer()
                 }
-
-                // После обновления можно обновить фото в адаптере
-                photoAdapter.notifyDataSetChanged()
             } catch (e: Exception) {
                 android.util.Log.e("OrderDetail", "Ошибка загрузки из локальной БД", e)
             }
@@ -323,14 +365,26 @@ class OrderDetailFragment : Fragment() {
         deviceName.text = formatText("Устройство: ${order.deviceName}")
         deviceType.text = formatText("Тип: ${order.deviceType}")
         manufacturer.text = formatText("Производитель: ${order.manufacturer}")
-        model.text = formatText("Модель: ${order.model}")
+        //model.text = formatText("Модель: ${order.model}")
         kit.text = formatText("Комплектация: ${order.kit}")
         description.text = formatText("Описание: ${order.description}")
         date.text = formatText("Дата: ${order.date}")
         orderType.text = formatText("Тип заказа: ${orderTypeMap[order.orderType] ?: order.orderType}")
         status.text = formatText("Статус: ${statusMap[order.status] ?: order.status}")
+        
+        // Отображение сложности заказа
+        val complexityText = if (order.complexityPercentage != null) {
+            val level = order.complexityLevel ?: getComplexityLevel(order.complexityPercentage!!)
+            "Сложность: ${"%.1f".format(order.complexityPercentage)}% ($level)"
+        } else {
+            "Сложность: не рассчитана"
+        }
+        binding.orderComplexity.text = formatText(complexityText)
 
         displayServices(order)
+        
+        // ВАЖНО: Обновляем список фото после обновления UI
+        updatePhotosList()
     }
 
     private fun displayServices(order: Order) {
@@ -347,8 +401,10 @@ class OrderDetailFragment : Fragment() {
         }
         order.services.forEachIndexed { index, svc ->
             val row = layoutInflater.inflate(R.layout.item_service, container, false)
-            row.findViewById<TextView>(R.id.tvServiceDesc).text =
-                "${svc.description}: ${"%.2f".format(svc.price)} ₽"
+            // Отображаем услугу с баллами сложности
+            val serviceText = "${svc.description}: ${"%.2f".format(svc.price)} ₽"
+            val complexityText = " (сложность: ${svc.complexityPoints}/10)"
+            row.findViewById<TextView>(R.id.tvServiceDesc).text = serviceText + complexityText
 
             row.findViewById<ImageButton>(R.id.btnDeleteService).setOnClickListener {
                 // ВАЖНО: Удаление работает локально в первую очередь
@@ -400,6 +456,7 @@ class OrderDetailFragment : Fragment() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_service, null)
         val etDesc = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDescription)
         val etPrice = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etPrice)
+        val etComplexity = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etComplexity)
         val recyclerViewPreset = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recyclerViewPresetServices)
 
         // Настраиваем RecyclerView для предустановленных услуг
@@ -423,12 +480,14 @@ class OrderDetailFragment : Fragment() {
             positiveButton.setOnClickListener {
                 val desc = etDesc.text.toString().trim()
                 val priceText = etPrice.text.toString().trim()
+                val complexityText = etComplexity?.text?.toString()?.trim() ?: "1"
+                val complexity = complexityText.toIntOrNull()?.coerceIn(1, 10) ?: 1
 
                 if (desc.isEmpty() || priceText.isEmpty()) {
-                    showToast("Заполните оба поля")
+                    showToast("Заполните обязательные поля")
                 } else {
                     priceText.toDoubleOrNull()?.let { price ->
-                        addServiceToOrder(desc, price)
+                        addServiceToOrder(desc, price, complexity)
                         dialog.dismiss()
                     } ?: showToast("Некорректная цена")
                 }
@@ -479,7 +538,7 @@ class OrderDetailFragment : Fragment() {
      * 3. Синхронизирует с сервером в ФОНОВОМ режиме
      * 4. Не ждет ответа от сервера - приложение работает автономно
      */
-    private fun addServiceToOrder(description: String, price: Double) {
+    private fun addServiceToOrder(description: String, price: Double, complexityPoints: Int = 1) {
         lifecycleScope.launch {
             try {
                 // Находим заказ в локальной БД
@@ -500,7 +559,8 @@ class OrderDetailFragment : Fragment() {
                         orderLocalId = orderEntity.localId,
                         orderServerId = currentOrder.id,
                         description = description,
-                        price = price
+                        price = price,
+                        complexityPoints = complexityPoints
                     )
 
                     // Обновляем UI СРАЗУ из локальной БД
@@ -513,7 +573,7 @@ class OrderDetailFragment : Fragment() {
                     if (currentOrder.id != null) {
                         // Пытаемся синхронизировать с сервером в фоне
                         try {
-                            RetrofitClient.addService(currentOrder.id!!.toString(), description, price) { success, _, error ->
+                            RetrofitClient.addService(currentOrder.id!!.toString(), description, price, complexityPoints) { success, _, error ->
                                 if (success) {
                                     android.util.Log.d("OrderDetail", "Услуга синхронизирована с сервером")
                                     // Обновляем заказ с сервера в фоне
@@ -662,17 +722,26 @@ class OrderDetailFragment : Fragment() {
                 if (currentOrder.id != null && isAdded) {
                     // Пытаемся загрузить с сервера в фоне
                     val updatedOrder = withContext(Dispatchers.IO) {
-                        RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                        android.util.Log.d("OrderDetail", "Загрузка заказа ${currentOrder.id} с сервера")
+                        val order = RetrofitClient.apiService.getOrderById(currentOrder.id!!.toString())
+                        android.util.Log.d("OrderDetail", "Заказ загружен: photos.size = ${order.photos.size}")
+                        order.photos.forEachIndexed { index, photo ->
+                            android.util.Log.d("OrderDetail", "Фото $index с сервера: id=${photo.id}, photoUrl=${photo.photoUrl}, orderIndex=${photo.orderIndex}")
+                        }
+                        order
                     }
 
                     // Сохраняем обновленный заказ в локальную БД
                     // ВАЖНО: saveOrderFromServer не перезапишет локальные изменения (PENDING статус)
+                    android.util.Log.d("OrderDetail", "Сохранение заказа в локальную БД")
                     repository.saveOrderFromServer(updatedOrder)
 
                     // Обновляем UI только если фрагмент еще прикреплен
                     if (isAdded) {
                         // Загружаем обновленные данные из локальной БД
                         loadFromLocalDatabase()
+                        // Обновляем фото после загрузки с сервера
+                        updatePhotosList()
                     }
                 }
             } catch (e: Exception) {
@@ -681,6 +750,43 @@ class OrderDetailFragment : Fragment() {
                 // Не показываем ошибку пользователю - приложение работает автономно
             }
         }
+    }
+
+    /**
+     * Обновить список фото в адаптере
+     */
+    private fun updatePhotosList() {
+        val photos: List<String> = try {
+            // ВАЖНО: Приоритет на фото с сервера (photos)
+            if (currentOrder.photos.isNotEmpty()) {
+                // Убираем дубликаты URL
+                currentOrder.photos.mapNotNull { it.photoUrl }.distinct()
+            } else {
+                val photosJson = currentOrder.photo
+                if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
+                    val jsonArray = JSONArray(photosJson)
+                    List(jsonArray.length()) { index -> jsonArray.getString(index) }
+                } else if (!photosJson.isNullOrEmpty()) {
+                    listOf(photosJson)
+                } else {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        
+        // Обновляем адаптер с новым списком фото
+        val newAdapter = PhotoPagerAdapter(photos)
+        binding.photosViewPager.adapter = newAdapter
+        
+        // Обновляем стрелки и кнопку удаления
+        fun updateArrows() {
+            binding.btnLeft.visibility = if (binding.photosViewPager.currentItem > 0) View.VISIBLE else View.INVISIBLE
+            binding.btnRight.visibility = if (binding.photosViewPager.currentItem < newAdapter.itemCount - 1) View.VISIBLE else View.INVISIBLE
+            binding.btnDeletePhoto.visibility = if (photos.isEmpty()) View.GONE else View.VISIBLE
+        }
+        updateArrows()
     }
 
     /**
@@ -726,6 +832,27 @@ class OrderDetailFragment : Fragment() {
             }
 
             if (localOrder != null && isAdded) {
+                android.util.Log.d("OrderDetail", "loadFromLocalDatabase: заказ найден, photos.size = ${localOrder.photos.size}, photo = ${localOrder.photo}")
+                localOrder.photos.forEachIndexed { index, photo ->
+                    android.util.Log.d("OrderDetail", "Фото $index из локальной БД: id=${photo.id}, photoUrl=${photo.photoUrl}, orderIndex=${photo.orderIndex}")
+                }
+                
+                // ВАЖНО: Загружаем photos с сервера, если есть serverId
+                var orderWithPhotos = localOrder
+                if (localOrder.id != null && localOrder.photos.isEmpty()) {
+                    try {
+                        val photos = withContext(Dispatchers.IO) {
+                            RetrofitClient.apiService.getOrderPhotos(localOrder.id!!.toString()).execute().body() ?: emptyList()
+                        }
+                        if (photos.isNotEmpty()) {
+                            android.util.Log.d("OrderDetail", "Загружено ${photos.size} фото с сервера")
+                            orderWithPhotos = localOrder.copy(photos = photos)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.d("OrderDetail", "Не удалось загрузить фото с сервера (офлайн режим): ${e.message}")
+                    }
+                }
+                
                 // Загружаем услуги для заказа
                 if (orderEntity != null) {
                     val servicesFlow = repository.getServicesForOrder(orderEntity.localId)
@@ -735,15 +862,17 @@ class OrderDetailFragment : Fragment() {
                     } catch (e: Exception) {
                         emptyList()
                     }
-                    val orderWithServices = localOrder.copy(services = servicesList)
+                    val orderWithServices = orderWithPhotos.copy(services = servicesList)
                     if (isAdded) {
                         currentOrder = orderWithServices
                         bindOrderToUI(orderWithServices)
+                        updatePhotosList()
                     }
                 } else {
                     if (isAdded) {
-                        currentOrder = localOrder
-                        bindOrderToUI(localOrder)
+                        currentOrder = orderWithPhotos
+                        bindOrderToUI(orderWithPhotos)
+                        updatePhotosList()
                     }
                 }
             }
@@ -964,6 +1093,189 @@ class OrderDetailFragment : Fragment() {
     }
 
     /**
+     * Показать диалог подтверждения удаления фото
+     */
+    private fun showDeletePhotoDialog(position: Int) {
+        // Получаем список фото для отображения
+        val photosList = try {
+            if (currentOrder.photos.isNotEmpty()) {
+                currentOrder.photos.mapNotNull { it.photoUrl }.distinct()
+            } else {
+                val photosJson = currentOrder.photo
+                if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
+                    val jsonArray = JSONArray(photosJson)
+                    List(jsonArray.length()) { index -> jsonArray.getString(index) }
+                } else if (!photosJson.isNullOrEmpty()) {
+                    listOf(photosJson)
+                } else {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        
+        if (position < 0 || position >= photosList.size) {
+            showToast("Ошибка: фото не найдено")
+            return
+        }
+        
+        val photoUrl = photosList[position]
+        // Находим соответствующее фото в currentOrder.photos
+        val photo = currentOrder.photos.firstOrNull { it.photoUrl == photoUrl }
+        
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Удалить фото?")
+            .setMessage("Вы уверены, что хотите удалить это фото?")
+            .setPositiveButton("Удалить") { _, _ ->
+                if (photo != null) {
+                    deletePhoto(photo)
+                } else {
+                    // Если фото нет в списке photos, удаляем по URL из локального JSON
+                    deletePhotoByUrl(photoUrl)
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+    
+    /**
+     * Удалить фото по объекту OrderPhoto
+     */
+    private fun deletePhoto(photo: egx.relab_app.models.OrderPhoto) {
+        lifecycleScope.launch {
+            try {
+                // Если фото есть на сервере (имеет id), удаляем с сервера
+                if (photo.id != null && currentOrder.id != null) {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            RetrofitClient.apiService.deletePhoto(currentOrder.id!!.toString(), photo.id!!.toString())
+                            android.util.Log.d("OrderDetail", "Фото ${photo.id} удалено с сервера")
+                        } catch (e: Exception) {
+                            android.util.Log.e("OrderDetail", "Ошибка удаления фото с сервера", e)
+                            // Продолжаем удаление локально даже если сервер недоступен
+                        }
+                    }
+                }
+                
+                // Удаляем фото из локального списка
+                val updatedPhotos = currentOrder.photos.filter { it.photoUrl != photo.photoUrl }
+                
+                // ВАЖНО: Обновляем поле photo в Order, конвертируя список фото в JSON
+                val updatedPhotoJson = if (updatedPhotos.isNotEmpty()) {
+                    val jsonArray = org.json.JSONArray()
+                    updatedPhotos.forEach { photoItem ->
+                        photoItem.photoUrl?.let { jsonArray.put(it) }
+                    }
+                    val jsonString = jsonArray.toString()
+                    android.util.Log.d("OrderDetail", "Обновленный JSON фото после удаления: $jsonString (${updatedPhotos.size} фото)")
+                    jsonString
+                } else {
+                    android.util.Log.d("OrderDetail", "Все фото удалены, photoJson = null")
+                    null
+                }
+                
+                // Обновляем заказ
+                val updatedOrder = currentOrder.copy(
+                    photos = updatedPhotos,
+                    photo = updatedPhotoJson
+                )
+                currentOrder = updatedOrder
+                
+                android.util.Log.d("OrderDetail", "Удаление фото: было ${currentOrder.photos.size + 1}, стало ${updatedPhotos.size}")
+                
+                // Сохраняем в локальную БД
+                val existingEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else {
+                    null
+                }
+                if (existingEntity != null) {
+                    android.util.Log.d("OrderDetail", "Сохранение обновленного заказа в БД: localId=${existingEntity.localId}, photo=$updatedPhotoJson")
+                    repository.updateOrder(existingEntity.localId, updatedOrder)
+                    
+                    // ВАЖНО: Перезагружаем данные из локальной БД, чтобы обновить currentOrder
+                    loadFromLocalDatabase()
+                    
+                    // Обновляем UI после перезагрузки данных
+                    updatePhotosList()
+                    showToast("Фото удалено")
+                } else {
+                    android.util.Log.e("OrderDetail", "Не удалось найти заказ в локальной БД для обновления")
+                    showToast("Ошибка: заказ не найден в локальной БД")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка при удалении фото", e)
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Удалить фото по URL (для локальных фото без id)
+     */
+    private fun deletePhotoByUrl(photoUrl: String) {
+        lifecycleScope.launch {
+            try {
+                // Удаляем фото из локального списка
+                val updatedPhotos = currentOrder.photos.filter { it.photoUrl != photoUrl }
+                
+                // Также удаляем из JSON поля photo, если оно есть
+                val photosJson = currentOrder.photo
+                val updatedPhotoJson = if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
+                    try {
+                        val jsonArray = JSONArray(photosJson)
+                        val newArray = JSONArray()
+                        for (i in 0 until jsonArray.length()) {
+                            val url = jsonArray.getString(i)
+                            if (url != photoUrl) {
+                                newArray.put(url)
+                            }
+                        }
+                        if (newArray.length() > 0) newArray.toString() else null
+                    } catch (e: Exception) {
+                        null
+                    }
+                } else if (photosJson == photoUrl) {
+                    null
+                } else {
+                    photosJson
+                }
+                
+                // Обновляем заказ
+                val updatedOrder = currentOrder.copy(
+                    photos = updatedPhotos,
+                    photo = updatedPhotoJson
+                )
+                currentOrder = updatedOrder
+                
+                // Сохраняем в локальную БД
+                val existingEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else {
+                    null
+                }
+                if (existingEntity != null) {
+                    repository.updateOrder(existingEntity.localId, updatedOrder)
+                    
+                    // ВАЖНО: Перезагружаем данные из локальной БД, чтобы обновить currentOrder
+                    loadFromLocalDatabase()
+                    
+                    // Обновляем UI после перезагрузки данных
+                    updatePhotosList()
+                    showToast("Фото удалено")
+                } else {
+                    android.util.Log.e("OrderDetail", "Не удалось найти заказ в локальной БД для обновления")
+                    showToast("Ошибка: заказ не найден в локальной БД")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OrderDetail", "Ошибка при удалении фото", e)
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+    
+    /**
      * Показать диалог подтверждения удаления заказа
      */
     private fun showDeleteConfirmationDialog() {
@@ -1032,6 +1344,18 @@ class OrderDetailFragment : Fragment() {
     private fun showToast(message: String) {
         if (isAdded && context != null) {
             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Получить текстовый уровень сложности на основе процента
+     */
+    private fun getComplexityLevel(percentage: Double): String {
+        return when {
+            percentage < 30 -> "Простая"
+            percentage < 60 -> "Средняя"
+            percentage < 80 -> "Высокая"
+            else -> "Очень высокая"
         }
     }
 

@@ -45,7 +45,7 @@
                 android:src="@android:drawable/ic_media_play"
                 android:rotation="180"
                 android:contentDescription="Previous"
-                app:tint="@color/black"
+                app:tint="@android:color/holo_blue_dark"
                 android:elevation="8dp"/>
 
             <!-- Правая стрелка -->
@@ -57,8 +57,21 @@
                 android:background="@android:color/transparent"
                 android:src="@android:drawable/ic_media_play"
                 android:contentDescription="Next"
-                app:tint="@color/black"
+                app:tint="@android:color/holo_blue_dark"
                 android:elevation="8dp"/>
+            
+            <!-- Кнопка удаления текущего фото -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnDeletePhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="10dp"
+                android:src="@drawable/trash_can_svgrepo_com"
+                app:tint="@color/white"
+                app:backgroundTint="@color/error_red"
+                android:contentDescription="Удалить фото"
+                android:elevation="5dp"/>
         </FrameLayout>
 
 
@@ -231,6 +244,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -240,6 +254,12 @@
                     android:textColor="@color/gray_900"
                     android:layout_marginBottom="12dp" />
 
+                <!-- Разделитель -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="6dp"
+                    android:background="@color/gray_900" />
                 <TextView
                     style="@style/DetailTextStyleBlack"
                     android:id="@+id/customer"
@@ -295,12 +315,13 @@
                     style="@style/DetailHeaderTextStyleBlack"
                     android:text="Устройство"
                     android:textColor="@color/gray_900"/>
+                <!-- Разделитель -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="6dp"
+                    android:background="@color/gray_900" />
 
-                <TextView
-                    style="@style/DetailTextStyleBlack"
-                    android:id="@+id/deviceName"
-                    android:text="Название: iPhone 12"
-                    android:textColor="@color/gray_900"/>
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
@@ -313,12 +334,12 @@
                     android:id="@+id/manufacturer"
                     android:text="Производитель: Apple"
                     android:textColor="@color/gray_900"/>
-
                 <TextView
                     style="@style/DetailTextStyleBlack"
-                    android:id="@+id/model"
-                    android:text="Модель: 12 Pro"
+                    android:id="@+id/deviceName"
+                    android:text="Модель: iPhone 12"
                     android:textColor="@color/gray_900"/>
+
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
@@ -367,6 +388,12 @@
                     style="@style/DetailTextStyleBlack"
                     android:id="@+id/status"
                     android:text="Статус: В процессе"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/orderComplexity"
+                    android:text="Сложность: не рассчитана"
                     android:textColor="@color/gray_900"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

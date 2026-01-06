@@ -52,7 +52,9 @@ data class OrderEntity(
     val status: String? = null,
     val createdByUsername: String? = null,
     val createdByFullName: String? = null,
-    val createdByAvatar: String? = null
+    val createdByAvatar: String? = null,
+    val complexityPercentage: Double? = null,
+    val complexityLevel: String? = null
 ) {
     /**
      * Статусы синхронизации заказа
@@ -94,7 +96,9 @@ data class OrderEntity(
             createdByUsername = createdByUsername,
             createdByFullName = createdByFullName,
             createdByAvatar = createdByAvatar,
-            services = emptyList()  // Services загружаются отдельно
+            services = emptyList(),  // Services загружаются отдельно
+            complexityPercentage = complexityPercentage,
+            complexityLevel = complexityLevel
         )
     }
     
@@ -125,7 +129,9 @@ data class OrderEntity(
                 status = order.status,
                 createdByUsername = order.createdByUsername,
                 createdByFullName = order.createdByFullName,
-                createdByAvatar = order.createdByAvatar
+                createdByAvatar = order.createdByAvatar,
+                complexityPercentage = order.complexityPercentage,
+                complexityLevel = order.complexityLevel
             )
         }
         
@@ -163,7 +169,9 @@ data class OrderEntity(
                 status = order.status,
                 createdByUsername = order.createdByUsername,
                 createdByFullName = order.createdByFullName,
-                createdByAvatar = order.createdByAvatar
+                createdByAvatar = order.createdByAvatar,
+                complexityPercentage = order.complexityPercentage,
+                complexityLevel = order.complexityLevel
             )
         }
     }

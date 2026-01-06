@@ -45,6 +45,7 @@ data class ServiceEntity(
     // Данные услуги
     val description: String,
     val price: Double,
+    val complexityPoints: Int = 1,  // Баллы сложности от 1 до 10
     
     // Timestamp создания (из сервера)
     val createdAt: Long? = null
@@ -56,7 +57,8 @@ data class ServiceEntity(
         return Service(
             id = serverId ?: 0,  // Если нет serverId, используем 0 (временное значение)
             description = description,
-            price = price
+            price = price,
+            complexityPoints = complexityPoints
         )
     }
     
@@ -76,6 +78,7 @@ data class ServiceEntity(
                 orderServerId = orderServerId,
                 description = service.description,
                 price = service.price,
+                complexityPoints = service.complexityPoints,
                 createdAt = createdAt
             )
         }
@@ -87,7 +90,8 @@ data class ServiceEntity(
             description: String,
             price: Double,
             orderLocalId: Long,
-            orderServerId: Int?
+            orderServerId: Int?,
+            complexityPoints: Int = 1
         ): ServiceEntity {
             return ServiceEntity(
                 serverId = null,
@@ -95,6 +99,7 @@ data class ServiceEntity(
                 orderServerId = orderServerId,
                 description = description,
                 price = price,
+                complexityPoints = complexityPoints,
                 createdAt = System.currentTimeMillis()
             )
         }

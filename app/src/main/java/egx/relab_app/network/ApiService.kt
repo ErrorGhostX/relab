@@ -1,6 +1,7 @@
 package egx.relab_app.network
 
 import egx.relab_app.models.Order
+import egx.relab_app.models.OrderPhoto
 import egx.relab_app.models.UserResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -50,7 +51,7 @@ interface ApiService {
         @Part("date")           date: RequestBody,
         @Part("status")         status: RequestBody,
         @Part("order_type")     orderType: RequestBody,
-        @Part                   photo: MultipartBody.Part?
+        @Part                   photos: List<MultipartBody.Part>
     ): Call<Order>
 
     @Multipart
@@ -71,14 +72,15 @@ interface ApiService {
         @Part("date") date: RequestBody,
         @Part("status") status: RequestBody,
         @Part("order_type") orderType: RequestBody,
-        @Part photo: MultipartBody.Part?
+        @Part photos: List<MultipartBody.Part>
     ): Call<Order>
 
     @GET("orders/")
     fun getOrders(): Call<List<Order>>
     data class AddServiceRequest(
         val description: String,
-        val price: Double
+        val price: Double,
+        val complexity_points: Int = 1
     )
 
     @POST("orders/{id}/add_service/")
@@ -107,6 +109,50 @@ interface ApiService {
     )
     data class OrdersCountResponse(
         val message: String
+    )
+    
+    // Новые эндпоинты аналитики
+    @GET("analytics/created_orders_count/")
+    fun getCreatedOrdersCount(): Call<CreatedOrdersCountResponse>
+    
+    data class CreatedOrdersCountResponse(
+        val count: Int,
+        val message: String
+    )
+    
+    @GET("analytics/employee_efficiency/")
+    fun getEmployeeEfficiency(): Call<EfficiencyResponse>
+    
+    data class EfficiencyResponse(
+        val efficiency: Double,
+        val created_orders: Int,
+        val completed_orders: Int,
+        val message: String
+    )
+    
+    @GET("analytics/average_complexity/")
+    fun getAverageComplexity(): Call<AverageComplexityResponse>
+    
+    data class AverageComplexityResponse(
+        val average_complexity: Double,
+        val message: String
+    )
+    
+    @GET("analytics/order_statistics/")
+    fun getOrderStatistics(): Call<OrderStatisticsResponse>
+    
+    data class OrderStatisticsResponse(
+        val total_orders: Int,
+        val completed_orders: Int,
+        val efficiency: Double,
+        val status_statistics: StatusStatistics
+    )
+    
+    data class StatusStatistics(
+        val new: Int,
+        val in_progress: Int,
+        val done: Int,
+        val pending: Int
     )
 
 
@@ -143,4 +189,21 @@ interface ApiService {
 
     @POST("auth/jwt/refresh/")
     suspend fun refresh(@Body refreshRequest: RefreshRequest): RefreshResponse
+
+    // Эндпоинты для работы с фотографиями заказов
+    @Multipart
+    @POST("orders/{id}/photos/upload/")
+    fun uploadPhotos(
+        @Path("id") orderId: String,
+        @Part vararg photos: MultipartBody.Part
+    ): Call<List<OrderPhoto>>
+
+    @GET("orders/{id}/photos/")
+    fun getOrderPhotos(@Path("id") orderId: String): Call<List<OrderPhoto>>
+
+    @DELETE("orders/{orderId}/photos/{photoId}/")
+    fun deletePhoto(
+        @Path("orderId") orderId: String,
+        @Path("photoId") photoId: String
+    ): Call<Void>
 }

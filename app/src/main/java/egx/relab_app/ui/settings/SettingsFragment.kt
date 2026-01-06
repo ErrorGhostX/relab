@@ -40,6 +40,19 @@ class SettingsFragment : Fragment() {
         val currentUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
         binding.editTextServerUrl.setText(currentUrl)
         
+        // Обработчик кнопки сохранения
+        binding.buttonSaveServerUrl.setOnClickListener {
+            val newUrl = binding.editTextServerUrl.text.toString().trim()
+            if (newUrl.isNotEmpty()) {
+                // Убеждаемся, что URL заканчивается на /
+                val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
+                tokenManager.serverUrl = url
+                Toast.makeText(requireContext(), "Настройки применены", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
 //        // Загружаем настройки синхронизации
 //        binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
 //        binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())

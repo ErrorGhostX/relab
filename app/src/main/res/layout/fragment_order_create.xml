@@ -11,7 +11,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingHorizontal="16dp"
-    android:paddingTop="50dp"
+    android:paddingTop="60dp"
     android:paddingBottom="80dp">
 
     <LinearLayout
@@ -45,13 +45,13 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        android:tint="@color/gray_900"
+                        android:src="@android:drawable/ic_input_get"
+                        app:tint="@color/gray_900"
                         android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Номер заказа"
+                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Номер заказа"
                         android:textColor="@color/gray_900"
                         android:textStyle="bold"
                         android:textSize="14sp" />
@@ -99,15 +99,26 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Основная информация"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="12dp" />
-
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/stat_sys_phone_call"
+                        app:tint="@color/gray_900"
+                        android:layout_marginEnd="8dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Информация о клиенте"
+                        android:textColor="@color/gray_900"
+                        android:textStyle="bold"
+                        android:textSize="17sp" />
+                </LinearLayout>
                 <!-- ФИО -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/inputLayoutCustomerName"
@@ -233,41 +244,29 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Информация об устройстве"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
 
-                <!-- Название устройства -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/inputLayoutDeviceName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Название устройства *"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    app:boxCornerRadiusTopStart="8dp"
-                    app:boxCornerRadiusTopEnd="8dp"
-                    app:boxCornerRadiusBottomStart="8dp"
-                    app:boxCornerRadiusBottomEnd="8dp"
-                    app:hintTextColor="@color/gray_300"
-                    app:boxStrokeColor="@color/gray_400"
-                    android:layout_marginBottom="12dp">
-
-        <AutoCompleteTextView
-            android:id="@+id/editTextDeviceName"
-                        android:layout_width="match_parent"
+                    <ImageView
+                        android:layout_width="15dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@android:drawable/ic_popup_disk_full"
+                        app:tint="@color/gray_900" />
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minHeight="56dp"
-            android:completionThreshold="1"
-                        android:inputType="text"
+                        android:text="Информация об устройстве"
                         android:textColor="@color/gray_900"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:textStyle="bold"
+                        android:textSize="17sp" />
+                </LinearLayout>
+
+
 
                 <!-- Тип устройства -->
                 <com.google.android.material.textfield.TextInputLayout
@@ -321,11 +320,12 @@
                         android:paddingEnd="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Модель устройства -->
+                <!-- Название устройства -->
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputLayoutDeviceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Модель устройства"
+                    android:hint="Модель устройства *"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"
@@ -335,16 +335,16 @@
                     app:boxStrokeColor="@color/gray_400"
                     android:layout_marginBottom="12dp">
 
-        <AutoCompleteTextView
-            android:id="@+id/editTextModel"
+                    <AutoCompleteTextView
+                        android:id="@+id/editTextDeviceName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="56dp"
-            android:completionThreshold="1"
+                        android:completionThreshold="1"
                         android:inputType="text"
-                        android:textColor="@color/gray_900"
+                        android:minHeight="56dp"
                         android:paddingStart="12dp"
-                        android:paddingEnd="12dp" />
+                        android:paddingEnd="12dp"
+                        android:textColor="@color/gray_900" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Комплектация -->
@@ -486,12 +486,12 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@android:drawable/ic_menu_info_details"
-                        android:tint="@color/gray_900"
+                        app:tint="@color/gray_900"
                         android:layout_marginEnd="8dp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Статус заказа"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Статус заказа"
                         android:textColor="@color/gray_900"
                         android:textStyle="bold"
                         android:textSize="14sp" />
@@ -550,7 +550,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@android:drawable/ic_menu_camera"
-                        android:tint="@color/gray_900"
+                        app:tint="@color/gray_900"
                         android:layout_marginEnd="8dp" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -588,10 +588,11 @@
     <!-- Кнопка сохранения -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSave"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
+        android:gravity="center_horizontal"
         android:text="Сохранить"
         android:textColor="@color/white"
         app:backgroundTint="@android:color/holo_green_dark"

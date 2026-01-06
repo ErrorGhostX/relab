@@ -100,5 +100,30 @@
                 android:textColor="@color/gray_900"
                 android:textColorHint="@color/gray_600" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilComplexity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Сложность (1-10)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:hintTextColor="@color/gray_600"
+            app:boxStrokeColor="@color/gray_400"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etComplexity"
+                android:inputType="number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="1"
+                android:textColor="@color/gray_900"
+                android:textColorHint="@color/gray_600" />
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 </ScrollView>
