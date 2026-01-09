@@ -157,7 +157,7 @@
                 android:layout_marginStart="8dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/system_error_100"
+                app:cardBackgroundColor="@color/gray_100"
                 app:strokeColor="@color/gray_900"
                 app:strokeWidth="1dp">
 
