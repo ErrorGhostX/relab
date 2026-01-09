@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
-    </list>
+    <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -147,6 +144,7 @@
       <workItem from="1767714609776" duration="1803000" />
       <workItem from="1767724406455" duration="2185000" />
       <workItem from="1767894424474" duration="5934000" />
+      <workItem from="1767946598292" duration="379000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />
