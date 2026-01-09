@@ -45,7 +45,7 @@ data class OrderEntity(
     val manufacturer: String? = null,
     val model: String? = null,
     val kit: String? = null,
-    val photo: String? = null,  // URL или путь к фото
+    val photo: String? = null,
     val description: String? = null,
     val date: String? = null,
     val orderType: String? = null,
@@ -67,12 +67,11 @@ data class OrderEntity(
     
     /**
      * Конвертация Entity в модель Order для использования в UI
-     * 
-     * ВАЖНО: Если serverId отрицательный (временный ID), возвращаем null
+     * Если serverId отрицательный (временный ID), возвращаем null
      * Это позволяет UI различать локальные и синхронизированные заказы
      */
     fun toOrder(): Order {
-        // ВАЖНО: Если serverId отрицательный (временный ID), возвращаем null
+        // Если serverId отрицательный (временный ID), возвращаем null
         // Отрицательные ID - это временные локальные ID, которые будут заменены при синхронизации
         val displayId = if (serverId != null && serverId!! < 0) null else serverId
         
@@ -136,19 +135,18 @@ data class OrderEntity(
         }
         
         /**
-         * Создание Entity для нового заказа (еще не синхронизированного)
-         * 
-         * ВАЖНО: Генерируем временный отрицательный ID для локальных заказов
+         * Создание Entity для нового заказа (еще не синхронизированного
+         * Генерируем временный отрицательный ID для локальных заказов
          * Этот ID будет заменен на серверный ID при синхронизации
          */
         fun fromNewOrder(order: Order): OrderEntity {
-            // ВАЖНО: Генерируем временный отрицательный ID для локальных заказов
+            // Генерируем временный отрицательный ID для локальных заказов
             // Отрицательные числа гарантируют, что они не конфликтуют с серверными ID (которые всегда положительные)
             // Используем timestamp в миллисекундах, но делаем отрицательным
             val tempId = -(System.currentTimeMillis() % Int.MAX_VALUE).toInt()
             
             return OrderEntity(
-                serverId = tempId,  // ВАЖНО: Временный отрицательный ID (будет заменен при синхронизации)
+                serverId = tempId,
                 syncStatus = SyncStatus.PENDING,
                 lastModified = System.currentTimeMillis(),
                 lastSynced = null,

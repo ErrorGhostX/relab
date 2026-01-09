@@ -5,7 +5,13 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Bundle
 import android.text.Spannable
@@ -26,6 +32,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.output.ByteArrayOutputStream
 import egx.relab_app.R
 import egx.relab_app.app
 import egx.relab_app.databinding.FragmentOrderDetailBinding
@@ -45,6 +52,8 @@ class OrderDetailFragment : Fragment() {
     private var _binding: FragmentOrderDetailBinding? = null
     private val binding get() = _binding!!
     private lateinit var currentOrder: Order
+    // флаг — может ли текущий пользователь управлять/редактировать этот заказ
+    private var canManageOrder: Boolean = false
 
     // Получаем Repository и ServiceDao из Application
     private val repository by lazy { requireContext().app.orderRepository }
@@ -237,7 +246,33 @@ class OrderDetailFragment : Fragment() {
 
 
     private fun bindOrderToUI(order: Order) = with(binding) {
-        // ВАЖНО: Обрабатываем случай, когда order.id = null (локально созданный заказ)
+        // Получаем инфу о пользователе и его ранге
+        val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        val userRank = tokenManager.rank ?: "employee"
+// Если у TokenManager другое имя свойства для логина — замените `username` на нужное
+        val currentUsername = try { tokenManager.username ?: "" } catch (e: Exception) { "" }
+
+// Разрешаем управление, если пользователь — админ или он — создатель заказа
+        canManageOrder = (userRank == "admin") || (!order.createdByUsername.isNullOrEmpty() && order.createdByUsername == currentUsername)
+
+// Применяем видимость к кнопкам управления
+        val manageVisibility = if (canManageOrder) View.VISIBLE else View.GONE
+        binding.buttonAddService.visibility = manageVisibility
+        binding.buttonEdit.visibility = manageVisibility
+        binding.buttonDelete.visibility = manageVisibility
+
+// Кнопка печати обычно доступна всем — если хотите скрыть печать тоже, замените ниже на manageVisibility
+        binding.buttonPrint.visibility = View.VISIBLE
+
+// Кнопка удаления фото — показываем только если есть фото и если пользователь может управлять
+        binding.btnDeletePhoto.visibility = if (canManageOrder && (binding.photosViewPager.adapter?.itemCount ?: 0) > 0) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+
+
+
         // Показываем serverId если есть (положительный), иначе показываем информацию о локальном заказе
         orderId.text = if (order.id != null && order.id!! > 0) {
             "ID: ${order.id}"
@@ -382,8 +417,7 @@ class OrderDetailFragment : Fragment() {
         binding.orderComplexity.text = formatText(complexityText)
 
         displayServices(order)
-        
-        // ВАЖНО: Обновляем список фото после обновления UI
+
         updatePhotosList()
     }
 
@@ -406,9 +440,15 @@ class OrderDetailFragment : Fragment() {
             val complexityText = " (сложность: ${svc.complexityPoints}/10)"
             row.findViewById<TextView>(R.id.tvServiceDesc).text = serviceText + complexityText
 
-            row.findViewById<ImageButton>(R.id.btnDeleteService).setOnClickListener {
-                // ВАЖНО: Удаление работает локально в первую очередь
-                // Передаем описание и цену для поиска услуги в локальной БД
+            val deleteBtn = row.findViewById<ImageButton>(R.id.btnDeleteService)
+            deleteBtn.visibility = if (canManageOrder) View.VISIBLE else View.GONE
+
+            deleteBtn.setOnClickListener {
+                // двойная проверка перед удалением
+                if (!canManageOrder) {
+                    showToast("Недостаточно прав для удаления услуги")
+                    return@setOnClickListener
+                }
                 deleteServiceByDescription(
                     orderId = order.id,
                     serviceId = svc.id,
@@ -417,6 +457,7 @@ class OrderDetailFragment : Fragment() {
                     serviceIndex = index
                 )
             }
+
 
             container.addView(row)
         }
@@ -531,8 +572,6 @@ class OrderDetailFragment : Fragment() {
 
     /**
      * Добавить услугу к заказу
-     *
-     * ВАЖНО: Приоритет на локальность
      * 1. Сохраняет услугу СРАЗУ в локальную БД
      * 2. Обновляет UI СРАЗУ
      * 3. Синхронизирует с сервером в ФОНОВОМ режиме
@@ -554,7 +593,7 @@ class OrderDetailFragment : Fragment() {
                 }
 
                 if (orderEntity != null) {
-                    // ВАЖНО: Добавляем услугу СРАЗУ в локальную БД
+                    // Добавляем услугу СРАЗУ в локальную БД
                     repository.addServiceToOrder(
                         orderLocalId = orderEntity.localId,
                         orderServerId = currentOrder.id,
@@ -568,7 +607,7 @@ class OrderDetailFragment : Fragment() {
 
                     showToast("Услуга добавлена")
 
-                    // ВАЖНО: Синхронизация происходит в ФОНОВОМ режиме через SyncManager
+                    // Синхронизация происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
                     if (currentOrder.id != null) {
                         // Пытаемся синхронизировать с сервером в фоне
@@ -583,16 +622,16 @@ class OrderDetailFragment : Fragment() {
                                             repository.saveOrderFromServer(updatedOrder, orderEntity.localId)
                                             loadFromLocalDatabase()
                                         } catch (e: Exception) {
-                                            // Ошибка - это нормально, продолжаем работать с локальными данными
+
                                         }
                                     }
                                 } else {
                                     android.util.Log.d("OrderDetail", "Ошибка синхронизации услуги: $error")
-                                    // Ошибка - это нормально, продолжаем работать с локальными данными
+
                                 }
                             }
                         } catch (e: Exception) {
-                            // Ошибка - это нормально, продолжаем работать с локальными данными
+
                             android.util.Log.d("OrderDetail", "Не удалось синхронизировать услугу (офлайн режим): ${e.message}")
                         }
                     }
@@ -885,7 +924,6 @@ class OrderDetailFragment : Fragment() {
     /**
      * Генерация PDF отчета локально
      *
-     * ВАЖНО: Приоритет на локальность
      * - Генерирует PDF локально из данных заказа
      * - Не требует подключения к серверу
      * - Для клиентов скрывает статус заказа
@@ -937,160 +975,10 @@ class OrderDetailFragment : Fragment() {
      * @return массив байтов PDF файла
      */
     private fun generatePdfLocally(order: Order, isEmployee: Boolean): ByteArray {
-        val outputStream = java.io.ByteArrayOutputStream()
-        val document = android.graphics.pdf.PdfDocument()
-
-        // Размер страницы A4 в пикселях (при 72 DPI)
-        val pageWidth = 595
-        val pageHeight = 842
-        val margin = 40
-        val contentWidth = pageWidth - 2 * margin
-
-        val pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
-        val page = document.startPage(pageInfo)
-        val canvas = page.canvas
-        val paint = android.graphics.Paint()
-
-        var yPos = margin + 30
-
-        // Заголовок
-        paint.textSize = 20f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-        paint.color = android.graphics.Color.BLACK
-        canvas.drawText("Отчёт по заказу №${order.orderNumber ?: "-"}", margin.toFloat(), yPos.toFloat(), paint)
-        yPos += 40
-
-        // Основная информация о заказе
-        paint.textSize = 12f
-        paint.typeface = android.graphics.Typeface.DEFAULT
-        paint.isFakeBoldText = false
-
-        val orderFields = mutableListOf<Pair<String, String>>().apply {
-            add("Имя клиента" to (order.customer ?: "—"))
-            add("Контакты" to (order.contactInfo ?: "—"))
-            if (!order.telegram.isNullOrEmpty()) add("Telegram" to order.telegram)
-            add("Устройство" to "${order.deviceType ?: ""} — ${order.deviceName ?: ""}")
-            if (!order.manufacturer.isNullOrEmpty()) add("Производитель" to order.manufacturer)
-            if (!order.model.isNullOrEmpty()) add("Модель" to order.model)
-            if (!order.kit.isNullOrEmpty()) add("Комплектация" to order.kit)
-            if (!order.description.isNullOrEmpty()) add("Описание проблемы" to order.description)
-            if (!order.extraInfo.isNullOrEmpty()) add("Доп. информация" to order.extraInfo)
-            if (!order.date.isNullOrEmpty()) add("Дата" to order.date)
-
-            // Тип заказа
-            val orderTypeText = when (order.orderType) {
-                "repair" -> "Починка"
-                "diagnosis" -> "Диагностика"
-                else -> order.orderType ?: "—"
-            }
-            add("Тип заказа" to orderTypeText)
-
-            if (isEmployee) {
-                val statusText = when (order.status) {
-                    "new" -> "Новый"
-                    "in_progress" -> "В процессе"
-                    "done" -> "Готов"
-                    "pending" -> "Ожидаемый"
-                    else -> order.status ?: "—"
-                }
-                add("Статус" to statusText)
-            }
-        }
-
-        // Рисуем поля заказа
-        for ((label, value) in orderFields) {
-            paint.isFakeBoldText = true
-            canvas.drawText("$label:", margin.toFloat(), yPos.toFloat(), paint)
-            paint.isFakeBoldText = false
-
-            // Переносим текст на новую строку, если он слишком длинный
-            val text = " $value"
-            val textWidth = paint.measureText(text)
-            if (textWidth > contentWidth - 100) {
-                // Разбиваем текст на несколько строк
-                val words = text.split(" ")
-                var currentLine = ""
-                for (word in words) {
-                    val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-                    if (paint.measureText(testLine) > contentWidth - 100) {
-                        if (currentLine.isNotEmpty()) {
-                            canvas.drawText(currentLine, (margin + 100).toFloat(), yPos.toFloat(), paint)
-                            yPos += 20
-                            currentLine = word
-                        }
-                    } else {
-                        currentLine = testLine
-                    }
-                }
-                if (currentLine.isNotEmpty()) {
-                    canvas.drawText(currentLine, (margin + 100).toFloat(), yPos.toFloat(), paint)
-                }
-            } else {
-                canvas.drawText(text, (margin + 100).toFloat(), yPos.toFloat(), paint)
-            }
-            yPos += 25
-        }
-
-        yPos += 20
-
-        // Таблица услуг
-        if (order.services.isNotEmpty()) {
-            paint.isFakeBoldText = true
-            paint.textSize = 14f
-            canvas.drawText("Услуги:", margin.toFloat(), yPos.toFloat(), paint)
-            yPos += 30
-
-            paint.textSize = 12f
-            paint.isFakeBoldText = false
-
-            // Заголовок таблицы
-            paint.isFakeBoldText = true
-            canvas.drawText("Услуга", margin.toFloat(), yPos.toFloat(), paint)
-            canvas.drawText("Цена (руб)", (pageWidth - margin - 100).toFloat(), yPos.toFloat(), paint)
-            yPos += 25
-
-            // Линия под заголовком
-            paint.strokeWidth = 1f
-            paint.color = android.graphics.Color.GRAY
-            canvas.drawLine(margin.toFloat(), yPos.toFloat(), (pageWidth - margin).toFloat(), yPos.toFloat(), paint)
-            yPos += 10
-            paint.color = android.graphics.Color.BLACK
-            paint.isFakeBoldText = false
-
-            var totalPrice = 0.0
-            for (service in order.services) {
-                totalPrice += service.price
-
-                // Описание услуги
-                canvas.drawText(service.description, margin.toFloat(), yPos.toFloat(), paint)
-
-                // Цена (выровнена по правому краю)
-                val priceText = String.format("%.2f", service.price)
-                val priceX = pageWidth - margin - paint.measureText(priceText)
-                canvas.drawText(priceText, priceX, yPos.toFloat(), paint)
-
-                yPos += 20
-            }
-
-            yPos += 5
-            // Линия перед итогом
-            canvas.drawLine(margin.toFloat(), yPos.toFloat(), (pageWidth - margin).toFloat(), yPos.toFloat(), paint)
-            yPos += 15
-
-            // Итого
-            paint.isFakeBoldText = true
-            canvas.drawText("Итого", margin.toFloat(), yPos.toFloat(), paint)
-            val totalText = String.format("%.2f", totalPrice)
-            val totalX = pageWidth - margin - paint.measureText(totalText)
-            canvas.drawText(totalText, totalX, yPos.toFloat(), paint)
-        }
-
-        document.finishPage(page)
-        document.writeTo(outputStream)
-        document.close()
-
-        return outputStream.toByteArray()
+        val pdfGenerator = GeneratePDF(requireContext())
+        return pdfGenerator.generate(order, isEmployee)
     }
+
 
     /**
      * Показать диалог подтверждения удаления фото

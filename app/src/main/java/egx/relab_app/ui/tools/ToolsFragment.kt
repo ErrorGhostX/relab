@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,9 +30,9 @@ class ToolsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         //Драйвера
-       // binding.btnDrivers.setOnClickListener {
-       //     startDriversDownload()
-       // }
+        binding.btnDrivers.setOnClickListener {
+            startDriversDownload()
+        }
 
         // Интерактивная инструкция по пультам
         binding.buttonOpenRemoteGuide.setOnClickListener {
@@ -42,7 +43,8 @@ class ToolsFragment : Fragment() {
         binding.buttonDownloadRemoteApp.setOnClickListener {
             openPlayMarket()
         }
-        
+        binding.tvDriverLink.movementMethod = LinkMovementMethod.getInstance()
+
         // Открыть настройки разработчика
         binding.buttonOpenDeveloperOptions.setOnClickListener {
             try {

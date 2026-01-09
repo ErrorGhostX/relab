@@ -1,5 +1,6 @@
 package egx.relab_app
 
+import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.View
@@ -7,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
@@ -27,6 +29,22 @@ class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
     private lateinit var tokenManager: TokenManager
     private lateinit var toggle: ActionBarDrawerToggle
+    // Пример (в Activity)
+    private val PERM_REQUEST = 1001
+
+    fun requestNeededPermissions() {
+        val perms = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            perms.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            perms.add(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (perms.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, perms.toTypedArray(), PERM_REQUEST)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

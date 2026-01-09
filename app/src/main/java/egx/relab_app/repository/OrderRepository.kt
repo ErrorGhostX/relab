@@ -195,15 +195,16 @@ class OrderRepository(
         } else {
             0.0
         }
-        
+
         // Определяем уровень сложности
         val level = when {
-            percentage >= 80 -> "Высокая"
-            percentage >= 50 -> "Средняя"
-            percentage > 0 -> "Низкая"
-            else -> "Нет данных"
+            percentage < 30 -> "🟢"
+            percentage < 60 -> "🟡"
+            percentage < 80 -> "🟠"
+            else -> "🔴"
         }
-        
+
+
         // Обновляем заказ с новой сложностью
         val updated = orderEntity.copy(
             complexityPercentage = percentage,
@@ -216,8 +217,7 @@ class OrderRepository(
     
     /**
      * Удалить услугу из локальной БД
-     * 
-     * ВАЖНО: Приоритет на локальность
+     *
      * - Удаляет услугу СРАЗУ из локальной БД
      * - Не делает запросов к серверу
      * - Синхронизация удаления происходит через SyncManager в фоне
@@ -233,10 +233,10 @@ class OrderRepository(
             serviceDao.deleteService(serviceEntity)
             android.util.Log.d("OrderRepository", "Услуга удалена локально. localId: $serviceLocalId")
             
-            // ВАЖНО: Пересчитываем сложность заказа локально
+            // Пересчитываем сложность заказа локально
             recalculateOrderComplexity(orderLocalId)
             
-            // ВАЖНО: Помечаем заказ как требующий синхронизации
+            //  Помечаем заказ как требующий синхронизации
             val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
             if (orderEntity != null && orderEntity.syncStatus == egx.relab_app.database.entity.OrderEntity.SyncStatus.SYNCED) {
                 // Если заказ был синхронизирован, помечаем как PENDING
@@ -247,8 +247,6 @@ class OrderRepository(
     
     /**
      * Создать новый заказ в локальной БД
-     * 
-     * ВАЖНО: Приоритет на локальность
      * - Сохраняет заказ СРАЗУ в локальную БД
      * - Статус синхронизации: PENDING (ожидает синхронизации)
      * - serverId: null (будет присвоен после синхронизации)
@@ -267,8 +265,6 @@ class OrderRepository(
     
     /**
      * Обновить заказ в локальной БД
-     * 
-     * ВАЖНО: Приоритет на локальность
      * - Обновляет заказ СРАЗУ в локальной БД
      * - Статус синхронизации меняется на PENDING (ожидает синхронизации)
      * - Не делает запросов к серверу
@@ -302,18 +298,16 @@ class OrderRepository(
             createdByUsername = order.createdByUsername,
             createdByFullName = order.createdByFullName,
             createdByAvatar = order.createdByAvatar,
-            syncStatus = OrderEntity.SyncStatus.PENDING,  // ВАЖНО: Помечаем как требующий синхронизации
-            lastModified = System.currentTimeMillis()     // Обновляем время последнего изменения
+            syncStatus = OrderEntity.SyncStatus.PENDING,
+            lastModified = System.currentTimeMillis()
         )
-        
-        // Обновляем в локальной БД
+
         orderDao.updateOrder(updatedEntity)
     }
     
     /**
      * Удалить заказ в локальной БД (мягкое удаление)
-     * 
-     * ВАЖНО: Приоритет на локальность
+
      * - Удаляет заказ СРАЗУ в локальной БД (мягкое удаление - isDeleted = true)
      * - Заказ исчезает из UI сразу
      * - Не делает запросов к серверу
@@ -322,7 +316,7 @@ class OrderRepository(
      * @param localId - локальный ID заказа
      */
     suspend fun deleteOrder(localId: Long) {
-        // ВАЖНО: Мягкое удаление - заказ помечается как удаленный
+        // Мягкое удаление - заказ помечается как удаленный
         // При синхронизации удаление будет отправлено на сервер
         orderDao.softDeleteOrder(localId)
     }
@@ -337,12 +331,11 @@ class OrderRepository(
     /**
      * Сохранить заказ, полученный с сервера (при синхронизации)
      * 
-     * ВАЖНО: Используется ТОЛЬКО SyncManager'ом
+     *Используется ТОЛЬКО SyncManager'ом
      * - НЕ вызывается напрямую из UI
      * - Не перезаписывает локальные изменения (PENDING или ERROR статус)
      * - Локальные изменения имеют приоритет над серверными
-     * 
-     * ЛОГИКА:
+     *
      * 1. Если заказ изменен локально (PENDING/ERROR) - НЕ перезаписываем
      * 2. Если заказ не изменен локально (SYNCED) - обновляем с сервера
      * 3. Если заказ новый - сохраняем в локальную БД
@@ -357,20 +350,19 @@ class OrderRepository(
         if (localId != null) {
             val existing = orderDao.getOrderByLocalId(localId)
             if (existing != null) {
-                // ВАЖНО: Обновляем существующий заказ с данными с сервера
                 // Сохраняем локальный ID, но обновляем serverId и все остальные поля
                 if (order.id != null) {
                     android.util.Log.d("OrderRepository", "Обновление заказа localId=$localId с serverId=${order.id}")
                     android.util.Log.d("OrderRepository", "До обновления: serverId=${existing.serverId}, syncStatus=${existing.syncStatus}")
                     
-                    // ВАЖНО: Всегда используем фото с сервера при синхронизации
+                    //  Всегда используем фото с сервера при синхронизации
                     // Локальные фото уже должны быть загружены на сервер
                     android.util.Log.d("OrderRepository", "Используем фото с сервера для заказа ${order.id}: ${order.photos.size} фото")
                     val photoToSave = null  // fromOrder сам конвертирует photos в JSON
                     
                     // Создаем Entity из заказа с сервера с правильным serverId
                     val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
-                    // ВАЖНО: Копируем все поля, включая serverId, но сохраняем локальный ID и фото
+                    // Копируем все поля, включая serverId, но сохраняем локальный ID и фото
                     val updated = entity.copy(
                         localId = existing.localId,  // Сохраняем локальный ID
                         serverId = order.id,  // ВАЖНО: Обновляем serverId с сервера
@@ -387,7 +379,7 @@ class OrderRepository(
                         saveServicesForOrder(existing.localId, order.id, order.services)
                     }
                     
-                    // ВАЖНО: Проверяем, что serverId действительно обновлен
+                    //Проверяем, что serverId действительно обновлен
                     val verify = orderDao.getOrderByLocalId(localId)
                     if (verify != null) {
                         android.util.Log.d("OrderRepository", "Проверка после обновления: serverId=${verify.serverId}, syncStatus=${verify.syncStatus}")
@@ -407,7 +399,7 @@ class OrderRepository(
         }
         
         // Проверяем, есть ли уже такой заказ (по serverId)
-        // ВАЖНО: Игнорируем отрицательные ID (временные локальные ID)
+        //  Игнорируем отрицательные ID (временные локальные ID)
         val existing = order.id?.let { serverId ->
             if (serverId > 0) {
                 orderDao.getOrderByServerId(serverId)
@@ -418,15 +410,15 @@ class OrderRepository(
         
         if (existing != null) {
             // Заказ уже существует локально
-            // ВАЖНО: Не перезаписываем, если заказ был изменен локально (PENDING или ERROR)
+            //  Не перезаписываем, если заказ был изменен локально (PENDING или ERROR)
             if (existing.syncStatus == OrderEntity.SyncStatus.PENDING || 
                 existing.syncStatus == OrderEntity.SyncStatus.ERROR) {
                 android.util.Log.d("OrderRepository", "Пропуск обновления заказа ${order.id} - локальные изменения в приоритете")
                 return
             }
-            
+
             // Обновляем только если заказ не был изменен локально
-            // ВАЖНО: Всегда используем фото с сервера при синхронизации
+            //  Всегда используем фото с сервера при синхронизации
             android.util.Log.d("OrderRepository", "Используем фото с сервера для заказа ${order.id}: ${order.photos.size} фото")
             
             val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)

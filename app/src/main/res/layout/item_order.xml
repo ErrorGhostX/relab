@@ -4,18 +4,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="0.5dp"
+
     app:cardCornerRadius="15dp"
-    app:cardElevation="0dp"
-    app:cardBackgroundColor="@android:color/system_accent1_50"
+    app:cardElevation="2dp"
+    android:layout_marginTop="3dp"
+    app:cardBackgroundColor="@color/gray_300"
     app:strokeColor="@color/black_40"
     android:clipToOutline="true"
-    app:strokeWidth="1dp"
+
+    app:strokeWidth="2dp"
     app:cardPreventCornerOverlap="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
         android:orientation="vertical">
 
         <!-- Картинка сверху, растягиваем до краев карточки -->
@@ -23,6 +26,7 @@
             android:id="@+id/orderImage"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+
             android:scaleType="centerCrop"
             app:shapeAppearanceOverlay="@style/RoundedImage" />
 
@@ -42,6 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="0dp"
             android:text="ID: 123"
+            android:layout_gravity="center_horizontal"
             android:textColor="@color/gray_900"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -62,6 +67,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="0dp"
                 android:text="Устройство: Телефон"
+                android:textSize="12sp"
                 android:textColor="@color/gray_900" />
 
 
@@ -71,15 +77,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="0dp"
+                android:textSize="12sp"
                 android:text="Статус: В процессе"
                 android:textColor="@color/gray_800" />
 
             <!-- Сложность -->
             <TextView
                 android:id="@+id/orderComplexityText"
-                android:layout_width="368dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="0dp"
+                android:textSize="12sp"
                 android:text="Сложность: не рассчитана"
                 android:textColor="@color/gray_800" />
 
@@ -95,8 +103,8 @@
 
                 <ImageView
                     android:id="@+id/createdByAvatar"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_marginEnd="6dp"
                     android:contentDescription="Аватар создателя"
                     android:scaleType="centerCrop"

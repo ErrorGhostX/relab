@@ -12,37 +12,42 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingHorizontal="0dp"
-        android:paddingTop="?attr/actionBarSize">
+        >
 
         <!-- Карточка с фильтром и статусом -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/filterCard"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="0dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="5dp"
-            app:cardElevation="2dp"
+            android:layout_height="135dp"
+            android:layout_marginTop="5dp"
+            app:cardBackgroundColor="@color/gray_900"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            android:clipToOutline="true"
+            app:cardPreventCornerOverlap="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:strokeColor="@color/gray_500"
-            app:strokeWidth="1dp">
+            app:layout_constraintTop_toTopOf="parent">
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="2dp"
-                android:spacing="2dp">
-
-                <!-- Ряд: фильтр + кнопка -->
+                android:layout_height="match_parent"
+                android:padding="6dp"
+                android:background="@android:color/transparent">
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="2dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:clipToPadding="false"
+                    android:padding="0dp">
+
+                <!-- Ряд: фильтр + кнопка -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="160dp"
+                        android:layout_marginBottom="2dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                     <!-- Фильтр по статусу -->
                     <com.google.android.material.textfield.TextInputLayout
@@ -50,40 +55,52 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:layout_marginBottom="2dp"
                         android:hint="Фильтр по статусу"
                         app:boxBackgroundMode="outline"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp"
-                        app:boxStrokeColor="@color/black"
-                        app:hintTextColor="@color/black">
+                        app:boxCornerRadiusBottomEnd="14dp"
+                        app:boxCornerRadiusBottomStart="14dp"
+                        app:boxCornerRadiusTopEnd="14dp"
+                        app:boxCornerRadiusTopStart="14dp"
+                        app:boxStrokeColor="@color/white"
+                        app:boxStrokeWidth="2dp"
+                        app:boxBackgroundColor="@color/gray_800"
+                        app:hintTextColor="@color/white"
+                        app:endIconTint="@color/white"
+                        android:backgroundTint="@android:color/transparent">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/statusFilterSpinner"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:focusable="false"
                             android:inputType="none"
-                            android:textColor="@color/black"
-                            app:iconTint="@color/black" />
+                            android:textColor="@color/white"
+                            android:textColorHint="@color/white"
+                            android:backgroundTint="@android:color/transparent"
+                            android:background="@null"
+                            android:padding="0dp"
+                            android:importantForAccessibility="no" />
+
                     </com.google.android.material.textfield.TextInputLayout>
+
 
                     <!-- Кнопка синхронизации -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonSync"
-
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_height="55dp"
+                        android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:text="Синхронизация"
                         android:textAllCaps="false"
-
-                        app:icon="@android:drawable/stat_notify_sync">
-
-                    </com.google.android.material.button.MaterialButton>
-
+                        app:icon="@android:drawable/stat_notify_sync"
+                        app:iconTint="@color/white"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/white"
+                        app:iconGravity="textStart"
+                        app:backgroundTint="@color/gray_900"
+                        android:textColor="@color/white"
+                        app:cornerRadius="12dp" />
                 </LinearLayout>
 
                 <!-- Статус синхронизации -->
@@ -107,9 +124,9 @@
                         android:textColor="@color/white"
                         android:textSize="12sp" />
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
-
 
 
 
@@ -119,7 +136,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
-            android:paddingTop="2dp"
+            android:paddingTop="4dp"
             android:paddingBottom="80dp"
             android:scrollbars="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -134,10 +151,13 @@
         android:id="@+id/add"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="bottom|center"
         android:layout_margin="16dp"
-        android:src="@android:drawable/ic_input_add"
+        android:src="@drawable/ic_add"
         android:tint="@android:color/white"
-        app:backgroundTint="@android:color/holo_green_dark" />
+        app:backgroundTint="@android:color/system_text_secondary_and_tertiary_inverse_dark"
+        app:maxImageSize="56dp"
+        app:useCompatPadding="false"
+        app:fabSize="normal"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

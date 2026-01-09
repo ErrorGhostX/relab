@@ -21,7 +21,7 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="13dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
+            app:cardBackgroundColor="@color/gray_300"
             app:strokeColor="@color/gray_900"
             app:strokeWidth="2dp">
 
@@ -40,7 +40,7 @@
                     android:layout_marginBottom="20dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="3dp"
-                    app:cardBackgroundColor="@color/gray_200"
+                    app:cardBackgroundColor="@color/gray_900"
                     app:strokeColor="@color/gray_500"
                     app:strokeWidth="2dp">
 
@@ -49,6 +49,7 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
+
                         android:padding="20dp">
 
                         <ImageView
@@ -76,7 +77,7 @@
                                 android:text="Фамилия Имя Отчество"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/gray_900"
+                                android:textColor="@color/white"
                                 android:layout_marginBottom="6dp" />
 
                             <TextView
@@ -206,7 +207,7 @@
             android:text="Сохранить изменения"
             android:textColor="@color/white"
             app:backgroundTint="@android:color/holo_green_dark"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="11dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"

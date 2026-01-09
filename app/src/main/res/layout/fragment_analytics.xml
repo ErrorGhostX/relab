@@ -35,11 +35,20 @@
                 android:gravity="center">
 
                 <ImageView
-                    android:layout_width="78dp"
-                    android:layout_height="63dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_width="98dp"
+                    android:layout_height="76dp"
+                    android:layout_marginBottom="10dp"
                     android:src="@drawable/money_svgrepo_com"
                     app:tint="#266F26" />
+
+                <TextView
+                    android:id="@+id/tvTotalEarnings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="— ₽"
+                    android:textColor="#266F26"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -50,15 +59,6 @@
 
                     android:layout_marginBottom="8dp" />
 
-                <TextView
-                    android:id="@+id/tvTotalEarnings"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="— ₽"
-                    android:textSize="32sp"
-                    android:textStyle="bold"
-                    android:textColor="#266F26"
-                   />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         <!-- Блок для графика (можно добавить позже) -->
@@ -67,7 +67,7 @@
             android:layout_height="wrap_content"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
+            app:cardBackgroundColor="@android:color/system_accent1_100"
             app:strokeColor="@color/gray_900"
             app:strokeWidth="2dp">
 
@@ -114,7 +114,7 @@
                 android:layout_marginEnd="8dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/gray_200"
+                app:cardBackgroundColor="@android:color/white"
                 app:strokeColor="@color/gray_900"
                 app:strokeWidth="1dp">
 
@@ -157,7 +157,7 @@
                 android:layout_marginStart="8dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/gray_200"
+                app:cardBackgroundColor="@android:color/system_error_100"
                 app:strokeColor="@color/gray_900"
                 app:strokeWidth="1dp">
 

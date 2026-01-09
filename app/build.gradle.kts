@@ -13,10 +13,10 @@ android {
 
     defaultConfig {
         applicationId = "egx.relab_app"
-        minSdk = 25
+        minSdk = 26
         targetSdk = 36
         versionCode = 7
-        versionName = "7.4.8-alpha"
+        versionName = "7.5.9-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -148,6 +148,63 @@
         </com.google.android.material.card.MaterialCardView>
 
 
+        <!-- Инструкция по драйверам -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/gray_200"
+            app:strokeColor="@color/gray_900"
+            app:strokeWidth="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Инструкция по драйверам"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="1. Скачайте драйвера через кнопку ниже\n2. Подключите телефон к компьютеру.\n3. Перекиньте драйвера с папки Downloads -> RelabDrivers и установите драйвера на компьютер."
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp" />
+
+                <!-- Кнопка скачать драйвера через Dropbox -->
+                <Button
+                    android:id="@+id/btnDrivers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Скачать драйвера" />
+
+                <!-- Кликабельная ссылка на сайт -->
+                <TextView
+                    android:id="@+id/tvDriverLink"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Или скачайте драйвера вручную: https://drivers-archive.net/?ysclid=mk6449glje562531082"
+                    android:textColor="@color/teal_700"
+                    android:autoLink="web"
+                    android:linksClickable="true"
+                    android:textSize="14sp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+
     </LinearLayout>
 </ScrollView>
 
