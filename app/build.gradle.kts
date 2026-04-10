@@ -15,8 +15,8 @@ android {
         applicationId = "egx.relab_app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "7.5.9-alpha"
+        versionCode = 8
+        versionName = "8.1.0-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

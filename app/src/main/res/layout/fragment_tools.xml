@@ -28,65 +28,82 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- Информация слева -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="ADB инструменты"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Инструменты для работы с Android Debug Bridge (ADB). Скачайте драйверы, изучите руководство и настройте отладку по USB."
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_marginBottom="16dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ADB инструменты"
+                        android:textColor="@color/gray_900"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="16dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonDownloadDrivers"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Скачать драйверы ADB"
-                    style="@style/Widget.MaterialComponents.Button"
-                    app:backgroundTint="@color/gray_900"
-                    android:textColor="@color/white"
-                    android:layout_marginBottom="8dp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Инструменты для работы с Android Debug Bridge (ADB). Скачайте драйверы, изучите руководство и настройте отладку по USB."
+                        android:textColor="@color/gray_700"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="4dp"
+                        android:layout_marginBottom="16dp" />
+                </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonOpenDeveloperOptions"
-                    android:layout_width="match_parent"
+                <!-- Кнопки справа -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Открыть настройки разработчика"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonAdbGuide"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Руководство по ADB"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="8dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonDownloadDrivers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Скачать драйверы ADB"
+                        style="@style/Widget.MaterialComponents.Button"
+                        app:backgroundTint="@color/gray_900"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="8dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonUsbDebugging"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Как включить отладку по USB"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOpenDeveloperOptions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Открыть настройки разработчика"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonAdbGuide"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Руководство по ADB"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonUsbDebugging"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Как включить отладку по USB"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -104,49 +121,64 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- Информация слева -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Интерактивная инструкция по пульту"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Откройте виртуальный пульт, нажмите кнопки последовательно, и получите текстовую инструкцию для бабушек, которую можно переслать."
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_marginBottom="16dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Интерактивная инструкция по пульту"
+                        android:textColor="@color/gray_900"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="16dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonOpenRemoteGuide"
-                    android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Откройте виртуальный пульт, нажмите кнопки последовательно, и получите текстовую инструкцию для бабушек, которую можно переслать."
+                        android:textColor="@color/gray_700"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="4dp"
+                        android:layout_marginBottom="16dp" />
+                </LinearLayout>
+
+                <!-- Кнопки справа -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Открыть виртуальный пульт"
-                    style="@style/Widget.MaterialComponents.Button"
-                    app:backgroundTint="@color/gray_900"
-                    android:textColor="@color/white"
-                    android:layout_marginBottom="8dp" />
-                
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonDownloadRemoteApp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="📱 Скачать приложение пульта (Play Market)"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
-                    android:textColor="@color/gray_900" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOpenRemoteGuide"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Открыть виртуальный пульт"
+                        style="@style/Widget.MaterialComponents.Button"
+                        app:backgroundTint="@color/gray_900"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonDownloadRemoteApp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📱 Скачать приложение пульта (Play Market)"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900" />
+                </LinearLayout>
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
-
 
         <!-- Инструкция по драйверам -->
         <com.google.android.material.card.MaterialCardView
@@ -162,50 +194,74 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- Информация слева -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:text="Инструкция по драйверам"
-                    android:textColor="@color/gray_900"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="1. Скачайте драйвера через кнопку ниже\n2. Подключите телефон к компьютеру.\n3. Перекиньте драйвера с папки Downloads -> RelabDrivers и установите драйвера на компьютер."
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Инструкция по драйверам"
+                        android:textColor="@color/gray_900"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
 
-                <!-- Кнопка скачать драйвера через Dropbox -->
-                <Button
-                    android:id="@+id/btnDrivers"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="Скачать драйвера" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:lineSpacingExtra="4dp"
+                        android:text="1. Скачайте драйвера через кнопку ниже\n2. Подключите телефон к компьютеру.\n3. Перекиньте драйвера с папки 'Downloads' в 'C:\\Program Files\\Android\\...'\n4. Перезагрузите компьютер"
+                        android:textColor="@color/gray_700"
+                        android:textSize="14sp" />
+                </LinearLayout>
 
-                <!-- Кликабельная ссылка на сайт -->
-                <TextView
-                    android:id="@+id/tvDriverLink"
-                    android:layout_width="match_parent"
+                <!-- Кнопки справа -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Или скачайте драйвера вручную: https://drivers-archive.net/?ysclid=mk6449glje562531082"
-                    android:textColor="@color/teal_700"
-                    android:autoLink="web"
-                    android:linksClickable="true"
-                    android:textSize="14sp"/>
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonDownloadDrivers2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Скачать драйверы"
+                        style="@style/Widget.MaterialComponents.Button"
+                        app:backgroundTint="@color/teal_700"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOpenDriversFolder"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Открыть папку драйверов"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonInstallDrivers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Установить драйверы"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-
     </LinearLayout>
 </ScrollView>
-
-
