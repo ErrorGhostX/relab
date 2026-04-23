@@ -1,7 +1,8 @@
 import os
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Q
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from reportlab.lib.utils import ImageReader
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -9,8 +10,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend_relab_app import settings
 from . import models
-from .models import Order, Service, OrderPhoto
-from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer
+from .models import Order, Service, OrderPhoto, OrderCollaborator
+from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -50,6 +51,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from django.contrib.auth.models import User
 
 from .models import Order
 
@@ -60,6 +62,22 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        """
+        Показываем заказы:
+        - Созданные текущим пользователем
+        - Общие заказы (is_public=True)
+        - Где я исполнитель (assigned_to)
+        - Где я коллаборатор
+        """
+        user = self.request.user
+        return Order.objects.filter(
+            Q(created_by=user) |
+            Q(is_public=True) |
+            Q(assigned_to=user) |
+            Q(collaborators__user=user)
+        ).distinct().order_by('-created_at')
+
     def get_parser_classes(self):
         """Используем MultiPartParser для методов, которые могут принимать файлы"""
         if self.action in ['update', 'partial_update', 'create_with_photo', 'upload_photos']:
@@ -67,7 +85,20 @@ class OrderViewSet(viewsets.ModelViewSet):
         return super().get_parser_classes()
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        order = serializer.save(created_by=self.request.user)
+        # Если заказ не общий — сразу назначаем создателя исполнителем
+        if not order.is_public:
+            order.assigned_to = self.request.user
+            order.assigned_at = timezone.now()
+            order.save(update_fields=['assigned_to', 'assigned_at'])
+
+    def perform_update(self, serializer):
+        order = serializer.save()
+        # Если заказ стал не общим и нет исполнителя — назначаем пользователя, который его редактирует
+        if not order.is_public and order.assigned_to is None:
+            order.assigned_to = self.request.user
+            order.assigned_at = timezone.now()
+            order.save(update_fields=['assigned_to', 'assigned_at'])
 
     def update(self, request, *args, **kwargs):
         """
@@ -125,6 +156,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         order = serializer.save(created_by=request.user)
         
+        # Если заказ не общий — сразу назначаем создателя исполнителем
+        if not order.is_public and order.assigned_to is None:
+            order.assigned_to = request.user
+            order.assigned_at = timezone.now()
+            order.save(update_fields=['assigned_to', 'assigned_at'])
+        
         # Обрабатываем несколько фото
         photos = []
         # Поддержка разных форматов: photos (множественное число), photo[], photo[0], photo[1], или просто photo
@@ -173,11 +210,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         POST /api/orders/{pk}/add_service/
         Тело: { "description": "...", "price": 123.45 }
+        ВАЖНО: Услуга автоматически привязывается к текущему пользователю в поле created_by
         """
         order = get_object_or_404(Order, pk=pk)
-        serializer = ServiceSerializer(data=request.data)
+        serializer = ServiceSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(order=order)
+            serializer.save(order=order, created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -185,12 +223,237 @@ class OrderViewSet(viewsets.ModelViewSet):
     def delete_service(self, request, pk=None, service_id=None):
         """
         DELETE /api/orders/{pk}/services/{service_id}/
-        Удаляет услугу с указанным service_id, привязанную к заказу pk.
+        Удаляет услугу. Сотрудник может удалять только СВОИ добавленные услуги.
+        Создатель заказа может удалять любые услуги.
         """
         order = get_object_or_404(Order, pk=pk)
         service = get_object_or_404(Service, pk=service_id, order=order)
+        
+        # Проверка прав: только создатель услуги или создатель заказа
+        if service.created_by != request.user and order.created_by != request.user:
+            return Response(
+                {"error": "Вы можете удалять только добавленные вами услуги"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         service.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # =============================================
+    # Новые actions для коллаборации и общих заказов
+    # =============================================
+
+    @action(detail=True, methods=['post'])
+    def accept_order(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/accept_order/
+        Принять общий заказ — стать исполнителем.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        if not order.is_public:
+            return Response({"error": "Этот заказ не является общим"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if order.assigned_to is not None:
+            return Response({"error": "Заказ уже принят"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if order.created_by == request.user:
+            return Response({"error": "Вы не можете принять свой же заказ"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        order.assigned_to = request.user
+        order.assigned_at = timezone.now()
+        order.save(update_fields=['assigned_to', 'assigned_at'])
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def reject_acceptance(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/reject_acceptance/
+        Создатель отклоняет принятие заказа другим сотрудником.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        if order.created_by != request.user:
+            return Response({"error": "Только создатель может отклонить принятие"}, status=status.HTTP_403_FORBIDDEN)
+        
+        if order.assigned_to is None:
+            return Response({"error": "Заказ ещё не принят"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        order.assigned_to = None
+        order.assigned_at = None
+        order.save(update_fields=['assigned_to', 'assigned_at'])
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def release_order(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/release_order/
+        Исполнитель отказывается от заказа.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        if order.assigned_to != request.user:
+            return Response({"error": "Вы не являетесь исполнителем этого заказа"}, status=status.HTTP_403_FORBIDDEN)
+        
+        order.assigned_to = None
+        order.assigned_at = None
+        order.save(update_fields=['assigned_to', 'assigned_at'])
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def invite_collaborator(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/invite_collaborator/
+        Пригласить сотрудника на заказ (коллаборация).
+        Тело: { "user_id": 123 }
+        Максимум 5 участников (создатель/исполнитель + до 4 коллабораторов).
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        # Только создатель или исполнитель могут приглашать
+        if order.created_by != request.user and order.assigned_to != request.user:
+            return Response({"error": "Только создатель или исполнитель могут приглашать"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "Укажите user_id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Проверяем лимит участников (5 максимум)
+        current_count = order.collaborators.count()
+        # Считаем: создатель (1) + исполнитель (если есть, 1) + коллабораторы
+        total_participants = 1 + (1 if order.assigned_to else 0) + current_count
+        if total_participants >= 5:
+            return Response({"error": "Максимум 5 участников на заказе"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        target_user = get_object_or_404(User, pk=user_id)
+        
+        # Нельзя пригласить себя, создателя или исполнителя
+        if target_user == order.created_by or target_user == order.assigned_to:
+            return Response({"error": "Этот сотрудник уже участвует в заказе"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Проверяем, не является ли уже коллаборатором
+        if OrderCollaborator.objects.filter(order=order, user=target_user).exists():
+            return Response({"error": "Сотрудник уже добавлен"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        OrderCollaborator.objects.create(order=order, user=target_user)
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def leave_order(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/leave_order/
+        Коллаборатор покидает заказ.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        collaborator = OrderCollaborator.objects.filter(order=order, user=request.user).first()
+        if not collaborator:
+            return Response({"error": "Вы не являетесь коллаборатором этого заказа"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        collaborator.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def remove_collaborator(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/remove_collaborator/
+        Создатель или исполнитель удаляет коллаборатора из заказа.
+        Тело: { "user_id": 123 }
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        # Только создатель или исполнитель могут удалять коллабораторов
+        if order.created_by != request.user and order.assigned_to != request.user:
+            return Response({"error": "Только создатель или исполнитель могут удалять участников"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "Укажите user_id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        collaborator = OrderCollaborator.objects.filter(order=order, user_id=user_id).first()
+        if not collaborator:
+            return Response({"error": "Сотрудник не является коллаборатором"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        collaborator.delete()
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def public_orders(self, request):
+        """
+        GET /api/orders/public_orders/
+        Список общих непринятых заказов (доступны для принятия).
+        """
+        orders = Order.objects.filter(
+            is_public=True,
+            assigned_to__isnull=True
+        ).order_by('-created_at')
+        serializer = self.get_serializer(orders, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def my_assigned(self, request):
+        """
+        GET /api/orders/my_assigned/
+        Заказы, принятые текущим пользователем.
+        """
+        orders = Order.objects.filter(
+            assigned_to=request.user
+        ).order_by('-created_at')
+        serializer = self.get_serializer(orders, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='services/(?P<service_id>[^/.]+)/toggle_status')
+    def toggle_service_status(self, request, pk=None, service_id=None):
+        """
+        POST /api/orders/{pk}/services/{service_id}/toggle_status/
+        Переключить статус услуги: pending ↔ done
+        При переключении в 'done', исполнителем (performed_by) становится тот, кто нажал чекбокс.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        service = get_object_or_404(Service, pk=service_id, order=order)
+        
+        # Переключаем статус и назначаем исполнителя
+        if service.service_status == 'pending':
+            service.service_status = 'done'
+            service.performed_by = request.user
+        else:
+            service.service_status = 'pending'
+            service.performed_by = None
+            
+        service.save(update_fields=['service_status', 'performed_by'])
+        
+        serializer = ServiceSerializer(service, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def available_employees(self, request, pk=None):
+        """
+        GET /api/orders/{pk}/available_employees/
+        Список сотрудников для приглашения на заказ.
+        Возвращает всех сотрудников кроме текущего, создателя и коллабораторов.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        
+        # Участники заказа
+        members = set()
+        if order.created_by: members.add(order.created_by.id)
+        if order.assigned_to: members.add(order.assigned_to.id)
+        for collab in order.collaborators.all():
+            members.add(collab.user_id)
+            
+        employees = User.objects.exclude(id__in=members).filter(is_active=True)
+        serializer = UserSerializer(employees, many=True, context={'request': request})
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='photos/upload', parser_classes=[MultiPartParser, FormParser])
     def upload_photos(self, request, pk=None):

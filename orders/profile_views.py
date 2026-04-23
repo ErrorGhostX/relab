@@ -7,8 +7,18 @@ from django.contrib.auth.models import User
 from .models import UserProfile
 from .serializers import UserSerializer, UserUpdateSerializer
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_by_id(request, pk):
+    """
+    GET /api/auth/users/<pk>/ - Получить пользователя с профилем
+    """
+    user = get_object_or_404(User, pk=pk)
+    UserProfile.objects.get_or_create(user=user)
+    serializer = UserSerializer(user, context={'request': request})
+    return Response(serializer.data)
 @api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([IsAuthenticated])
 def get_current_user(request):

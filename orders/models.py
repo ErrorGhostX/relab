@@ -69,6 +69,20 @@ class Order(models.Model):
         related_name='orders'
     )
     
+    # Общий заказ — виден всем сотрудникам
+    is_public = models.BooleanField(default=False, verbose_name='Общий заказ')
+    
+    # Исполнитель — кто принял заказ
+    assigned_to = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='assigned_orders',
+        verbose_name='Исполнитель'
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата принятия')
+    
     # Дата создания заказа (автоматически при создании)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -110,6 +124,8 @@ class Order(models.Model):
 class Service(models.Model):
     """
     Одна строка отчёта — одна оказанная услуга.
+    Каждая услуга привязана к конкретному сотруднику (performed_by).
+    Сотрудник может добавлять/удалять только СВОИ услуги.
     """
     order = models.ForeignKey(
         Order,
@@ -123,9 +139,42 @@ class Service(models.Model):
     # Баллы сложности услуги (от 1 до 10, где 1 - простая, 10 - очень сложная)
     complexity_points = models.IntegerField(default=1, help_text="Баллы сложности от 1 до 10")
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Кто добавил эту услугу
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_services',
+        verbose_name='Создатель услуги'
+    )
+    
+    # Кто выполняет эту услугу (отмечено чекбоксом)
+    performed_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='performed_services',
+        verbose_name='Исполнитель услуги'
+    )
+    
+    # Статус услуги: в ожидании / выполнена
+    SERVICE_STATUS_CHOICES = (
+        ('pending', 'В ожидании'),
+        ('done', 'Выполнена'),
+    )
+    service_status = models.CharField(
+        max_length=20,
+        choices=SERVICE_STATUS_CHOICES,
+        default='pending',
+        verbose_name='Статус услуги'
+    )
 
     def __str__(self):
-        return f"{self.order.order_number}: {self.description} — {self.price:.2f} (сложность: {self.complexity_points})"
+        performer = self.performed_by.username if self.performed_by else 'Не назначен'
+        return f"{self.order.order_number}: {self.description} — {self.price:.2f} ({performer}, {self.get_service_status_display()})"
 
 
 class OrderPhoto(models.Model):
@@ -151,9 +200,36 @@ class OrderPhoto(models.Model):
         return f"Photo {self.order_index} for order {self.order.order_number}"
 
 
+class OrderCollaborator(models.Model):
+    """
+    Участники заказа (коллабораторы).
+    Максимум 5 сотрудников на одном заказе (создатель/исполнитель + до 4 коллабораторов).
+    Все участники равноправны (нет ролей).
+    """
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='collaborators'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='collaborations'
+    )
+    joined_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата присоединения')
+
+    class Meta:
+        unique_together = ('order', 'user')
+        verbose_name = 'Коллаборатор заказа'
+        verbose_name_plural = 'Коллабораторы заказов'
+
+    def __str__(self):
+        return f"{self.user.username} → {self.order.order_number}"
+
+
 class UserProfile(models.Model):
     """
-    Расширенный профиль пользователя с ФИО, аватаром, рангом и телефоном
+    Расширенный профиль пользователя с ФИО, аватаром, рангом, телефоном и специализацией
     """
     RANK_CHOICES = (
         ('admin', 'Администратор'),
@@ -171,9 +247,17 @@ class UserProfile(models.Model):
         default='employee',
         verbose_name='Ранг'
     )
+    specialization = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='Специализация',
+        help_text='Например: Мастер по видеокартам, Приёмщик заказов'
+    )
     
     def __str__(self):
-        return f"{self.user.username} - {self.full_name or 'Без ФИО'} ({self.get_rank_display()})"
+        spec = f" [{self.specialization}]" if self.specialization else ""
+        return f"{self.user.username} - {self.full_name or 'Без ФИО'} ({self.get_rank_display()}){spec}"
 
 
 @receiver(post_save, sender=User)
