@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.output.ByteArrayOutputStream
 import egx.relab_app.R
@@ -38,6 +39,7 @@ import egx.relab_app.app
 import egx.relab_app.databinding.FragmentOrderDetailBinding
 import egx.relab_app.databinding.ItemPresetServiceBinding
 import egx.relab_app.models.Order
+import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
 import egx.relab_app.repository.OrderRepository
 import kotlinx.coroutines.*
@@ -188,7 +190,7 @@ class OrderDetailFragment : Fragment() {
 
                 // После загрузки из локальной БД обновляем с сервера в фоне
                 if (currentOrder.id != null) {
-                    loadOrderDetailsFromServer()
+                    refreshOrderFromServer(currentOrder.id!!)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("OrderDetail", "Ошибка загрузки из локальной БД", e)
@@ -254,10 +256,17 @@ class OrderDetailFragment : Fragment() {
 
 // Разрешаем управление, если пользователь — админ или он — создатель заказа
         canManageOrder = (userRank == "admin") || (!order.createdByUsername.isNullOrEmpty() && order.createdByUsername == currentUsername)
+        
+        // Коллабораторы и исполнители тоже могут добавлять услуги
+        val isAssigned = order.assignedToUsername == currentUsername
+        val isCollaborator = order.collaborators.any { it.username == currentUsername }
 
 // Применяем видимость к кнопкам управления
         val manageVisibility = if (canManageOrder) View.VISIBLE else View.GONE
-        binding.buttonAddService.visibility = manageVisibility
+        
+        // Кнопка добавления услуги видна всем участникам (владелец, исполнитель, коллаборатор)
+        binding.buttonAddService.visibility = if (canManageOrder || isAssigned || isCollaborator) View.VISIBLE else View.GONE
+        
         binding.buttonEdit.visibility = manageVisibility
         binding.buttonDelete.visibility = manageVisibility
 
@@ -405,7 +414,9 @@ class OrderDetailFragment : Fragment() {
         description.text = formatText("Описание: ${order.description}")
         date.text = formatText("Дата: ${order.date}")
         orderType.text = formatText("Тип заказа: ${orderTypeMap[order.orderType] ?: order.orderType}")
-        status.text = formatText("Статус: ${statusMap[order.status] ?: order.status}")
+        
+        // Отображение статуса в виде бейджа
+        bindStatusBadge(order.status)
         
         // Отображение сложности заказа
         val complexityText = if (order.complexityPercentage != null) {
@@ -416,6 +427,7 @@ class OrderDetailFragment : Fragment() {
         }
         binding.orderComplexity.text = formatText(complexityText)
 
+        bindCollaborationUI(order)
         displayServices(order)
 
         updatePhotosList()
@@ -433,20 +445,27 @@ class OrderDetailFragment : Fragment() {
             })
             return
         }
+        
+        val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        val currentUsername = tokenManager.username ?: ""
+        
+        // Дополнительные статусы для разрешений (рассчитываем для всего списка услуг)
+        val isAssigned = order.assignedToUsername == currentUsername
+        val isCollaborator = order.collaborators.any { it.username == currentUsername }
+        
         order.services.forEachIndexed { index, svc ->
             val row = layoutInflater.inflate(R.layout.item_service, container, false)
-            // Отображаем услугу с баллами сложности
-            val serviceText = "${svc.description}: ${"%.2f".format(svc.price)} ₽"
-            val complexityText = " (сложность: ${svc.complexityPoints}/10)"
-            row.findViewById<TextView>(R.id.tvServiceDesc).text = serviceText + complexityText
-
+            
+            // Права на эту конкретную услугу (создатель имеет полные права удаления)
+            val isServiceCreator = svc.createdByUsername == currentUsername || svc.createdByUsername == null // null fallback for old services
+            val canDeleteThisService = canManageOrder || isServiceCreator
+            
             val deleteBtn = row.findViewById<ImageButton>(R.id.btnDeleteService)
-            deleteBtn.visibility = if (canManageOrder) View.VISIBLE else View.GONE
+            deleteBtn.visibility = if (canDeleteThisService) View.VISIBLE else View.GONE
 
             deleteBtn.setOnClickListener {
-                // двойная проверка перед удалением
-                if (!canManageOrder) {
-                    showToast("Недостаточно прав для удаления услуги")
+                if (!canDeleteThisService) {
+                    showToast("Ошиба прав. Вы можете удалять только свои услуги")
                     return@setOnClickListener
                 }
                 deleteServiceByDescription(
@@ -457,7 +476,91 @@ class OrderDetailFragment : Fragment() {
                     serviceIndex = index
                 )
             }
+            
+            // Чекбокс статуса
+            val cbStatus = row.findViewById<CheckBox>(R.id.cbServiceStatus)
+            cbStatus.isChecked = svc.serviceStatus == "done"
+            
+            // Кто может переключать статус
+            // - В 'done' может перевести: исполнитель заказа, любой коллаборатор или админ
+            // - Из 'done' в 'pending' может вернуть: только Тот кто выполнил, или админ
+            val isPerformedByMe = svc.performedByUsername == currentUsername
+            
+            val canToggleStatus = if (svc.serviceStatus == "done") {
+                isPerformedByMe || canManageOrder
+            } else {
+                canManageOrder || isAssigned || isCollaborator
+            }
+            
+            cbStatus.isEnabled = canToggleStatus
+            
+            if (canToggleStatus && order.id != null && svc.id > 0) {
+                cbStatus.setOnClickListener {
+                    toggleServiceStatus(order.id!!, svc.id)
+                }
+            } else if (svc.serviceStatus == "done" && !canToggleStatus) {
+                cbStatus.setOnClickListener {
+                    showToast("Только исполнитель (${svc.performedByFullName ?: svc.performedByUsername}) может отменить услугу")
+                    cbStatus.isChecked = true // Возвращаем галку
+                }
+            }
 
+            // Описание, цена и сложность
+            val serviceText = "${svc.description} \nЦена: ${"%.2f".format(svc.price)} ₽"
+            row.findViewById<TextView>(R.id.tvServiceDesc).text = serviceText
+            
+            val chipComplexity = row.findViewById<com.google.android.material.chip.Chip>(R.id.chipComplexity)
+            chipComplexity.text = "Сложность: ${svc.complexityPoints}/10"
+            
+            // Исполнитель (Аватар слева)
+            val ivPerformer = row.findViewById<ImageView>(R.id.ivPerformerAvatar)
+            if (svc.serviceStatus == "done") {
+                ivPerformer.visibility = View.VISIBLE
+                if (!svc.performedByAvatar.isNullOrEmpty() && svc.performedByAvatar != "null") {
+                    Glide.with(this).load(svc.performedByAvatar).placeholder(R.drawable.relab).circleCrop().into(ivPerformer)
+                } else {
+                    ivPerformer.setImageResource(R.drawable.relab)
+                }
+                
+                // Клик по исполнителю
+                svc.performedBy?.let { userId ->
+                    ivPerformer.setOnClickListener { showProfileBottomSheet(userId) }
+                }
+            } else {
+                ivPerformer.visibility = View.GONE
+            }
+            
+            // Создатель (Аватар справа перед удалением)
+            val ivCreator = row.findViewById<ImageView>(R.id.ivCreatorAvatar)
+            if (!svc.createdByAvatar.isNullOrEmpty() && svc.createdByAvatar != "null") {
+                Glide.with(this).load(svc.createdByAvatar).placeholder(R.drawable.relab).circleCrop().into(ivCreator)
+            } else {
+                ivCreator.setImageResource(R.drawable.relab)
+            }
+            
+            // Клик по создателю
+            svc.createdBy?.let { userId ->
+                ivCreator.setOnClickListener { showProfileBottomSheet(userId) }
+            }
+            
+            // Кнопка удаления услуги
+            val btnDelete = row.findViewById<ImageButton>(R.id.btnDeleteService)
+            // Только создатель услуги или создатель заказа или админ
+            val canDelete = canManageOrder || svc.createdByUsername == currentUsername
+            
+            btnDelete.visibility = if (canDelete) View.VISIBLE else View.GONE
+            if (canDelete) {
+                btnDelete.setOnClickListener {
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Удалить услугу")
+                        .setMessage("Вы уверены, что хотите удалить услугу \"${svc.description}\"?")
+                        .setPositiveButton("Удалить") { _, _ ->
+                            deleteService(order.id!!, svc.id)
+                        }
+                        .setNegativeButton("Отмена", null)
+                        .show()
+                }
+            }
 
             container.addView(row)
         }
@@ -468,6 +571,45 @@ class OrderDetailFragment : Fragment() {
             setTextAppearance(R.style.DetailTextStyleBlack)
             setPadding(0, 10, 0, 4)
         })
+    }
+    
+    /**
+     * Переключить статус услуги (pending <-> done)
+     */
+    private fun toggleServiceStatus(orderId: Int, serviceId: Int) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.toggleServiceStatus(orderId, serviceId)
+                }
+                showToast("Статус услуги обновлён")
+                refreshOrderFromServer(orderId)
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка переключения статуса услуги", e)
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Удалить услугу из заказа
+     */
+    private fun deleteService(orderId: Int, serviceId: Int) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val response = RetrofitClient.apiService.deleteService(orderId, serviceId).execute()
+                    if (!response.isSuccessful) {
+                        throw Exception(response.errorBody()?.string() ?: "Ошибка удаления")
+                    }
+                }
+                showToast("Услуга удалена")
+                refreshOrderFromServer(orderId)
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка удаления услуги", e)
+                showToast("Ошибка: ${e.message}")
+            }
+        }
     }
 
     /**
@@ -1327,6 +1469,484 @@ class OrderDetailFragment : Fragment() {
         override fun getItemCount() = photoUris.size
     }
      */
+
+    // ==================== COLLABORATION UI ====================
+    
+    /**
+     */
+    private fun bindStatusBadge(statusValue: String?) {
+        val statusName = statusMap[statusValue] ?: statusValue ?: "—"
+        binding.status.text = statusName.uppercase()
+        
+        val (bgColor, textColor) = when (statusValue?.lowercase()) {
+            "new", "новый" -> R.color.status_new_bg to R.color.status_new
+            "working", "в работе", "work", "in_progress" -> R.color.status_work_bg to R.color.status_work
+            "completed", "выполнен", "done", "ready", "finished" -> R.color.status_completed_bg to R.color.status_completed
+            "cancelled", "отменен", "cancel" -> R.color.status_cancelled_bg to R.color.status_cancelled
+            "waiting", "ожидание", "pending" -> R.color.status_waiting_bg to R.color.status_waiting
+            else -> R.color.status_default_bg to R.color.status_default
+        }
+        
+        binding.status.setTextColor(resources.getColor(textColor, null))
+        
+        // Создаем фон с закругленными углами и цветом
+        val shape = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = 8 * resources.displayMetrics.density
+            setColor(resources.getColor(bgColor, null))
+        }
+        binding.status.background = shape
+    }
+
+    /**
+     * Отображение информации о коллаборации:
+     * - Исполнитель (assigned_to)
+     * - Метка «Общий заказ» (is_public)
+     * - Список коллабораторов
+     * - Кнопки: Принять / Отклонить / Пригласить / Покинуть
+     */
+    private fun bindCollaborationUI(order: Order) {
+        val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        val currentUsername = tokenManager.username ?: ""
+        val isCreator = order.createdByUsername == currentUsername
+        val isAssigned = order.assignedToUsername == currentUsername
+        val isCollaborator = order.collaborators.any { it.username == currentUsername }
+        
+        // --- Исполнитель ---
+        if (!order.assignedToFullName.isNullOrEmpty() || !order.assignedToUsername.isNullOrEmpty()) {
+            val name = order.assignedToFullName ?: order.assignedToUsername ?: "Не назначен"
+            binding.assignedToName.text = name
+            
+            if (!order.assignedToAvatar.isNullOrEmpty() && order.assignedToAvatar != "null") {
+                Glide.with(binding.root.context)
+                    .load(order.assignedToAvatar)
+                    .placeholder(R.mipmap.ic_launcher_round)
+                    .error(R.mipmap.ic_launcher_round)
+                    .circleCrop()
+                    .into(binding.assignedToAvatar)
+            } else {
+                binding.assignedToAvatar.setImageResource(R.mipmap.ic_launcher_round)
+            }
+        } else {
+            binding.assignedToName.text = "Не назначен"
+            binding.assignedToAvatar.setImageResource(R.mipmap.ic_launcher_round)
+        }
+        
+        // --- Метка «Общий заказ» ---
+        binding.labelPublicOrder.visibility = if (order.isPublic) View.VISIBLE else View.GONE
+        
+        // --- Общие переменные для кнопок ---
+        val orderId = order.id
+        val hasAssignee = !order.assignedToUsername.isNullOrEmpty()
+        
+        // --- Коллабораторы ---
+        val collabContainer = binding.collaboratorsContainer
+        collabContainer.removeAllViews()
+        if (order.collaborators.isNotEmpty()) {
+            val headerView = TextView(requireContext()).apply {
+                text = "Участники (${order.collaborators.size}):"
+                setTextColor(resources.getColor(R.color.gray_900, null))
+                textSize = 13f
+                setTypeface(null, Typeface.BOLD)
+                setPadding(0, 0, 0, 4)
+            }
+            collabContainer.addView(headerView)
+            
+            order.collaborators.forEach { collab ->
+                val collabView = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(0, 4, 0, 4)
+                }
+                
+                val avatarView = ImageView(requireContext()).apply {
+                    val size = (22 * resources.displayMetrics.density).toInt()
+                    layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                        marginEnd = (6 * resources.displayMetrics.density).toInt()
+                    }
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setImageResource(R.mipmap.ic_launcher_round)
+                }
+                
+                if (!collab.avatar.isNullOrEmpty() && collab.avatar != "null") {
+                    Glide.with(requireContext())
+                        .load(collab.avatar)
+                        .placeholder(R.mipmap.ic_launcher_round)
+                        .error(R.mipmap.ic_launcher_round)
+                        .circleCrop()
+                        .into(avatarView)
+                }
+                
+                // Клик по аватарке участника
+                if (collab.userId != null) {
+                    avatarView.setOnClickListener { showProfileBottomSheet(collab.userId) }
+                }
+                
+                val nameView = TextView(requireContext()).apply {
+                    text = collab.fullName ?: collab.username
+                    setTextColor(resources.getColor(R.color.gray_900, null))
+                    textSize = 13f
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                
+                collabView.addView(avatarView)
+                collabView.addView(nameView)
+                
+                // Кнопка удаления коллаборатора — видна создателю или исполнителю
+                if ((isCreator || isAssigned) && orderId != null && collab.userId != null) {
+                    val removeBtn = ImageButton(requireContext()).apply {
+                        val btnSize = (24 * resources.displayMetrics.density).toInt()
+                        layoutParams = LinearLayout.LayoutParams(btnSize, btnSize).apply {
+                            marginStart = (8 * resources.displayMetrics.density).toInt()
+                        }
+                        setImageResource(android.R.drawable.ic_delete)
+                        setColorFilter(resources.getColor(R.color.error_red, null))
+                        setBackgroundColor(Color.TRANSPARENT)
+                        contentDescription = "Удалить участника"
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        setPadding(0, 0, 0, 0)
+                    }
+                    removeBtn.setOnClickListener {
+                        val collabUserId = collab.userId!!
+                        val collabName = collab.fullName ?: collab.username ?: "участника"
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Удалить участника")
+                            .setMessage("Удалить $collabName из заказа?")
+                            .setPositiveButton("Удалить") { _, _ ->
+                                removeCollaborator(orderId!!, collabUserId)
+                            }
+                            .setNegativeButton("Отмена", null)
+                            .show()
+                    }
+                    collabView.addView(removeBtn)
+                }
+                
+                collabContainer.addView(collabView)
+            }
+        }
+        
+        // --- Кнопки ---
+        
+        // Принять — виден если заказ общий, нет исполнителя, и я не создатель
+        binding.buttonAcceptOrder.visibility = if (
+            order.isPublic && !hasAssignee && !isCreator && orderId != null
+        ) View.VISIBLE else View.GONE
+        
+        // Отклонить — виден создателю если есть исполнитель
+        binding.buttonRejectAcceptance.visibility = if (
+            isCreator && hasAssignee && orderId != null
+        ) View.VISIBLE else View.GONE
+        
+        // Пригласить — виден создателю или исполнителю
+        binding.buttonInvite.visibility = if (
+            (isCreator || isAssigned) && orderId != null
+        ) View.VISIBLE else View.GONE
+        
+        // Покинуть — виден коллаборатору (не создателю)
+        binding.buttonLeaveOrder.visibility = if (
+            isCollaborator && !isCreator && orderId != null
+        ) View.VISIBLE else View.GONE
+
+        // Отказаться — виден если я назначен на заказ
+        binding.buttonReleaseOrder.visibility = if (
+            isAssigned && orderId != null
+        ) View.VISIBLE else View.GONE
+        
+        // --- Обработчики кнопок ---
+        binding.buttonAcceptOrder.setOnClickListener {
+            if (orderId != null) acceptOrder(orderId)
+        }
+        
+        binding.buttonRejectAcceptance.setOnClickListener {
+            if (orderId != null) rejectAcceptance(orderId)
+        }
+        
+        binding.buttonInvite.setOnClickListener {
+            if (orderId != null) showInviteDialog(orderId)
+        }
+        
+        binding.buttonLeaveOrder.setOnClickListener {
+            if (orderId != null) leaveOrder(orderId)
+        }
+
+        binding.buttonReleaseOrder.setOnClickListener {
+            if (orderId != null) releaseOrder(orderId)
+        }
+    }
+    
+    // ==================== COLLABORATION ACTIONS ====================
+    
+    /**
+     * Извлечь понятное сообщение об ошибке из ответа сервера
+     */
+    private fun parseServerError(e: Exception): String {
+        if (e is retrofit2.HttpException) {
+            try {
+                val errorBody = e.response()?.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    val json = org.json.JSONObject(errorBody)
+                    if (json.has("error")) {
+                        return json.getString("error")
+                    }
+                    if (json.has("detail")) {
+                        return json.getString("detail")
+                    }
+                    return errorBody
+                }
+            } catch (_: Exception) {}
+        }
+        return e.message ?: "Неизвестная ошибка"
+    }
+    
+    private fun acceptOrder(orderId: Int) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.acceptOrder(orderId)
+                }
+                showToast("Заказ принят")
+                refreshOrderFromServer(orderId)
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка принятия заказа", e)
+                showToast(parseServerError(e))
+            }
+        }
+    }
+
+    private fun releaseOrder(orderId: Int) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Отказаться от заказа")
+            .setMessage("Вы уверены, что хотите отказаться от выполнения этого заказа? Он снова станет общим.")
+            .setPositiveButton("Отказаться") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            RetrofitClient.apiService.releaseOrder(orderId)
+                        }
+                        showToast("Вы отказались от заказа")
+                        refreshOrderFromServer(orderId)
+                    } catch (e: Exception) {
+                        Log.e("OrderDetail", "Ошибка отказа от заказа", e)
+                        showToast(parseServerError(e))
+                    }
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+    
+    private fun rejectAcceptance(orderId: Int) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Отклонить исполнителя")
+            .setMessage("Отклонить текущего исполнителя заказа?")
+            .setPositiveButton("Отклонить") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            RetrofitClient.apiService.rejectAcceptance(orderId)
+                        }
+                        showToast("Исполнитель отклонён")
+                        refreshOrderFromServer(orderId)
+                    } catch (e: Exception) {
+                        Log.e("OrderDetail", "Ошибка отклонения", e)
+                        showToast(parseServerError(e))
+                    }
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+    
+    private fun removeCollaborator(orderId: Int, userId: Int) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.removeCollaborator(
+                        orderId,
+                        ApiService.RemoveCollaboratorRequest(userId)
+                    )
+                }
+                showToast("Участник удалён")
+                refreshOrderFromServer(orderId)
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка удаления коллаборатора", e)
+                showToast(parseServerError(e))
+            }
+        }
+    }
+    
+    private fun showInviteDialog(orderId: Int) {
+        // Загружаем список доступных сотрудников
+        lifecycleScope.launch {
+            try {
+                val employees = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getAvailableEmployees(orderId)
+                }
+                
+                if (employees.isEmpty()) {
+                    showToast("Нет доступных сотрудников")
+                    return@launch
+                }
+                
+                val names = employees.map { it.fullName ?: it.username }.toTypedArray()
+                val userIds = employees.map { it.id }.toIntArray()
+                
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Пригласить сотрудника")
+                    .setItems(names) { _, which ->
+                        val selectedUserId = userIds[which]
+                        inviteCollaborator(orderId, selectedUserId)
+                    }
+                    .setNegativeButton("Отмена", null)
+                    .show()
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка загрузки сотрудников", e)
+                showToast("Ошибка загрузки списка сотрудников")
+            }
+        }
+    }
+    
+    private fun inviteCollaborator(orderId: Int, userId: Int) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.inviteCollaborator(
+                        orderId,
+                        ApiService.InviteRequest(userId)
+                    )
+                }
+                showToast("Сотрудник приглашён")
+                refreshOrderFromServer(orderId)
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка приглашения", e)
+                showToast(parseServerError(e))
+            }
+        }
+    }
+    
+    private fun leaveOrder(orderId: Int) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Покинуть заказ")
+            .setMessage("Вы уверены, что хотите покинуть этот заказ?")
+            .setPositiveButton("Покинуть") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        val response = withContext(Dispatchers.IO) {
+                            RetrofitClient.apiService.leaveOrder(orderId)
+                        }
+                        
+                        if (response.isSuccessful) {
+                            showToast("Вы покинули заказ")
+                            refreshOrderFromServer(orderId)
+                        } else {
+                            val errorMsg = response.errorBody()?.string() ?: "Неизвестная ошибка"
+                            showToast("Ошибка сервера: $errorMsg")
+                            if (response.code() == 400) {
+                                refreshOrderFromServer(orderId)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("OrderDetail", "Ошибка покидания заказа", e)
+                        
+                        // Обработка 400 Bad Request (Вы не являетесь коллаборатором)
+                        if (e is retrofit2.HttpException && e.code() == 400) {
+                            showToast("Вы уже не являетесь участником этого заказа")
+                            // Принудительно обновляем данные, чтобы убрать кнопку Покинуть
+                            refreshOrderFromServer(orderId)
+                        } else {
+                            showToast("Ошибка: ${e.message}")
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+    
+    /**
+     * Обновить заказ с сервера после действий коллаборации
+     */
+    private fun refreshOrderFromServer(orderId: Int) {
+        lifecycleScope.launch {
+            try {
+                val updatedOrder = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getOrderById(orderId.toString())
+                }
+                currentOrder = updatedOrder
+                
+                // Сохраняем в локальную БД
+                repository.saveOrderFromServer(updatedOrder)
+                
+                if (isAdded && _binding != null) {
+                    bindOrderToUI(updatedOrder)
+                }
+            } catch (e: Exception) {
+                Log.e("OrderDetail", "Ошибка обновления заказа с сервера", e)
+            }
+        }
+    }
+
+    private fun showProfileBottomSheet(userId: Int) {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val bottomSheetView = layoutInflater.inflate(R.layout.bottom_sheet_profile, null)
+        bottomSheetDialog.setContentView(bottomSheetView)
+        
+        val tvFullName = bottomSheetView.findViewById<TextView>(R.id.tvProfileFullName)
+        val tvUsername = bottomSheetView.findViewById<TextView>(R.id.tvProfileUsername)
+        val tvSpecialization = bottomSheetView.findViewById<TextView>(R.id.tvProfileSpecialization)
+        val ivAvatar = bottomSheetView.findViewById<ImageView>(R.id.ivProfileAvatar)
+        val tvPhone = bottomSheetView.findViewById<TextView>(R.id.tvProfilePhone)
+        val tvRank = bottomSheetView.findViewById<TextView>(R.id.tvProfileRank)
+        val btnMoreDetails = bottomSheetView.findViewById<View>(R.id.btnMoreDetails)
+        
+        // Show loading state
+        tvFullName.text = "Загрузка..."
+        tvUsername.text = ""
+        tvSpecialization.text = ""
+        tvPhone.text = ""
+        tvRank.text = ""
+        
+        bottomSheetDialog.show()
+        
+        lifecycleScope.launch {
+            try {
+                val profile = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    RetrofitClient.apiService.getUserProfile(userId)
+                }
+                
+                // Update UI
+                tvFullName.text = profile.full_name ?: profile.first_name ?: profile.username
+                tvUsername.text = "@${profile.username}"
+                tvSpecialization.text = profile.specialization ?: "Сотрудник"
+                tvRank.text = "Ранг: ${profile.rank_display ?: "не указан"}"
+                
+                if (!profile.phone.isNullOrEmpty()) {
+                    tvPhone.text = profile.phone
+                } else {
+                    tvPhone.text = "Нет телефона"
+                }
+                
+                if (!profile.avatar.isNullOrEmpty() && profile.avatar != "null") {
+                    Glide.with(requireContext())
+                        .load(profile.avatar)
+                        .placeholder(R.drawable.relab)
+                        .circleCrop()
+                        .into(ivAvatar)
+                }
+                
+                btnMoreDetails.setOnClickListener {
+                    bottomSheetDialog.dismiss()
+                    val bundle = Bundle().apply {
+                        putInt("userId", userId)
+                    }
+                    findNavController().navigate(R.id.profileFragment, bundle)
+                }
+            } catch (e: Exception) {
+                // Если ошибка
+                tvFullName.text = "Ошибка загрузки"
+            }
+        }
+    }
 
     // Фух конец
     override fun onDestroyView() {

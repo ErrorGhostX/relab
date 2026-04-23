@@ -159,71 +159,208 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/orderId"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:text="ID: 123"
+                            android:textColor="@color/gray_900"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/orderNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:text="Номер заказа: 12345"
+                            android:textColor="@color/gray_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Статус заказа (Бейдж) -->
                     <TextView
-                        android:id="@+id/orderId"
+                        android:id="@+id/status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
-                        android:text="ID: 123"
-                        android:textColor="@color/gray_900"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/orderNumber"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:text="Номер заказа: 12345"
-                        android:textColor="@color/gray_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:text="НОВЫЙ"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:background="@color/gray_800" />
                 </LinearLayout>
 
 
                 <!-- Кто создал -->
                 <LinearLayout
-                    android:layout_width="347dp"
-                    android:layout_height="34dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
 
-                    <!-- "Создан:" -->
                     <TextView
-                        android:id="@+id/orderCreatedLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Создан:"
+                        android:text="Создан: "
                         android:textColor="@color/gray_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold"/>
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-
-                    <!-- Аватар -->
                     <ImageView
                         android:id="@+id/createdByAvatar"
-                        android:layout_width="34dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="6dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:layout_marginEnd="6dp"
                         android:scaleType="centerCrop"
                         android:src="@mipmap/ic_launcher_round" />
 
-                    <!-- ФИО / username -->
                     <TextView
                         android:id="@+id/orderCreatedName"
-                        android:layout_width="236dp"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Иван Иванов"
+                        android:layout_weight="1"
+                        android:text="Загрузка..."
                         android:textColor="@color/gray_900"
                         android:textSize="14sp" />
+                </LinearLayout>
+                
+                <!-- Информация об исполнителе и коллаборации (ПЕРЕНЕСЕНО НАВЕРХ) -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="8dp"
+                    android:background="@color/gray_900" />
 
+                <LinearLayout
+                    android:id="@+id/layoutAssignedTo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Исполнитель: "
+                        android:textColor="@color/gray_900"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/assignedToAvatar"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="6dp"
+                        android:scaleType="centerCrop"
+                        android:src="@mipmap/ic_launcher_round" />
+
+                    <TextView
+                        android:id="@+id/assignedToName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Не назначен"
+                        android:textColor="@color/gray_900"
+                        android:textSize="14sp" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/labelPublicOrder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🌐 Общий заказ"
+                    android:textColor="#1976D2"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:id="@+id/collaboratorsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Кнопки управления коллаборацией -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_marginTop="4dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonAcceptOrder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Принять"
+                        android:textSize="11sp"
+                        app:backgroundTint="#4CAF50"
+                        app:cornerRadius="8dp"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonRejectAcceptance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Отклонить"
+                        android:textSize="11sp"
+                        app:backgroundTint="#F44336"
+                        app:cornerRadius="8dp"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonInvite"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Пригласить"
+                        android:textSize="11sp"
+                        app:backgroundTint="#3F51B5"
+                        app:cornerRadius="8dp"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonLeaveOrder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Покинуть"
+                        android:textSize="11sp"
+                        app:backgroundTint="#FF9800"
+                        app:cornerRadius="8dp"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonReleaseOrder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Отказаться"
+                        android:textSize="11sp"
+                        app:backgroundTint="#607D8B"
+                        app:cornerRadius="8dp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -384,11 +521,6 @@
                     android:text="Тип заказа: Ремонт"
                     android:textColor="@color/gray_900"/>
 
-                <TextView
-                    style="@style/DetailTextStyleBlack"
-                    android:id="@+id/status"
-                    android:text="Статус: В процессе"
-                    android:textColor="@color/gray_900"/>
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
@@ -397,6 +529,7 @@
                     android:textColor="@color/gray_900"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
 
         <!-- Секция услуг -->
         <com.google.android.material.card.MaterialCardView

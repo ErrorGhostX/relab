@@ -16,6 +16,7 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 
 import android.app.Service
+import egx.relab_app.models.User
 import okhttp3.ResponseBody
 import retrofit2.http.DELETE
 import retrofit2.http.Streaming
@@ -51,6 +52,7 @@ interface ApiService {
         @Part("date")           date: RequestBody,
         @Part("status")         status: RequestBody,
         @Part("order_type")     orderType: RequestBody,
+        @Part("is_public")      isPublic: RequestBody,
         @Part                   photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -72,6 +74,7 @@ interface ApiService {
         @Part("date") date: RequestBody,
         @Part("status") status: RequestBody,
         @Part("order_type") orderType: RequestBody,
+        @Part("is_public") isPublic: RequestBody,
         @Part photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -176,6 +179,9 @@ interface ApiService {
     @GET("auth/users/me/")
     suspend fun getCurrentUser(): UserResponse
     
+    @GET("auth/users/{id}/")
+    suspend fun getUserProfile(@Path("id") id: Int): UserResponse
+    
     @PATCH("auth/users/me/")
     suspend fun updateUserProfile(@Body profile: UpdateProfileRequest): UserResponse
     
@@ -206,4 +212,67 @@ interface ApiService {
         @Path("orderId") orderId: String,
         @Path("photoId") photoId: String
     ): Call<Void>
+
+    data class InviteRequest(
+        @com.google.gson.annotations.SerializedName("user_id")
+        val userId: Int
+    )
+
+    // =============================================
+    // Эндпоинты для коллаборации и общих заказов
+    // =============================================
+
+    // Принять общий заказ (стать исполнителем)
+    @POST("orders/{id}/accept_order/")
+    suspend fun acceptOrder(@Path("id") orderId: Int): Order
+
+    // Создатель отклоняет принятие заказа
+    @POST("orders/{id}/reject_acceptance/")
+    suspend fun rejectAcceptance(@Path("id") orderId: Int): Order
+
+    // Исполнитель отказывается от заказа
+    @POST("orders/{id}/release_order/")
+    suspend fun releaseOrder(@Path("id") orderId: Int): Order
+
+    // Пригласить сотрудника на заказ (передаём username)
+    @POST("orders/{id}/invite_collaborator/")
+    suspend fun inviteCollaborator(
+        @Path("id") orderId: Int,
+        @Body request: InviteRequest
+    ): Order
+
+    // Покинуть заказ (коллаборатор)
+    @POST("orders/{id}/leave_order/")
+    suspend fun leaveOrder(@Path("id") orderId: Int): retrofit2.Response<Unit>
+
+    // Удалить коллаборатора из заказа (создатель/исполнитель)
+    data class RemoveCollaboratorRequest(
+        @com.google.gson.annotations.SerializedName("user_id")
+        val userId: Int
+    )
+
+    @POST("orders/{id}/remove_collaborator/")
+    suspend fun removeCollaborator(
+        @Path("id") orderId: Int,
+        @Body request: RemoveCollaboratorRequest
+    ): Order
+
+    // Список общих непринятых заказов
+    @GET("orders/public_orders/")
+    suspend fun getPublicOrders(): List<Order>
+
+    // Мои принятые заказы
+    @GET("orders/my_assigned/")
+    suspend fun getMyAssignedOrders(): List<Order>
+
+    // Переключить статус услуги (pending ↔ done)
+    @POST("orders/{orderId}/services/{serviceId}/toggle_status/")
+    suspend fun toggleServiceStatus(
+        @Path("orderId") orderId: Int,
+        @Path("serviceId") serviceId: Int
+    ): egx.relab_app.models.Service
+
+    // Список доступных сотрудников для приглашения
+    @GET("orders/{id}/available_employees/")
+    suspend fun getAvailableEmployees(@Path("id") orderId: Int): List<User>
 }

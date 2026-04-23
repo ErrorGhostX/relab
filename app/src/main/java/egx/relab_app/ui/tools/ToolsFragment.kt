@@ -30,7 +30,7 @@ class ToolsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         //Драйвера
-        binding.btnDrivers.setOnClickListener {
+        binding.buttonDownloadDrivers.setOnClickListener {
             startDriversDownload()
         }
 
@@ -43,17 +43,32 @@ class ToolsFragment : Fragment() {
         binding.buttonDownloadRemoteApp.setOnClickListener {
             openPlayMarket()
         }
-        binding.tvDriverLink.movementMethod = LinkMovementMethod.getInstance()
 
-        // Открыть настройки разработчика
+        // --- ДРАЙВЕРЫ RELAB ---
+        
+        // Скачать драйверы Relab
+        binding.buttonDownloadDrivers2.setOnClickListener {
+            startDriversDownload()
+        }
+
+        // Открыть папку с драйверами
+        binding.buttonOpenDriversFolder.setOnClickListener {
+            openDriversFolder()
+        }
+
+        // Установить драйверы (открыть ZIP)
+        binding.buttonInstallDrivers.setOnClickListener {
+            openLastDownloadedDriver()
+        }
+
+        // Открыть настройки разработчика (ПЕРЕМЕЩЕНО)
         binding.buttonOpenDeveloperOptions.setOnClickListener {
             try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                 startActivity(intent)
             } catch (e: Exception) {
-                // Если прямого доступа нет, открываем общие настройки
                 try {
-                    val intent = Intent(Settings.ACTION_SETTINGS)
+                    val intent = Intent(android.provider.Settings.ACTION_SETTINGS)
                     startActivity(intent)
                     Toast.makeText(requireContext(), "Перейдите в Настройки > О телефоне > Номер сборки (нажмите 7 раз)", Toast.LENGTH_LONG).show()
                 } catch (e2: Exception) {
@@ -61,7 +76,7 @@ class ToolsFragment : Fragment() {
                 }
             }
         }
-        
+
         // Скачать драйверы ADB
         binding.buttonDownloadDrivers.setOnClickListener {
             val url = "https://developer.android.com/studio/releases/platform-tools"
@@ -124,7 +139,63 @@ class ToolsFragment : Fragment() {
 
     private fun startDriversDownload() {
         val intent = Intent(requireContext(), DriversDownloadService::class.java)
-        requireContext().startForegroundService(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().startForegroundService(intent)
+        } else {
+            requireContext().startService(intent)
+        }
+        Toast.makeText(requireContext(), "Загрузка драйверов запущена", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun openDriversFolder() {
+        val path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath + "/RelabDrivers"
+        val file = java.io.File(path)
+        
+        if (!file.exists()) {
+            Toast.makeText(requireContext(), "Папка еще не создана. Скачайте драйверы.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW)
+        val uri = Uri.parse(path)
+        intent.setDataAndType(uri, "resource/folder")
+        
+        try {
+            // Пытаемся открыть через системный менеджер
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Если не вышло, пробуем более общий вариант
+            try {
+                val genericIntent = Intent(Intent.ACTION_VIEW)
+                genericIntent.setDataAndType(Uri.fromFile(file), "*/*")
+                startActivity(genericIntent)
+            } catch (e2: Exception) {
+                Toast.makeText(requireContext(), "Не удалось открыть папку автоматически. Перейдите в Загрузки/RelabDrivers вручную.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun openLastDownloadedDriver() {
+        val path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath + "/RelabDrivers"
+        val directory = java.io.File(path)
+        
+        val lastFile = directory.listFiles()?.filter { it.extension == "zip" }
+            ?.maxByOrNull { it.lastModified() }
+
+        if (lastFile != null && lastFile.exists()) {
+            val intent = Intent(Intent.ACTION_VIEW)
+            // Примечание: на Android 7+ для открытия файлов нужен FileProvider, 
+            // но для простоты и учитывая специфику проекта, пробуем прямой доступ если разрешено
+            intent.setDataAndType(Uri.fromFile(lastFile), "application/zip")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Файл скачан: ${lastFile.name}. Откройте его через менеджер файлов.", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(requireContext(), "Драйверы еще не скачаны", Toast.LENGTH_SHORT).show()
+        }
     }
 
 

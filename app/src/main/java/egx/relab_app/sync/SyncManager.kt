@@ -151,7 +151,7 @@ class SyncManager(
                     
                     // ВАЖНО: Проверяем, является ли serverId временным (отрицательным)
                     // Отрицательные ID - это временные локальные ID
-                    val isNewOrder = orderEntity.serverId == null || (orderEntity.serverId != null && orderEntity.serverId!! < 0)
+                    val isNewOrder = orderEntity.serverId == null || orderEntity.serverId!! < 0
                     
                     if (isNewOrder) {
                         // Новый заказ - создаем на сервере
@@ -311,7 +311,7 @@ class SyncManager(
                 }
             }
         
-        Log.d(TAG, "Создание заказа на сервере с ${photoUris.size} фото")
+        Log.d(TAG, "Создание заказа на сервере с ${photoUris.size} фото. isPublic=${order.isPublic}")
         
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
@@ -481,7 +481,7 @@ class SyncManager(
                 }
             }
         
-        Log.d(TAG, "Обновление заказа на сервере с ${photoUris.size} новыми локальными фото")
+        Log.d(TAG, "Обновление заказа на сервере с ${photoUris.size} новыми фото. isPublic=${order.isPublic}")
         
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->

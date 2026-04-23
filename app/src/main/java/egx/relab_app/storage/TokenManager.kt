@@ -60,4 +60,9 @@ class TokenManager(context: Context) {
     var phone: String?
         get() = prefs.getString("PHONE", null)
         set(value) = prefs.edit().putString("PHONE", value).apply()
+
+    // Режим отображения заказов (сетка/список)
+    var isOrderGridView: Boolean
+        get() = prefs.getBoolean("IS_ORDER_GRID_VIEW", true)
+        set(value) = prefs.edit().putBoolean("IS_ORDER_GRID_VIEW", value).apply()
 }

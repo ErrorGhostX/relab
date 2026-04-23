@@ -1,20 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingVertical="0dp">
+    android:paddingVertical="4dp"
+    android:layout_marginBottom="4dp">
 
-    <!-- Описание + цена: занимает всё свободное место -->
-    <TextView
-        android:id="@+id/tvServiceDesc"
+    <CheckBox
+        android:id="@+id/cbServiceStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:buttonTint="@color/gray_800"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:layout_marginEnd="4dp"
+        android:padding="0dp" />
+
+    <!-- Исполнитель услуги (появляется когда услуга выполнена) -->
+    <ImageView
+        android:id="@+id/ivPerformerAvatar"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/relab"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        tools:src="@tools:sample/avatars"
+        tools:visibility="visible" />
+
+    <!-- Описание + цена + сложность -->
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        style="@style/DetailTextStyleBlack"/>
+        android:orientation="vertical"
+        android:layout_marginEnd="8dp">
 
-    <!-- Кнопка «корзина» -->
+        <TextView
+            android:id="@+id/tvServiceDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/DetailTextStyleBlack"
+            tools:text="Замена дисплея - 1500 руб" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipComplexity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/gray_800"
+            app:chipBackgroundColor="@color/gray_200"
+            app:chipMinHeight="24dp"
+            app:ensureMinTouchTargetSize="false"
+            tools:text="Сложность: 3/10" />
+
+    </LinearLayout>
+
+    <!-- Кто добавил услугу -->
+    <ImageView
+        android:id="@+id/ivCreatorAvatar"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/relab"
+        android:scaleType="centerCrop"
+        tools:src="@tools:sample/avatars" />
+
+    <!-- Кнопка «удалить» -->
     <ImageButton
         android:id="@+id/btnDeleteService"
         android:layout_width="24dp"
@@ -24,7 +79,6 @@
         android:padding="0dp"
         android:scaleType="fitCenter"
         android:src="@drawable/trash_can_svgrepo_com"
-        android:tint="@color/error_red" />
-
+        app:tint="@color/error_red" />
 
 </LinearLayout>

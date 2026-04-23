@@ -27,6 +27,17 @@
             android:exported="false"
             android:foregroundServiceType="dataSync"/>
 
+        <service
+            android:name="egx.relab_app.ui.tools.RemoteTileService"
+            android:icon="@drawable/tools_svgrepo_com"
+            android:label="Пульт Relab"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- MainActivity -->
         <activity
             android:name=".MainActivity"

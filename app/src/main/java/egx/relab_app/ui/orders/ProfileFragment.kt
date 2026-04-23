@@ -55,16 +55,14 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         tokenManager = TokenManager(requireContext())
 
+        val userId = arguments?.getInt("userId", -1) ?: -1
+        
         // Загружаем данные профиля
-        loadUserProfile()
+        loadUserProfile(userId)
 
         // Кнопка изменения аватара
-//        binding.buttonChangeAvatar.setOnClickListener {
-//            openImagePicker()
-//        }
-
         binding.profileImage.setOnClickListener {
-            openImagePicker()
+            if (userId == -1) openImagePicker()
         }
 
         // Кнопка сохранения
@@ -79,7 +77,10 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        loadUserProfile()
+        val userId = arguments?.getInt("userId", -1) ?: -1
+        if (userId == -1) {
+            loadUserProfile(userId)
+        }
     }
 
     /**
@@ -89,40 +90,52 @@ class ProfileFragment : Fragment() {
      * 2. ЗАТЕМ пытаемся обновить с сервера в ФОНОВОМ режиме
      * 3. При отсутствии сети продолжаем работать с локальными данными
      */
-    private fun loadUserProfile() {
+    private fun loadUserProfile(userId: Int = -1) {
         if (!isAdded || _binding == null) return
-        loadFromLocalStorage()
         
-        // Обновление с сервера происходит в ФОНОВОМ режиме
-        // Не блокирует отображение - пользователь уже видит локальные данные
+        // Если это мой профиль - показываем сначала локальные данные
+        if (userId == -1) {
+            loadFromLocalStorage()
+        }
+        
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 if (!isAdded || _binding == null) return@launch
                 
-                val user = RetrofitClient.apiService.getCurrentUser()
+                val user = if (userId == -1) {
+                    RetrofitClient.apiService.getCurrentUser()
+                } else {
+                    RetrofitClient.apiService.getUserProfile(userId)
+                }
                 
                 if (!isAdded || _binding == null) return@launch
                 
-                // Обновляем TokenManager только если сервер вернул непустые значения
-                // Не перезаписываем локальные данные пустыми значениями
-                user.username?.let { tokenManager.username = it }
-                user.email?.let { tokenManager.email = it }
-                if (!user.full_name.isNullOrBlank()) {
-                    tokenManager.fullName = user.full_name
-                }
-                if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
-                    tokenManager.avatarUrl = user.avatar
-                }
-                user.rank?.let { tokenManager.rank = it }
-                user.rank_display?.let { tokenManager.rankDisplay = it }
-                updateUI(user)
+                // Если это МОЙ профиль (либо userId==-1, либо ID совпадает)
+                val isMe = userId == -1 || user.id == tokenManager.username?.hashCode() // Это не совсем надежно, лучше по ID
+                // Но getCurrentUser обычно возвращает мой профиль.
                 
-                // Обновляем навигацию
-                val activity = activity as? egx.relab_app.MainActivity
-                activity?.refreshNavBar()
+                if (userId == -1) {
+                    user.username?.let { tokenManager.username = it }
+                    user.email?.let { tokenManager.email = it }
+                    if (!user.full_name.isNullOrBlank()) {
+                        tokenManager.fullName = user.full_name
+                    }
+                    if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
+                        tokenManager.avatarUrl = user.avatar
+                    }
+                    user.rank?.let { tokenManager.rank = it }
+                    user.rank_display?.let { tokenManager.rankDisplay = it }
+                    
+                    // Обновляем навигацию
+                    val activity = activity as? egx.relab_app.MainActivity
+                    activity?.refreshNavBar()
+                }
+                
+                updateUI(user, isReadOnly = userId != -1)
+                
             } catch (e: Exception) {
-                android.util.Log.d("ProfileFragment", "Не удалось загрузить с сервера (офлайн режим): ${e.message}")
-                if (isAdded && _binding != null) {
+                android.util.Log.d("ProfileFragment", "Ошибка загрузки профиля: ${e.message}")
+                if (isAdded && _binding != null && userId == -1) {
                     loadFromLocalStorage()
                 }
             }
@@ -158,20 +171,20 @@ class ProfileFragment : Fragment() {
             if (!savedAvatarUrl.isNullOrEmpty() && savedAvatarUrl != "null") {
                 Glide.with(this)
                     .load(savedAvatarUrl)
-                    .placeholder(R.mipmap.ic_launcher_round)
-                    .error(R.mipmap.ic_launcher_round)
+                    .placeholder(R.drawable.relab)
+                    .error(R.drawable.relab)
                     .circleCrop()
                     .into(binding.profileImage)
             } else {
                 // Если нет сохраненного аватара, показываем placeholder
-                binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+                binding.profileImage.setImageResource(R.drawable.relab)
             }
         } catch (e: Exception) {
             android.util.Log.e("ProfileFragment", "Ошибка при загрузке из локального хранилища", e)
         }
     }
 
-    private fun updateUI(user: egx.relab_app.models.UserResponse) {
+    private fun updateUI(user: egx.relab_app.models.UserResponse, isReadOnly: Boolean = false) {
         if (!isAdded || _binding == null) return
         
         try {
@@ -193,24 +206,33 @@ class ProfileFragment : Fragment() {
             if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
                 Glide.with(this)
                     .load(avatarUrl)
-                    .placeholder(R.mipmap.ic_launcher_round)
-                    .error(R.mipmap.ic_launcher_round)
+                    .placeholder(R.drawable.relab)
+                    .error(R.drawable.relab)
                     .circleCrop()
                     .into(binding.profileImage)
             } else {
-                binding.profileImage.setImageResource(R.mipmap.ic_launcher_round)
+                binding.profileImage.setImageResource(R.drawable.relab)
             }
             
-            // Сохраняем в TokenManager ПЕРЕД обновлением навигации
-            tokenManager.fullName = user.full_name
-            tokenManager.avatarUrl = user.avatar
-            tokenManager.phone = user.phone
-            user.rank?.let { tokenManager.rank = it }
-            user.rank_display?.let { tokenManager.rankDisplay = it }
-            
-            // Обновляем навигацию в MainActivity сразу после загрузки
-            val activity = activity as? egx.relab_app.MainActivity
-            activity?.refreshNavBar()
+            if (!isReadOnly) {
+                // Сохраняем в TokenManager ПЕРЕД обновлением навигации
+                tokenManager.fullName = user.full_name
+                tokenManager.avatarUrl = user.avatar
+                tokenManager.phone = user.phone
+                user.rank?.let { tokenManager.rank = it }
+                user.rank_display?.let { tokenManager.rankDisplay = it }
+                
+                // Обновляем навигацию в MainActivity сразу после загрузки
+                val activity = activity as? egx.relab_app.MainActivity
+                activity?.refreshNavBar()
+            } else {
+                // Режим только для чтения
+                binding.buttonSaveProfile.visibility = View.GONE
+                binding.btnLogout.visibility = View.GONE
+                binding.editTextFullName.isEnabled = false
+                binding.editTextPhone.isEnabled = false
+                binding.profileImage.isClickable = false
+            }
         } catch (e: Exception) {
             android.util.Log.e("ProfileFragment", "Ошибка при обновлении UI", e)
         }
@@ -225,8 +247,8 @@ class ProfileFragment : Fragment() {
         if (!isAdded) return
         Glide.with(this)
             .load(uri)
-            .placeholder(R.mipmap.ic_launcher_round)
-            .error(R.mipmap.ic_launcher_round)
+            .placeholder(R.drawable.relab)
+            .error(R.drawable.relab)
             .circleCrop()
             .into(binding.profileImage)
     }

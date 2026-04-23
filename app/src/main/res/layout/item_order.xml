@@ -22,13 +22,42 @@
         android:orientation="vertical">
 
         <!-- Картинка сверху, растягиваем до краев карточки -->
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/orderImage"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="200dp">
 
-            android:scaleType="centerCrop"
-            app:shapeAppearanceOverlay="@style/RoundedImage" />
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/orderImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/RoundedImage" />
+
+            <!-- Плашка "Общий" -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/badgePublic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#E8F5E9"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#2E7D32"
+                app:strokeWidth="1dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="ОБЩИЙ"
+                    android:textColor="#1B5E20"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
 
 
 
@@ -76,10 +105,14 @@
                 android:id="@+id/orderStatusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:textSize="12sp"
-                android:text="Статус: В процессе"
-                android:textColor="@color/gray_800" />
+                android:layout_marginTop="6dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:text="СТАТУС: В ПРОЦЕССЕ"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
             <!-- Сложность -->
             <TextView

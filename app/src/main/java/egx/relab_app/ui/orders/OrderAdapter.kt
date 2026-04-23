@@ -1,6 +1,7 @@
 package egx.relab_app.orders
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -14,21 +15,36 @@ class OrderAdapter(
     private val onClick: (Order) -> Unit
 ) : RecyclerView.Adapter<OrderAdapter.OrderViewHolder>() {
 
+    companion object {
+        private const val VIEW_TYPE_GRID = 1
+        private const val VIEW_TYPE_LIST = 2
+    }
+
+    private val statusMap = mapOf(
+        "new" to "Новый",
+        "working" to "В работе",
+        "completed" to "Выполнен",
+        "cancelled" to "Отменен",
+        "waiting" to "Ожидание"
+    )
+
 
     var orders: List<Order> = emptyList()
+    var isGridView: Boolean = true
 
     fun updateList(newList: List<Order>) {
         orders = newList
         notifyDataSetChanged()
     }
 
+    override fun getItemViewType(position: Int): Int {
+        return if (isGridView) VIEW_TYPE_GRID else VIEW_TYPE_LIST
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderViewHolder {
-        val binding = ItemOrderBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return OrderViewHolder(binding)
+        val layoutId = if (viewType == VIEW_TYPE_GRID) R.layout.item_order else R.layout.item_order_list
+        val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
+        return OrderViewHolder(view, viewType == VIEW_TYPE_GRID)
     }
 
     override fun onBindViewHolder(holder: OrderViewHolder, position: Int) {
@@ -61,78 +77,105 @@ class OrderAdapter(
     }
 
     inner class OrderViewHolder(
-        private val binding: ItemOrderBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
+        itemView: View,
+        private val isGrid: Boolean
+    ) : RecyclerView.ViewHolder(itemView) {
+
+        // Общие для обеих версток элементы
+        private val orderImage: android.widget.ImageView = itemView.findViewById(R.id.orderImage)
+        private val orderIdText: android.widget.TextView = itemView.findViewById(R.id.orderIdText)
+        private val deviceNameText: android.widget.TextView = itemView.findViewById(R.id.deviceNameText)
+        private val orderStatusText: android.widget.TextView = itemView.findViewById(R.id.orderStatusText)
+        private val orderComplexityText: android.widget.TextView = itemView.findViewById(R.id.orderComplexityText)
+        private val createdByAvatar: android.widget.ImageView = itemView.findViewById(R.id.createdByAvatar)
+        private val orderCreatedText: android.widget.TextView = itemView.findViewById(R.id.orderCreatedText)
+        private val badgePublic: View = itemView.findViewById(R.id.badgePublic)
 
         fun bind(order: Order) {
-            // ВАЖНО: Обрабатываем случай, когда order.id = null (локально созданный заказ)
-            binding.orderIdText.text = if (order.id != null && order.id!! > 0) {
+            orderIdText.text = if (order.id != null && order.id!! > 0) {
                 "ID: ${order.id}"
             } else {
                 "ID: Локальный"
             }
             
-            // ВАЖНО: Показываем номер заказа
-            // binding.orderNumberText.text = "Номер: ${order.orderNumber ?: "-"}"
-            
-            binding.deviceNameText.text = "Устройство: ${order.deviceName}"
+            deviceNameText.text = "Устройство: ${order.deviceName}"
 
-// Показываем ФИО если есть, иначе username
             val creatorName = order.createdByFullName
                 ?: order.createdByUsername
                 ?: "Неизвестно"
 
-            binding.orderCreatedText.text = creatorName
+            orderCreatedText.text = creatorName
 
-// Загружаем аватар создателя
             if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
-                Glide.with(binding.root.context)
+                Glide.with(itemView.context)
                     .load(order.createdByAvatar)
                     .placeholder(R.mipmap.ic_launcher_round)
                     .error(R.mipmap.ic_launcher_round)
                     .circleCrop()
-                    .into(binding.createdByAvatar)
+                    .into(createdByAvatar)
             } else {
-                binding.createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
+                createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
             }
-
             
-            // Статус внизу
-            binding.orderStatusText.text = "Статус: ${order.status}"
+            bindStatusBadge(order.status)
             
-            // Отображение сложности заказа
             val complexityText = if (order.complexityPercentage != null) {
                 val level = order.complexityLevel ?: getComplexityLevel(order.complexityPercentage!!)
                 "Сложность: ${"%.0f".format(order.complexityPercentage)}% ($level)"
             } else {
                 "Сложность: не рассчитана"
             }
-            binding.orderComplexityText.text = complexityText
+            orderComplexityText.text = complexityText
+
+            badgePublic.visibility = if (
+                order.isPublic && (order.assignedToUsername.isNullOrEmpty() || order.assignedToUsername == "null")
+            ) View.VISIBLE else View.GONE
             
-            // Фото заказа - обрабатываем 404 ошибки и JSON массивы
             val firstPhotoPath = getFirstPhotoPath(order.photo)
             if (!firstPhotoPath.isNullOrEmpty()) {
                 val imageSource = if (firstPhotoPath.startsWith("http://") || firstPhotoPath.startsWith("https://")) {
-                    // URL с сервера
                     firstPhotoPath
                 } else {
-                    // Локальный файл - используем File для загрузки
                     java.io.File(firstPhotoPath)
                 }
                 
-                Glide.with(binding.root.context)
+                Glide.with(itemView.context)
                     .load(imageSource)
                     .placeholder(R.drawable.ic_menu_camera)
                     .error(android.R.drawable.dark_header)
                     .fallback(R.drawable.ic_menu_camera)
-                    .into(binding.orderImage)
+                    .into(orderImage)
             } else {
-                binding.orderImage.setImageResource(R.drawable.ic_menu_camera)
+                orderImage.setImageResource(R.drawable.ic_menu_camera)
             }
 
-            binding.root.setOnClickListener {
+            itemView.setOnClickListener {
                 onClick(order)
             }
+        }
+
+        private fun bindStatusBadge(statusValue: String?) {
+            val statusName = statusMap[statusValue] ?: statusValue ?: "—"
+            orderStatusText.text = statusName.uppercase()
+            
+            val (bgColor, textColor) = when (statusValue?.lowercase()) {
+                "new", "новый" -> R.color.status_new_bg to R.color.status_new
+                "working", "в работе", "work", "in_progress" -> R.color.status_work_bg to R.color.status_work
+                "completed", "выполнен", "done", "ready", "finished" -> R.color.status_completed_bg to R.color.status_completed
+                "cancelled", "отменен", "cancel" -> R.color.status_cancelled_bg to R.color.status_cancelled
+                "waiting", "ожидание", "pending" -> R.color.status_waiting_bg to R.color.status_waiting
+                else -> R.color.status_default_bg to R.color.status_default
+            }
+            
+            val context = itemView.context
+            orderStatusText.setTextColor(context.getColor(textColor))
+            
+            val shape = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 6 * context.resources.displayMetrics.density
+                setColor(context.getColor(bgColor))
+            }
+            orderStatusText.background = shape
         }
         
         /**

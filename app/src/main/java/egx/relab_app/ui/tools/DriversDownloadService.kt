@@ -39,7 +39,12 @@ class DriversDownloadService : Service() {
         // Если нажали Stop в уведомлении
         if (intent?.action == ACTION_STOP) {
             isStopped = true
-            stopForeground(true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
             stopSelf()
             return START_NOT_STICKY
         }
@@ -99,7 +104,12 @@ class DriversDownloadService : Service() {
         }
 
         // Загрузка завершена
-        stopForeground(false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(Service.STOP_FOREGROUND_DETACH)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(false)
+        }
         stopSelf()
     }
 

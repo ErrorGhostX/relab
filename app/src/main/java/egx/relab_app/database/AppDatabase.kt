@@ -22,7 +22,7 @@ import egx.relab_app.database.entity.ServiceEntity
  */
 @Database(
     entities = [OrderEntity::class, ServiceEntity::class],
-    version = 4,  // Увеличена версия для добавления полей complexityPercentage и complexityLevel
+    version = 5,  // v5: Добавлены поля коллаборации (isPublic, assignedTo) и статус услуг (serviceStatus, performedBy)
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -59,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "relab_database"  // Имя файла базы данных
                 )
-                    .fallbackToDestructiveMigration()  // При изменении версии удаляем старую БД (для разработки)
+                    .fallbackToDestructiveMigration(true)  // При изменении версии удаляем старую БД (для разработки)
                     // В продакшене нужно использовать миграции:
                     // .addMigrations(MIGRATION_1_2, MIGRATION_2_3, ...)
                     .build()

@@ -139,7 +139,10 @@ class OrderRepository(
         orderServerId: Int?,
         description: String,
         price: Double,
-        complexityPoints: Int = 1
+        complexityPoints: Int = 1,
+        performedByUsername: String? = null,
+        performedByFullName: String? = null,
+        performedByAvatar: String? = null
     ): Long {
         // Создаем Entity для новой услуги (serverId = null)
         val serviceEntity = egx.relab_app.database.entity.ServiceEntity.fromNewService(
@@ -147,7 +150,10 @@ class OrderRepository(
             price = price,
             orderLocalId = orderLocalId,
             orderServerId = orderServerId,
-            complexityPoints = complexityPoints
+            complexityPoints = complexityPoints,
+            performedByUsername = performedByUsername,
+            performedByFullName = performedByFullName,
+            performedByAvatar = performedByAvatar
         )
         
         // Вставляем в локальную БД
@@ -163,7 +169,7 @@ class OrderRepository(
             orderDao.updateSyncStatus(orderLocalId, egx.relab_app.database.entity.OrderEntity.SyncStatus.PENDING)
         }
         
-        android.util.Log.d("OrderRepository", "Услуга добавлена локально. localId: $serviceLocalId, orderLocalId: $orderLocalId")
+        android.util.Log.d("OrderRepository", "Услуга добавлена локально. localId: $serviceLocalId, orderLocalId: $orderLocalId, performer: $performedByUsername")
         return serviceLocalId
     }
     
@@ -298,6 +304,11 @@ class OrderRepository(
             createdByUsername = order.createdByUsername,
             createdByFullName = order.createdByFullName,
             createdByAvatar = order.createdByAvatar,
+            isPublic = order.isPublic,
+            assignedToUsername = order.assignedToUsername,
+            assignedToFullName = order.assignedToFullName,
+            assignedToAvatar = order.assignedToAvatar,
+            assignedAt = order.assignedAt,
             syncStatus = OrderEntity.SyncStatus.PENDING,
             lastModified = System.currentTimeMillis()
         )
@@ -362,6 +373,8 @@ class OrderRepository(
                     
                     // Создаем Entity из заказа с сервера с правильным serverId
                     val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+                    android.util.Log.d("OrderRepository", "Обновление: order.isPublic=${order.isPublic}, entity.isPublic=${entity.isPublic}")
+                    
                     // Копируем все поля, включая serverId, но сохраняем локальный ID и фото
                     val updated = entity.copy(
                         localId = existing.localId,  // Сохраняем локальный ID

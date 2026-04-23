@@ -34,4 +34,23 @@
     <!-- Цвета для ошибок -->
     <color name="error_red">#F44336</color>
     <color name="error_red_light">#FFCDD2</color>
+
+    <!-- Цвета для статусов (Премиум палитра) -->
+    <color name="status_new">#1976D2</color>
+    <color name="status_new_bg">#E3F2FD</color>
+    
+    <color name="status_work">#F57C00</color>
+    <color name="status_work_bg">#FFF3E0</color>
+    
+    <color name="status_completed">#388E3C</color>
+    <color name="status_completed_bg">#E8F5E9</color>
+    
+    <color name="status_cancelled">#D32F2F</color>
+    <color name="status_cancelled_bg">#FFEBEE</color>
+    
+    <color name="status_waiting">#7B1FA2</color>
+    <color name="status_waiting_bg">#F3E5F5</color>
+    
+    <color name="status_default">#616161</color>
+    <color name="status_default_bg">#F5F5F5</color>
 </resources>

@@ -116,7 +116,7 @@ object RetrofitClient {
             parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, photoParts
+            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!, photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -183,7 +183,7 @@ object RetrofitClient {
             parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, photoParts
+            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!, photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -220,8 +220,11 @@ object RetrofitClient {
             "description"  to o.description.orEmpty().toRequestBody(mt),
             "date"         to formattedDate.toRequestBody(mt),
             "status"       to o.status.orEmpty().toRequestBody(mt),
-            "order_type"   to o.orderType.orEmpty().toRequestBody(mt)
-        )
+            "order_type"   to o.orderType.orEmpty().toRequestBody(mt),
+            "is_public"    to (if (o.isPublic) "1" else "0").toRequestBody(mt)
+        ).also { 
+            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic} -> ${if (o.isPublic) "1" else "0"}")
+        }
     }
     
     /**

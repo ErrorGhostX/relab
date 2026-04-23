@@ -75,7 +75,29 @@ data class Order(
     val complexityPercentage: Double? = null,
 
     @SerializedName("complexity_level")
-    val complexityLevel: String? = null
+    val complexityLevel: String? = null,
+
+    // Общий заказ и коллаборация
+    @SerializedName("is_public")
+    val isPublic: Boolean = false,
+
+    @SerializedName("assigned_to")
+    val assignedToUsername: String? = null,
+
+    @SerializedName("assigned_to_full_name")
+    val assignedToFullName: String? = null,
+
+    @SerializedName("assigned_to_avatar")
+    val assignedToAvatar: String? = null,
+
+    @SerializedName("assigned_at")
+    val assignedAt: String? = null,
+
+    @SerializedName("collaborators")
+    val collaborators: @RawValue List<OrderCollaborator> = emptyList(),
+
+    @SerializedName("collaborators_count")
+    val collaboratorsCount: Int = 0
 
 ) : Parcelable
 
@@ -95,9 +117,23 @@ data class OrderPhoto(
 ) : Parcelable
 
 @Parcelize
+data class OrderCollaborator(
+    @SerializedName("id") val id: Int? = null,
+    @SerializedName("user_id") val userId: Int? = null,
+    @SerializedName("username") val username: String? = null,
+    @SerializedName("full_name") val fullName: String? = null,
+    @SerializedName("avatar") val avatar: String? = null,
+    @SerializedName("specialization") val specialization: String? = null,
+    @SerializedName("joined_at") val joinedAt: String? = null
+) : Parcelable
+
+@Parcelize
 data class User(
     @SerializedName("id")       val id: Int,
     @SerializedName("username") val username: String,
     @SerializedName("first_name") val firstName: String?,
-    @SerializedName("last_name")  val lastName: String?
+    @SerializedName("last_name")  val lastName: String?,
+    @SerializedName("full_name")  val fullName: String? = null,
+    @SerializedName("avatar")     val avatar: String? = null,
+    @SerializedName("specialization") val specialization: String? = null
 ) : Parcelable

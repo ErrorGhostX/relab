@@ -518,16 +518,16 @@ class OrderFormFragment : Fragment() {
             }
         }
         reverseStatusMap[o.status]?.let { statusText ->
-            //  Для AutoCompleteTextView используем только setText, не setSelection
-            // setSelection может вызвать IndexOutOfBoundsException если текст пустой
             try {
                 binding.statusSpinner.setText(statusText, false)
             } catch (e: Exception) {
                 android.util.Log.e("OrderForm", "Ошибка установки status: ${e.message}")
-                // Пробуем установить текст без фильтрации
                 binding.statusSpinner.setText(statusText)
             }
         }
+        
+        // Устанавливаем значение переключателя "Общий заказ"
+        binding.switchIsPublic.isChecked = o.isPublic
     }
 
     /**
@@ -657,6 +657,7 @@ class OrderFormFragment : Fragment() {
         // Получаем выбранные значения из MaterialAutoCompleteTextView
         val statusSelected = binding.statusSpinner.text.toString()
         val typeSelected = binding.orderTypeSpinner.text.toString()
+        val isPublicChecked = binding.switchIsPublic.isChecked
 
         return Order(
             id = null,
@@ -676,7 +677,11 @@ class OrderFormFragment : Fragment() {
             orderType = orderTypeMap[typeSelected] ?: "repair",
             createdByUsername = tokenManager.username,
             createdByFullName = tokenManager.fullName,
-            createdByAvatar = tokenManager.avatarUrl
+            createdByAvatar = tokenManager.avatarUrl,
+            isPublic = isPublicChecked,
+            assignedToUsername = if (!isPublicChecked) tokenManager.username else null,
+            assignedToFullName = if (!isPublicChecked) tokenManager.fullName else null,
+            assignedToAvatar = if (!isPublicChecked) tokenManager.avatarUrl else null
         )
     }
 
@@ -767,7 +772,11 @@ class OrderFormFragment : Fragment() {
             status = finalStatus,
             createdByUsername = originalOrder.createdByUsername ?: tokenManager.username,
             createdByFullName = originalOrder.createdByFullName ?: tokenManager.fullName,
-            createdByAvatar = originalOrder.createdByAvatar ?: tokenManager.avatarUrl
+            createdByAvatar = originalOrder.createdByAvatar ?: tokenManager.avatarUrl,
+            isPublic = binding.switchIsPublic.isChecked,
+            assignedToUsername = if (!binding.switchIsPublic.isChecked && originalOrder.assignedToUsername == null) tokenManager.username else originalOrder.assignedToUsername,
+            assignedToFullName = if (!binding.switchIsPublic.isChecked && originalOrder.assignedToFullName == null) tokenManager.fullName else originalOrder.assignedToFullName,
+            assignedToAvatar = if (!binding.switchIsPublic.isChecked && originalOrder.assignedToAvatar == null) tokenManager.avatarUrl else originalOrder.assignedToAvatar
         )
     }
 

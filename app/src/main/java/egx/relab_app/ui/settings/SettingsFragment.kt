@@ -53,39 +53,27 @@ class SettingsFragment : Fragment() {
             }
         }
         
-//        // Загружаем настройки синхронизации
-//        binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
-//        binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
-//
-//        binding.buttonSaveServerUrl.setOnClickListener {
-//            val newUrl = binding.editTextServerUrl.text.toString().trim()
-//            if (newUrl.isNotEmpty()) {
-//                // Убеждаемся, что URL заканчивается на /
-//                val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
-//                tokenManager.serverUrl = url
-//                Toast.makeText(requireContext(), "Адрес сервера сохранен. Перезапустите приложение для применения изменений.", Toast.LENGTH_LONG).show()
-//            } else {
-//                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//
-//        // Сохранение настроек синхронизации
-//        binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
-//            tokenManager.autoSyncEnabled = isChecked
-//            Toast.makeText(requireContext(), if (isChecked) "Автосинхронизация включена" else "Автосинхронизация выключена", Toast.LENGTH_SHORT).show()
-//        }
-//
-//        binding.editTextSyncInterval.setOnFocusChangeListener { _, hasFocus ->
-//            if (!hasFocus) {
-//                val interval = binding.editTextSyncInterval.text.toString().toIntOrNull()
-//                if (interval != null && interval > 0) {
-//                    tokenManager.syncIntervalMinutes = interval
-//                } else {
-//                    binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
-//                    Toast.makeText(requireContext(), "Введите корректное значение (больше 0)", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        }
+        // Загружаем настройки синхронизации
+        binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
+        binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
+
+        // Сохранение настроек синхронизации
+        binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
+            tokenManager.autoSyncEnabled = isChecked
+            Toast.makeText(requireContext(), if (isChecked) "Автосинхронизация включена" else "Автосинхронизация выключена", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.editTextSyncInterval.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val interval = binding.editTextSyncInterval.text.toString().toIntOrNull()
+                if (interval != null && interval > 0) {
+                    tokenManager.syncIntervalMinutes = interval
+                } else {
+                    binding.editTextSyncInterval.setText(tokenManager.syncIntervalMinutes.toString())
+                    Toast.makeText(requireContext(), "Введите корректное значение (больше 0)", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         
         // Очистка кэша
         binding.buttonClearCache.setOnClickListener {
@@ -133,7 +121,16 @@ class SettingsFragment : Fragment() {
             append("Модель: ${Build.MODEL}\n")
             append("Производитель: ${Build.MANUFACTURER}\n")
             append("Версия Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})\n")
-            append("Серийный номер: ${Build.SERIAL}\n")
+            
+            // Build.SERIAL устарел в Android 10+ (API 29) для обычных приложений
+            val serial = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                "Недоступно (Android 10+)"
+            } else {
+                @Suppress("DEPRECATION")
+                Build.SERIAL
+            }
+            append("Серийный номер: $serial\n")
+            
             append("ID устройства: ${Build.ID}\n")
             append("Аппаратная платформа: ${Build.HARDWARE}")
         }

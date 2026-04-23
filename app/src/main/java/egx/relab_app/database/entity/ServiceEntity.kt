@@ -48,7 +48,15 @@ data class ServiceEntity(
     val complexityPoints: Int = 1,  // Баллы сложности от 1 до 10
     
     // Timestamp создания (из сервера)
-    val createdAt: Long? = null
+    val createdAt: Long? = null,
+    
+    // Статус услуги: "pending" (в ожидании) / "done" (выполнена)
+    val serviceStatus: String = "pending",
+    
+    // Кто добавил/выполняет эту услугу
+    val performedByUsername: String? = null,
+    val performedByFullName: String? = null,
+    val performedByAvatar: String? = null
 ) {
     /**
      * Конвертация Entity в модель Service
@@ -58,7 +66,11 @@ data class ServiceEntity(
             id = serverId ?: 0,  // Если нет serverId, используем 0 (временное значение)
             description = description,
             price = price,
-            complexityPoints = complexityPoints
+            complexityPoints = complexityPoints,
+            serviceStatus = serviceStatus,
+            performedByUsername = performedByUsername,
+            performedByFullName = performedByFullName,
+            performedByAvatar = performedByAvatar
         )
     }
     
@@ -79,7 +91,11 @@ data class ServiceEntity(
                 description = service.description,
                 price = service.price,
                 complexityPoints = service.complexityPoints,
-                createdAt = createdAt
+                createdAt = createdAt,
+                serviceStatus = service.serviceStatus,
+                performedByUsername = service.performedByUsername,
+                performedByFullName = service.performedByFullName,
+                performedByAvatar = service.performedByAvatar
             )
         }
         
@@ -91,7 +107,10 @@ data class ServiceEntity(
             price: Double,
             orderLocalId: Long,
             orderServerId: Int?,
-            complexityPoints: Int = 1
+            complexityPoints: Int = 1,
+            performedByUsername: String? = null,
+            performedByFullName: String? = null,
+            performedByAvatar: String? = null
         ): ServiceEntity {
             return ServiceEntity(
                 serverId = null,
@@ -100,7 +119,11 @@ data class ServiceEntity(
                 description = description,
                 price = price,
                 complexityPoints = complexityPoints,
-                createdAt = System.currentTimeMillis()
+                createdAt = System.currentTimeMillis(),
+                serviceStatus = "pending",
+                performedByUsername = performedByUsername,
+                performedByFullName = performedByFullName,
+                performedByAvatar = performedByAvatar
             )
         }
     }

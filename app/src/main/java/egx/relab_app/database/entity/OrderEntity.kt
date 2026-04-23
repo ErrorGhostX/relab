@@ -4,7 +4,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import egx.relab_app.models.Order
+import egx.relab_app.models.OrderCollaborator
 
 /**
  * Entity для хранения заказов в локальной базе данных Room
@@ -54,7 +57,15 @@ data class OrderEntity(
     val createdByFullName: String? = null,
     val createdByAvatar: String? = null,
     val complexityPercentage: Double? = null,
-    val complexityLevel: String? = null
+    val complexityLevel: String? = null,
+    
+    // Общий заказ и коллаборация
+    val isPublic: Boolean = false,
+    val assignedToUsername: String? = null,
+    val assignedToFullName: String? = null,
+    val assignedToAvatar: String? = null,
+    val assignedAt: String? = null,
+    val collaboratorsJson: String? = null  // JSON список коллабораторов
 ) {
     /**
      * Статусы синхронизации заказа
@@ -97,8 +108,24 @@ data class OrderEntity(
             createdByAvatar = createdByAvatar,
             services = emptyList(),  // Services загружаются отдельно
             complexityPercentage = complexityPercentage,
-            complexityLevel = complexityLevel
+            complexityLevel = complexityLevel,
+            isPublic = isPublic,
+            assignedToUsername = assignedToUsername,
+            assignedToFullName = assignedToFullName,
+            assignedToAvatar = assignedToAvatar,
+            assignedAt = assignedAt,
+            collaborators = parseCollaborators(collaboratorsJson)
         )
+    }
+
+    private fun parseCollaborators(json: String?): List<OrderCollaborator> {
+        if (json.isNullOrEmpty()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<OrderCollaborator>>() {}.type
+            Gson().fromJson(json, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
     
     companion object {
@@ -130,7 +157,13 @@ data class OrderEntity(
                 createdByFullName = order.createdByFullName,
                 createdByAvatar = order.createdByAvatar,
                 complexityPercentage = order.complexityPercentage,
-                complexityLevel = order.complexityLevel
+                complexityLevel = order.complexityLevel,
+                isPublic = order.isPublic,
+                assignedToUsername = order.assignedToUsername,
+                assignedToFullName = order.assignedToFullName,
+                assignedToAvatar = order.assignedToAvatar,
+                assignedAt = order.assignedAt,
+                collaboratorsJson = Gson().toJson(order.collaborators)
             )
         }
         
@@ -169,7 +202,13 @@ data class OrderEntity(
                 createdByFullName = order.createdByFullName,
                 createdByAvatar = order.createdByAvatar,
                 complexityPercentage = order.complexityPercentage,
-                complexityLevel = order.complexityLevel
+                complexityLevel = order.complexityLevel,
+                isPublic = order.isPublic,
+                assignedToUsername = order.assignedToUsername,
+                assignedToFullName = order.assignedToFullName,
+                assignedToAvatar = order.assignedToAvatar,
+                assignedAt = order.assignedAt,
+                collaboratorsJson = Gson().toJson(order.collaborators)
             )
         }
     }

@@ -3,16 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="#F8F9FA"
     android:fitsSystemWindows="true"
-    android:paddingHorizontal="16dp"
-    android:paddingBottom="16dp"
     android:paddingTop="70dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <!-- ADB инструменты -->
         <com.google.android.material.card.MaterialCardView
@@ -21,245 +20,221 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/black"
-            app:strokeWidth="2dp">
+            app:cardBackgroundColor="@color/white"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center_horizontal">
 
-                <!-- Информация слева -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="ADB Инструменты"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="8dp"
+                    android:textAlignment="center" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ADB инструменты"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
-                        android:layout_marginBottom="16dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Инструменты для работы с Android Debug Bridge (ADB). Скачайте драйверы, изучите руководство и настройте отладку по USB."
-                        android:textColor="@color/gray_700"
-                        android:textSize="14sp"
-                        android:lineSpacingExtra="4dp"
-                        android:layout_marginBottom="16dp" />
-                </LinearLayout>
-
-                <!-- Кнопки справа -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Инструменты ADB: скачайте драйверы, изучите руководство и настройте отладку по USB."
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:textAlignment="center"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="16dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonDownloadDrivers"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Скачать драйверы ADB"
-                        style="@style/Widget.MaterialComponents.Button"
-                        app:backgroundTint="@color/gray_900"
-                        android:textColor="@color/white"
-                        android:layout_marginBottom="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadDrivers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Скачать драйверы ADB"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="@color/gray_900"
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="8dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonOpenDeveloperOptions"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Открыть настройки разработчика"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900"
-                        android:layout_marginBottom="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonOpenDeveloperOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Открыть настройки разработчика"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/gray_400"
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonAdbGuide"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Руководство по ADB"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_weight="1"
+                        android:text="Руководство"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginEnd="4dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonUsbDebugging"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Как включить отладку по USB"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900" />
+                        android:layout_weight="1"
+                        android:text="Об отладке"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginStart="4dp" />
                 </LinearLayout>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Инструкция по использованию пультов -->
+        <!-- Пульт -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
+            app:cardBackgroundColor="@color/white"
+            app:strokeColor="@color/teal_200"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center_horizontal">
 
-                <!-- Информация слева -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Интерактивный пульт"
+                    android:textColor="@color/teal_700"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="8dp"
+                    android:textAlignment="center" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Интерактивная инструкция по пульту"
-                        android:textColor="@color/gray_900"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
-                        android:layout_marginBottom="16dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Откройте виртуальный пульт, нажмите кнопки последовательно, и получите текстовую инструкцию для бабушек, которую можно переслать."
-                        android:textColor="@color/gray_700"
-                        android:textSize="14sp"
-                        android:lineSpacingExtra="4dp"
-                        android:layout_marginBottom="16dp" />
-                </LinearLayout>
-
-                <!-- Кнопки справа -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Создайте пошаговую инструкцию для управления ТВ и отправьте её клиенту."
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:textAlignment="center"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="16dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonOpenRemoteGuide"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Открыть виртуальный пульт"
-                        style="@style/Widget.MaterialComponents.Button"
-                        app:backgroundTint="@color/gray_900"
-                        android:textColor="@color/white"
-                        android:layout_marginBottom="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonOpenRemoteGuide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Открыть виртуальный пульт"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="@color/teal_700"
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="8dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonDownloadRemoteApp"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="📱 Скачать приложение пульта (Play Market)"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900" />
-                </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadRemoteApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Скачать в Play Market"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/teal_700"
+                    android:textColor="@color/teal_700" />
+                
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Инструкция по драйверам -->
+        <!-- Драйверы -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
+            app:cardBackgroundColor="@color/white"
+            app:strokeColor="#C5E1A5"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center_horizontal">
 
-                <!-- Информация слева -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Драйверы Relab"
+                    android:textColor="#33691E"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="8dp"
+                    android:textAlignment="center" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:text="Инструкция по драйверам"
-                        android:textColor="@color/gray_900"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:lineSpacingExtra="4dp"
-                        android:text="1. Скачайте драйвера через кнопку ниже\n2. Подключите телефон к компьютеру.\n3. Перекиньте драйвера с папки 'Downloads' в 'C:\\Program Files\\Android\\...'\n4. Перезагрузите компьютер"
-                        android:textColor="@color/gray_700"
-                        android:textSize="14sp" />
-                </LinearLayout>
-
-                <!-- Кнопки справа -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Скачайте архив, перенесите файлы в папку Program Files и перезагрузитесь."
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="16dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonDownloadDrivers2"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Скачать драйверы"
-                        style="@style/Widget.MaterialComponents.Button"
-                        app:backgroundTint="@color/teal_700"
-                        android:textColor="@color/white"
-                        android:layout_marginBottom="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadDrivers2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Скачать драйверы"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="#388E3C"
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonOpenDriversFolder"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Открыть папку драйверов"
+                        android:layout_weight="1"
+                        android:text="Папка"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900"
-                        android:layout_marginBottom="8dp" />
+                        app:strokeColor="#81C784"
+                        android:textColor="#388E3C"
+                        android:layout_marginEnd="4dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonInstallDrivers"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Установить драйверы"
+                        android:layout_weight="1"
+                        android:text="Установить"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/gray_400"
-                        android:textColor="@color/gray_900" />
+                        app:strokeColor="#81C784"
+                        android:textColor="#388E3C"
+                        android:layout_marginStart="4dp" />
                 </LinearLayout>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

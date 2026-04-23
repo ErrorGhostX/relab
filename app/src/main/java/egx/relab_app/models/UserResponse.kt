@@ -14,5 +14,6 @@ data class UserResponse(
     val first_name: String? = null,
     val last_name: String? = null,
     val rank: String? = null,
-    val rank_display: String? = null
+    val rank_display: String? = null,
+    val specialization: String? = null
 ): Parcelable

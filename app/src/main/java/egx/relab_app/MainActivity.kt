@@ -168,6 +168,21 @@ class MainActivity : AppCompatActivity() {
                         loadProfileFromServer()
                     }
                 }
+        
+        handleRemoteIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleRemoteIntent(intent)
+    }
+
+    private fun handleRemoteIntent(intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra("EXTRA_OPEN_REMOTE", false) == true) {
+            val dialog = egx.relab_app.ui.tools.RemoteControlGuideDialog()
+            dialog.show(supportFragmentManager, "RemoteControlGuide")
+        }
     }
 
 

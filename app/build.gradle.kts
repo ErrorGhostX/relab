@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "egx.relab_app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "egx.relab_app"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 8
-        versionName = "8.1.0-alpha"
+        versionName = "9.0.5-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,6 +44,7 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    buildToolsVersion = "35.0.0"
 }
 
 dependencies {
