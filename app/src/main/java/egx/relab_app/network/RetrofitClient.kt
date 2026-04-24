@@ -30,7 +30,7 @@ import okhttp3.Interceptor
 
 
 object RetrofitClient {
-    private const val DEFAULT_BASE_URL = "http://10.8.0.18:8000/api/"
+    private const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/api/"
 
 
     lateinit var tokenManager: TokenManager
@@ -113,10 +113,12 @@ object RetrofitClient {
         val parts = makeParts(order)
         apiService.createOrder(
             parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
-            parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
+            parts["extra_info"]!!, parts["messenger"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!, photoParts
+            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
+            parts["customer_ref"],
+            photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -180,10 +182,12 @@ object RetrofitClient {
         apiService.updateOrder(
             id,
             parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
-            parts["extra_info"]!!, parts["telegram"]!!, parts["device_name"]!!,
+            parts["extra_info"]!!, parts["messenger"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
-            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!, photoParts
+            parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
+            parts["customer_ref"],
+            photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
                 val body = resp.errorBody()?.string()
@@ -211,7 +215,7 @@ object RetrofitClient {
             "customer"     to o.customer.orEmpty().toRequestBody(mt),
             "contact_info" to o.contactInfo.orEmpty().toRequestBody(mt),
             "extra_info"   to o.extraInfo.orEmpty().toRequestBody(mt),
-            "telegram"     to o.telegram.orEmpty().toRequestBody(mt),
+            "messenger"    to o.messenger.orEmpty().toRequestBody(mt),
             "device_name"  to o.deviceName.orEmpty().toRequestBody(mt),
             "device_type"  to o.deviceType.orEmpty().toRequestBody(mt),
             "manufacturer" to o.manufacturer.orEmpty().toRequestBody(mt),
@@ -221,9 +225,10 @@ object RetrofitClient {
             "date"         to formattedDate.toRequestBody(mt),
             "status"       to o.status.orEmpty().toRequestBody(mt),
             "order_type"   to o.orderType.orEmpty().toRequestBody(mt),
-            "is_public"    to (if (o.isPublic) "1" else "0").toRequestBody(mt)
+            "is_public"    to (if (o.isPublic) "1" else "0").toRequestBody(mt),
+            "customer_ref" to (o.customerRef?.toString() ?: "").toRequestBody(mt)
         ).also { 
-            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic} -> ${if (o.isPublic) "1" else "0"}")
+            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic} -> ${if (o.isPublic) "1" else "0"}, customerRef=${o.customerRef}")
         }
     }
     

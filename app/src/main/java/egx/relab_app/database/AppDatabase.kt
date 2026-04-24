@@ -5,8 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import egx.relab_app.database.dao.CustomerDao
 import egx.relab_app.database.dao.OrderDao
 import egx.relab_app.database.dao.ServiceDao
+import egx.relab_app.database.entity.CustomerEntity
 import egx.relab_app.database.entity.OrderEntity
 import egx.relab_app.database.entity.ServiceEntity
 
@@ -21,8 +23,8 @@ import egx.relab_app.database.entity.ServiceEntity
  * Room автоматически создает SQLite базу данных и генерирует код для работы с ней.
  */
 @Database(
-    entities = [OrderEntity::class, ServiceEntity::class],
-    version = 5,  // v5: Добавлены поля коллаборации (isPublic, assignedTo) и статус услуг (serviceStatus, performedBy)
+    entities = [OrderEntity::class, ServiceEntity::class, CustomerEntity::class],
+    version = 6,  // v6: Добавлена таблица клиентов (customers), поле customerRefId в заказах, telegram → messenger
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,6 +38,11 @@ abstract class AppDatabase : RoomDatabase() {
      * Получить DAO для работы с услугами
      */
     abstract fun serviceDao(): ServiceDao
+    
+    /**
+     * Получить DAO для работы с клиентами
+     */
+    abstract fun customerDao(): CustomerDao
     
     companion object {
         // Volatile гарантирует, что изменения видны всем потокам
@@ -70,4 +77,3 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
-

@@ -3,18 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="#F8F9FA"
     android:fitsSystemWindows="true"
-    android:paddingTop="60dp"
-    android:paddingHorizontal="5dp"
-    android:paddingBottom="11dp">
+    android:paddingTop="70dp"
+    android:paddingHorizontal="16dp"
+    android:paddingBottom="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
-
-
 
         <!-- Карточка: Заработано -->
         <com.google.android.material.card.MaterialCardView
@@ -22,31 +20,30 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="8dp"
+                android:padding="20dp"
                 android:gravity="center">
 
                 <ImageView
-                    android:layout_width="98dp"
-                    android:layout_height="76dp"
-                    android:layout_marginBottom="10dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_marginBottom="12dp"
                     android:src="@drawable/money_svgrepo_com"
-                    app:tint="#266F26" />
+                    app:tint="@color/teal_700" />
 
                 <TextView
                     android:id="@+id/tvTotalEarnings"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="— ₽"
-                    android:textColor="#266F26"
+                    android:textColor="@color/gray_900"
                     android:textSize="32sp"
                     android:textStyle="bold" />
 
@@ -54,193 +51,226 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Заработано за месяц"
-                    android:textColor="#0E0F0E"
-                    android:textSize="21sp"
-
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="@color/gray_700"
+                    android:textSize="16sp" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        <!-- Блок для графика (можно добавить позже) -->
+
+        <!-- Блок для графика -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@android:color/system_accent1_100"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-
-                android:padding="0dp">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="График заработка по дням месяца"
-                    android:textColor="#192E71"
-                    android:textSize="19sp"
-                    android:layout_gravity="center_horizontal"
-                    android:padding="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="График заработка по дням"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/chartMonthlyEarnings"
-                    android:layout_marginBottom="8dp"
                     android:layout_width="match_parent"
-                    android:layout_height="300dp" />
+                    android:layout_height="250dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        <!-- Три маленьких блока в ряд -->
+
+        <!-- Статистика заказов (Pie Chart + цифры) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Статистика заказов"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <!-- Pie Chart -->
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/chartOrderDistribution"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <!-- Выполнено -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Выполнено"
+                            android:textColor="@color/gray_700"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tvCompletedOrders"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/teal_700"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Создано -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Создано"
+                            android:textColor="@color/gray_700"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tvOrdersCreated"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/gray_900"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Эффективность и Сложность -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="24dp"
-            android:gravity="center"
-            android:weightSum="3"
-            android:layout_marginTop="16dp">
+            android:weightSum="2">
 
-            <!-- Блок 1: Выполнено заказов -->
+            <!-- Эффективность -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
-                android:layout_height="120dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white"
-                app:strokeColor="@color/gray_900"
-                app:strokeWidth="1dp">
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
+                    android:padding="16dp"
                     android:gravity="center">
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@drawable/check_correct_svgrepo_com"
-                        app:tint="@android:color/holo_green_dark"
-                        android:layout_marginBottom="1dp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Выполнено"
-                        android:textColor="@color/gray_700"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="4dp"/>
-
-                    <TextView
-                        android:id="@+id/tvCompletedOrders"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/holo_green_dark"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Блок 2: Эффективность -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="120dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="8dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/gray_100"
-                app:strokeColor="@color/gray_900"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="6dp"
-                    >
 
                     <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
                         android:src="@android:drawable/star_big_on"
+                        app:tint="#FBC02D"
+                        android:layout_marginBottom="8dp" />
 
-                        android:layout_marginBottom="1dp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Эффективность"
                         android:textColor="@color/gray_700"
-                        android:textSize="11sp"
-                        android:layout_marginBottom="4dp"/>
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
 
                     <TextView
                         android:id="@+id/tvEmployeeEfficiency"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="- %"
+                        android:textColor="@color/gray_900"
                         android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/holo_orange_dark"/>
+                        android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Блок 3: Создано заказов -->
+            <!-- Средняя сложность -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
-                android:layout_height="120dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/gray_200"
-                app:strokeColor="@color/gray_900"
-                app:strokeWidth="1dp">
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
+                    android:padding="16dp"
                     android:gravity="center">
+
                     <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@drawable/pencil_file_svgrepo_com"
-                        app:tint="@color/gray_900"
-                        android:layout_marginBottom="1dp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Создано заказов"
-                        android:textColor="@color/gray_700"
-                        android:textSize="11sp"
-                        android:layout_marginBottom="4dp"/>
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/tools_svgrepo_com"
+                        app:tint="#D32F2F"
+                        android:layout_marginBottom="8dp" />
 
                     <TextView
-                        android:id="@+id/tvOrdersCreated"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="-"
+                        android:text="Ср. сложность"
+                        android:textColor="@color/gray_700"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvAverageComplexity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="- pts"
+                        android:textColor="@color/gray_900"
                         android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray_900"/>
+                        android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
-
-
-
-
 
     </LinearLayout>
 </ScrollView>

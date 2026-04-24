@@ -19,6 +19,7 @@ class AnalyticsCache(context: Context) {
         private const val KEY_EMPLOYEE_EFFICIENCY = "employee_efficiency"
         private const val KEY_AVERAGE_COMPLEXITY = "average_complexity"
         private const val KEY_DAILY_EARNINGS = "daily_earnings"
+        private const val KEY_ORDER_STATISTICS = "order_statistics"
         private const val KEY_CACHE_TIMESTAMP = "cache_timestamp"
         private const val CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000L // 24 часа
     }
@@ -159,6 +160,25 @@ class AnalyticsCache(context: Context) {
             } else {
                 null
             }
+        } else {
+            null
+        }
+    }
+    
+    /**
+     * Сохранить статистику статусов
+     */
+    fun saveOrderStatistics(jsonString: String) {
+        prefs.edit().putString(KEY_ORDER_STATISTICS, jsonString).apply()
+        updateCacheTimestamp()
+    }
+    
+    /**
+     * Получить статистику статусов
+     */
+    fun getOrderStatistics(): String? {
+        return if (isCacheValid()) {
+            prefs.getString(KEY_ORDER_STATISTICS, null)
         } else {
             null
         }

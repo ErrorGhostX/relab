@@ -137,8 +137,8 @@ class GeneratePDF(
         canvas.drawText(order.contactInfo ?: "—", margin + 100f, yy, value)
 
         yy += 18f
-        canvas.drawText("Telegram:", margin, yy, label)
-        canvas.drawText(order.telegram ?: "—", margin + 100f, yy, value)
+        canvas.drawText("Мэсэнджер:", margin, yy, label)
+        canvas.drawText(order.messenger ?: "—", margin + 100f, yy, value)
 
         yy += 18f
         canvas.drawText("Дополнительно:", margin, yy, label)

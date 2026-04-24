@@ -48,7 +48,7 @@ class OrderListFragment : Fragment() {
     // Получаем Repository из Application
     private val repository by lazy { requireContext().app.orderRepository }
     private val syncManager by lazy { 
-        SyncManager(repository, requireContext())
+        SyncManager(repository, requireContext(), requireContext().app.customerDao)
     }
 
     private val statusMap = mapOf(

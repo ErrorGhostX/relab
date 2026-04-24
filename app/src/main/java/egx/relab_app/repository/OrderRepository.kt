@@ -287,10 +287,11 @@ class OrderRepository(
         // Статус меняется на PENDING - заказ будет синхронизирован через SyncManager
         val updatedEntity = existingEntity.copy(
             orderNumber = order.orderNumber,
+            customerRefId = order.customerRef,
             customer = order.customer,
             contactInfo = order.contactInfo,
             extraInfo = order.extraInfo,
-            telegram = order.telegram,
+            messenger = order.messenger,
             deviceName = order.deviceName,
             deviceType = order.deviceType,
             manufacturer = order.manufacturer,
@@ -509,6 +510,13 @@ class OrderRepository(
      */
     suspend fun markAsFullyDeleted(localId: Long) {
         orderDao.fullyDeleteOrder(localId)
+    }
+
+    /**
+     * Обновить заказ целиком
+     */
+    suspend fun updateOrder(orderEntity: egx.relab_app.database.entity.OrderEntity) {
+        orderDao.updateOrder(orderEntity)
     }
     
     /**

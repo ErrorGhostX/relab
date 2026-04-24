@@ -19,7 +19,9 @@ import egx.relab_app.R
 import egx.relab_app.app
 import egx.relab_app.data.DeviceDatabase
 import egx.relab_app.databinding.FragmentOrderCreateBinding
+import egx.relab_app.models.Customer
 import egx.relab_app.models.Order
+import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
 import egx.relab_app.storage.TokenManager
 import egx.relab_app.sync.SyncManager
@@ -48,9 +50,12 @@ class OrderFormFragment : Fragment() {
 
     private var allOrders: List<Order> = emptyList()
     
+    // Выбранный клиент из базы (null если клиент вводится вручную)
+    private var selectedCustomer: Customer? = null
+    
     // Получаем Repository и SyncManager из Application
     private val repository by lazy { requireContext().app.orderRepository }
-    private val syncManager by lazy { SyncManager(repository, requireContext()) }
+    private val syncManager by lazy { SyncManager(repository, requireContext(), requireContext().app.customerDao) }
     private val tokenManager by lazy { TokenManager(requireContext()) }
     
     // Локальный ID заказа (для режима редактирования)
@@ -116,6 +121,9 @@ class OrderFormFragment : Fragment() {
         }
         // Инициализируем базу данных устройств
         DeviceDatabase.initialize(requireContext())
+        
+        // Настраиваем выбор клиента
+        setupCustomerPicker()
         
         // Загружаем заказы для автодополнения
         loadOrdersForAutocomplete()
@@ -303,6 +311,195 @@ class OrderFormFragment : Fragment() {
     }
 
     /**
+     * Настройка выбора клиента (поиск + добавление нового)
+     */
+    private fun setupCustomerPicker() {
+        // Логика кнопки добавления нового клиента
+        binding.btnAddNewCustomer.setOnClickListener {
+            binding.inputLayoutCustomerSearch.visibility = View.GONE
+            binding.btnAddNewCustomer.visibility = View.GONE
+            binding.cardSelectedCustomer.visibility = View.GONE
+            binding.layoutNewCustomerForm.visibility = View.VISIBLE
+            selectedCustomer = null // Сбрасываем выбранного клиента
+        }
+
+        // Кнопка отмены добавления
+        binding.btnCancelNewCustomer.setOnClickListener {
+            binding.inputLayoutCustomerSearch.visibility = View.VISIBLE
+            binding.btnAddNewCustomer.visibility = View.VISIBLE
+            binding.layoutNewCustomerForm.visibility = View.GONE
+            
+            // Очищаем форму
+            binding.editTextCustomerName.text?.clear()
+            binding.editTextContactInfo.text?.clear()
+            binding.editTextCustomerEmail.text?.clear()
+            binding.editTextMessenger.text?.clear()
+            binding.editTextExtraInfo.text?.clear()
+        }
+
+        // Кнопка сохранения нового клиента
+        binding.btnSaveNewCustomer.setOnClickListener {
+            val name = binding.editTextCustomerName.text?.toString() ?: ""
+            if (name.isBlank()) {
+                validateField(binding.editTextCustomerName, binding.inputLayoutCustomerName, "Введите ФИО")
+                return@setOnClickListener
+            }
+
+            val newCustomer = Customer(
+                id = null,
+                fullName = name,
+                phone = binding.editTextContactInfo.text?.toString() ?: "",
+                email = binding.editTextCustomerEmail.text?.toString() ?: "",
+                messenger = binding.editTextMessenger.text?.toString() ?: "",
+                extraInfo = binding.editTextExtraInfo.text?.toString() ?: "",
+                ltv = 0.0,
+                totalOrders = 0,
+                isBlacklisted = false
+            )
+
+            // Сохраняем в локальную БД и сервер
+            lifecycleScope.launch {
+                try {
+                    val created = withContext(Dispatchers.IO) {
+                        val request = ApiService.CreateCustomerRequest(
+                            full_name = newCustomer.fullName,
+                            phone = newCustomer.phone,
+                            email = newCustomer.email,
+                            messenger = newCustomer.messenger,
+                            extra_info = newCustomer.extraInfo,
+                            is_blacklisted = newCustomer.isBlacklisted,
+                            blacklist_reason = newCustomer.blacklistReason,
+                            notes = newCustomer.notes
+                        )
+                        RetrofitClient.apiService.createCustomer(request)
+                    }
+                    // Обновляем локальную базу (в фоне)
+                    requireContext().app.customerDao.insertCustomer(egx.relab_app.database.entity.CustomerEntity.fromCustomer(created))
+                    
+                    Toast.makeText(context, "Клиент добавлен", Toast.LENGTH_SHORT).show()
+                    
+                    // Выбираем его
+                    selectCustomer(created)
+                    
+                    // Скрываем форму и возвращаем нормальный вид
+                    binding.layoutNewCustomerForm.visibility = View.GONE
+                    binding.inputLayoutCustomerSearch.visibility = View.VISIBLE
+                    binding.btnAddNewCustomer.visibility = View.VISIBLE
+                    
+                    // Очищаем форму
+                    binding.editTextCustomerName.text?.clear()
+                    binding.editTextContactInfo.text?.clear()
+                    binding.editTextCustomerEmail.text?.clear()
+                    binding.editTextMessenger.text?.clear()
+                    binding.editTextExtraInfo.text?.clear()
+                    
+                } catch (e: Exception) {
+                    android.util.Log.e("OrderForm", "Error creating customer, creating locally offline", e)
+                    
+                    // OFFLINE FALLBACK
+                    withContext(Dispatchers.IO) {
+                        val pendingEntity = egx.relab_app.database.entity.CustomerEntity.fromNewCustomer(newCustomer)
+                        val localId = requireContext().app.customerDao.insertCustomer(pendingEntity)
+                        
+                        val offlineCustomer = newCustomer.copy(id = -localId.toInt())
+                        
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(context, "Клиент сохранен локально (ожидает сети)", android.widget.Toast.LENGTH_SHORT).show()
+                            selectCustomer(offlineCustomer)
+                            binding.layoutNewCustomerForm.visibility = View.GONE
+                            binding.inputLayoutCustomerSearch.visibility = View.VISIBLE
+                            binding.btnAddNewCustomer.visibility = View.VISIBLE
+                            
+                            binding.editTextCustomerName.text?.clear()
+                            binding.editTextContactInfo.text?.clear()
+                            binding.editTextCustomerEmail.text?.clear()
+                            binding.editTextMessenger.text?.clear()
+                            binding.editTextExtraInfo.text?.clear()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Настройка автокомплита для поиска (поиск по БД)
+        val adapter = object : ArrayAdapter<Customer>(requireContext(), R.layout.item_spinner_black, mutableListOf()) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as android.widget.TextView
+                val customer = getItem(position)
+                view.text = "${customer?.fullName} ${if (!customer?.phone.isNullOrBlank()) "(${customer?.phone})" else ""}"
+                return view
+            }
+
+            override fun getFilter(): android.widget.Filter {
+                return object : android.widget.Filter() {
+                    override fun performFiltering(constraint: CharSequence?): FilterResults {
+                        val results = FilterResults()
+                        if (constraint.isNullOrBlank()) {
+                            results.values = emptyList<Customer>()
+                            results.count = 0
+                            return results
+                        }
+                        
+                        val query = constraint.toString().lowercase()
+                        // Ищем в локальной БД (синхронно, так как это filter)
+                        val fromDb = try {
+                            requireContext().app.customerDao.searchCustomersSync("%$query%")
+                                .map { it.toCustomer() }
+                        } catch (e: Exception) {
+                            emptyList<Customer>()
+                        }
+                        
+                        results.values = fromDb
+                        results.count = fromDb.size
+                        return results
+                    }
+
+                    @Suppress("UNCHECKED_CAST")
+                    override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                        clear()
+                        if (results != null && results.count > 0) {
+                            addAll(results.values as List<Customer>)
+                        }
+                        notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+        
+        binding.autoCompleteCustomer.setAdapter(adapter)
+        binding.autoCompleteCustomer.setOnItemClickListener { parent, _, position, _ ->
+            val customer = parent.getItemAtPosition(position) as Customer
+            selectCustomer(customer)
+            binding.autoCompleteCustomer.text?.clear()
+        }
+
+        // Кнопка очистки выбранного клиента
+        binding.btnClearCustomer.setOnClickListener {
+            selectedCustomer = null
+            binding.cardSelectedCustomer.visibility = View.GONE
+            binding.cardBlacklistWarning.visibility = View.GONE
+            binding.inputLayoutCustomerSearch.visibility = View.VISIBLE
+            binding.autoCompleteCustomer.requestFocus()
+        }
+    }
+
+    private fun selectCustomer(customer: Customer) {
+        selectedCustomer = customer
+        binding.cardSelectedCustomer.visibility = View.VISIBLE
+        binding.inputLayoutCustomerSearch.visibility = View.GONE
+        
+        binding.textSelectedCustomerName.text = customer.fullName
+        binding.textSelectedCustomerPhone.text = customer.phone.takeIf { !it.isNullOrBlank() } ?: "Нет телефона"
+        
+        if (customer.isBlacklisted) {
+            binding.cardBlacklistWarning.visibility = View.VISIBLE
+            binding.textBlacklistReason.text = customer.blacklistReason ?: "Причина не указана"
+        } else {
+            binding.cardBlacklistWarning.visibility = View.GONE
+        }
+    }
+
+    /**
      * Загрузить локальный ID заказа для редактирования
      */
     private fun loadOrderLocalId() {
@@ -374,21 +571,6 @@ class OrderFormFragment : Fragment() {
 
     private fun setupAutocompleteAdapters() {
         // Извлекаем уникальные значения из заказов для полей, не связанных с устройствами
-        val customers = allOrders.mapNotNull { it.customer }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-
-        val contactInfos = allOrders.mapNotNull { it.contactInfo }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-
-        val telegrams = allOrders.mapNotNull { it.telegram }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-
         val kits = allOrders.mapNotNull { it.kit }
             .filter { it.isNotBlank() }
             .distinct()
@@ -397,8 +579,6 @@ class OrderFormFragment : Fragment() {
         setupAutocompleteWithDeviceDB(binding.editTextManufacturer, AutocompleteFieldType.MANUFACTURER)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceType, AutocompleteFieldType.DEVICE_TYPE)
         setupAutocompleteWithDeviceDB(binding.editTextDeviceName, AutocompleteFieldType.DEVICE_NAME)
-        setupAutocompleteAdapter(binding.editTextContactInfo, contactInfos)
-        setupAutocompleteAdapter(binding.editTextTelegram, telegrams)
         setupAutocompleteAdapter(binding.editTextKit, kits)
     }
 
@@ -493,10 +673,26 @@ class OrderFormFragment : Fragment() {
     private fun populateEditFields() {
         val o = args.order!!
         binding.editTextOrderNumber.setText(o.orderNumber)
-        binding.editTextCustomerName.setText(o.customer)
-        binding.editTextContactInfo.setText(o.contactInfo)
-        binding.editTextExtraInfo.setText(o.extraInfo)
-        binding.editTextTelegram.setText(o.telegram)
+        
+        // Если есть привязанный клиент — показываем его в карточке
+        if (o.customerDetail != null) {
+            selectCustomer(o.customerDetail)
+        } else if (o.customerRef != null) {
+            // Загружаем клиента по ID
+            lifecycleScope.launch {
+                try {
+                    val customer = RetrofitClient.apiService.getCustomer(o.customerRef)
+                    selectCustomer(customer)
+                } catch (e: Exception) {
+                    // Если не получилось загрузить — показываем текстовые поля
+                    binding.autoCompleteCustomer.setText(o.customer ?: "")
+                }
+            }
+        } else {
+            // Старый заказ без customer_ref — показываем текстовые данные
+            binding.autoCompleteCustomer.setText(o.customer ?: "")
+        }
+        
         binding.editTextDeviceName.setText(o.deviceName)
         binding.editTextDeviceType.setText(o.deviceType)
         binding.editTextManufacturer.setText(o.manufacturer)
@@ -504,16 +700,12 @@ class OrderFormFragment : Fragment() {
         binding.editTextKit.setText(o.kit)
         binding.editTextDescription.setText(o.description)
         selectedDate = o.date
-        //  Если дата есть, показываем её, иначе показываем "Выберите дату"
         binding.textViewSelectedDate.text = o.date ?: "Выберите дату"
         reverseOrderTypeMap[o.orderType]?.let { orderTypeText ->
-            //  Для AutoCompleteTextView используем только setText, не setSelection
-            // setSelection может вызвать IndexOutOfBoundsException если текст пустой
             try {
                 binding.orderTypeSpinner.setText(orderTypeText, false)
             } catch (e: Exception) {
                 android.util.Log.e("OrderForm", "Ошибка установки orderType: ${e.message}")
-                // Пробуем установить текст без фильтрации
                 binding.orderTypeSpinner.setText(orderTypeText)
             }
         }
@@ -526,7 +718,6 @@ class OrderFormFragment : Fragment() {
             }
         }
         
-        // Устанавливаем значение переключателя "Общий заказ"
         binding.switchIsPublic.isChecked = o.isPublic
     }
 
@@ -539,19 +730,27 @@ class OrderFormFragment : Fragment() {
      * 4. Не ждет ответа от сервера - приложение работает автономно
      */
     private fun saveOrUpdate() {
-        // Валидируем обязательные поля с подсветкой красным
-        val customerNameValid = validateField(
-            binding.editTextCustomerName,
-            binding.inputLayoutCustomerName,
-            "Имя клиента обязательно"
-        )
+        // Валидируем обязательные поля
+        // Клиент обязателен: либо выбран из базы, либо введено имя в форме нового клиента
+        val hasCustomer = selectedCustomer != null || 
+            (binding.layoutNewCustomerForm.visibility == View.VISIBLE && 
+             binding.editTextCustomerName.text?.isNotBlank() == true)
+        
+        if (!hasCustomer) {
+            val ctx = context
+            if (ctx != null && isAdded) {
+                Toast.makeText(ctx, "Выберите клиента из базы или добавьте нового", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        
         val deviceNameValid = validateField(
             binding.editTextDeviceName,
             binding.inputLayoutDeviceName,
             "Название устройства обязательно"
         )
         
-        if (!customerNameValid || !deviceNameValid) {
+        if (!deviceNameValid) {
             val ctx = context
             if (ctx != null && isAdded) {
                 Toast.makeText(ctx, "Заполните обязательные поля", Toast.LENGTH_SHORT).show()
@@ -659,13 +858,25 @@ class OrderFormFragment : Fragment() {
         val typeSelected = binding.orderTypeSpinner.text.toString()
         val isPublicChecked = binding.switchIsPublic.isChecked
 
+        // Определяем данные клиента
+        val customerRefId = selectedCustomer?.id
+        val customerName = selectedCustomer?.fullName 
+            ?: binding.editTextCustomerName.text?.toString() ?: ""
+        val contactInfo = selectedCustomer?.phone 
+            ?: binding.editTextContactInfo.text?.toString() ?: ""
+        val messenger = selectedCustomer?.messenger 
+            ?: binding.editTextMessenger.text?.toString() ?: ""
+        val extraInfo = selectedCustomer?.extraInfo 
+            ?: binding.editTextExtraInfo.text?.toString() ?: ""
+
         return Order(
             id = null,
             orderNumber = binding.editTextOrderNumber.text.toString(),
-            customer = binding.editTextCustomerName.text.toString(),
-            contactInfo = binding.editTextContactInfo.text.toString(),
-            extraInfo = binding.editTextExtraInfo.text.toString(),
-            telegram = binding.editTextTelegram.text.toString(),
+            customerRef = customerRefId,
+            customer = customerName,
+            contactInfo = contactInfo,
+            extraInfo = extraInfo,
+            messenger = messenger,
             deviceName = binding.editTextDeviceName.text.toString(),
             deviceType = binding.editTextDeviceType.text.toString(),
             manufacturer = binding.editTextManufacturer.text.toString(),

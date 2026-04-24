@@ -1,5 +1,6 @@
 package egx.relab_app.network
 
+import egx.relab_app.models.Customer
 import egx.relab_app.models.Order
 import egx.relab_app.models.OrderPhoto
 import egx.relab_app.models.UserResponse
@@ -14,6 +15,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 import android.app.Service
 import egx.relab_app.models.User
@@ -42,7 +44,7 @@ interface ApiService {
         @Part("customer")       customer: RequestBody,
         @Part("contact_info")   contactInfo: RequestBody,
         @Part("extra_info")     extraInfo: RequestBody,
-        @Part("telegram")       telegram: RequestBody,
+        @Part("messenger")      messenger: RequestBody,
         @Part("device_name")    deviceName: RequestBody,
         @Part("device_type")    deviceType: RequestBody,
         @Part("manufacturer")   manufacturer: RequestBody,
@@ -53,6 +55,7 @@ interface ApiService {
         @Part("status")         status: RequestBody,
         @Part("order_type")     orderType: RequestBody,
         @Part("is_public")      isPublic: RequestBody,
+        @Part("customer_ref")   customerRef: RequestBody?,
         @Part                   photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -64,7 +67,7 @@ interface ApiService {
         @Part("customer") customer: RequestBody,
         @Part("contact_info") contactInfo: RequestBody,
         @Part("extra_info") extraInfo: RequestBody,
-        @Part("telegram") telegram: RequestBody,
+        @Part("messenger") messenger: RequestBody,
         @Part("device_name") deviceName: RequestBody,
         @Part("device_type") deviceType: RequestBody,
         @Part("manufacturer") manufacturer: RequestBody,
@@ -75,6 +78,7 @@ interface ApiService {
         @Part("status") status: RequestBody,
         @Part("order_type") orderType: RequestBody,
         @Part("is_public") isPublic: RequestBody,
+        @Part("customer_ref") customerRef: RequestBody?,
         @Part photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -275,4 +279,35 @@ interface ApiService {
     // Список доступных сотрудников для приглашения
     @GET("orders/{id}/available_employees/")
     suspend fun getAvailableEmployees(@Path("id") orderId: Int): List<User>
+
+    // =============================================
+    // Эндпоинты для клиентской базы
+    // =============================================
+
+    // Получить всех клиентов
+    @GET("customers/")
+    suspend fun getCustomers(): List<Customer>
+
+    // Поиск клиентов по имени/телефону
+    @GET("customers/")
+    suspend fun searchCustomers(@Query("search") query: String): List<Customer>
+
+    // Создать нового клиента
+    data class CreateCustomerRequest(
+        val full_name: String,
+        val phone: String? = null,
+        val email: String? = null,
+        val messenger: String? = null,
+        val extra_info: String? = null,
+        val is_blacklisted: Boolean = false,
+        val blacklist_reason: String? = null,
+        val notes: String? = null
+    )
+
+    @POST("customers/")
+    suspend fun createCustomer(@Body request: CreateCustomerRequest): Customer
+
+    // Получить клиента по ID
+    @GET("customers/{id}/")
+    suspend fun getCustomer(@Path("id") id: Int): Customer
 }

@@ -37,12 +37,15 @@ data class OrderEntity(
     val lastSynced: Long? = null,
     val isDeleted: Boolean = false,
     
+    // Ссылка на клиента из базы клиентов (серверный ID)
+    val customerRefId: Int? = null,
+    
     // Данные заказа (соответствуют модели Order)
     val orderNumber: String? = null,
     val customer: String? = null,
     val contactInfo: String? = null,
     val extraInfo: String? = null,
-    val telegram: String? = null,
+    val messenger: String? = null,
     val deviceName: String? = null,
     val deviceType: String? = null,
     val manufacturer: String? = null,
@@ -89,10 +92,11 @@ data class OrderEntity(
         return Order(
             id = displayId,
             orderNumber = orderNumber,
+            customerRef = customerRefId,
             customer = customer,
             contactInfo = contactInfo,
             extraInfo = extraInfo,
-            telegram = telegram,
+            messenger = messenger,
             deviceName = deviceName,
             deviceType = deviceType,
             manufacturer = manufacturer,
@@ -138,11 +142,12 @@ data class OrderEntity(
                 syncStatus = syncStatus,
                 lastModified = System.currentTimeMillis(),
                 lastSynced = System.currentTimeMillis(),
+                customerRefId = order.customerRef,
                 orderNumber = order.orderNumber,
                 customer = order.customer,
                 contactInfo = order.contactInfo,
                 extraInfo = order.extraInfo,
-                telegram = order.telegram,
+                messenger = order.messenger,
                 deviceName = order.deviceName,
                 deviceType = order.deviceType,
                 manufacturer = order.manufacturer,
@@ -183,11 +188,12 @@ data class OrderEntity(
                 syncStatus = SyncStatus.PENDING,
                 lastModified = System.currentTimeMillis(),
                 lastSynced = null,
+                customerRefId = order.customerRef,
                 orderNumber = order.orderNumber,
                 customer = order.customer,
                 contactInfo = order.contactInfo,
                 extraInfo = order.extraInfo,
-                telegram = order.telegram,
+                messenger = order.messenger,
                 deviceName = order.deviceName,
                 deviceType = order.deviceType,
                 manufacturer = order.manufacturer,
@@ -213,4 +219,3 @@ data class OrderEntity(
         }
     }
 }
-

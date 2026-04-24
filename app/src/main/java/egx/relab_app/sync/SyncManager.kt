@@ -3,6 +3,8 @@ package egx.relab_app.sync
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import egx.relab_app.database.dao.CustomerDao
+import egx.relab_app.database.entity.CustomerEntity
 import egx.relab_app.database.entity.OrderEntity
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
@@ -45,7 +47,8 @@ import kotlin.coroutines.resumeWithException
  */
 class SyncManager(
     private val repository: OrderRepository,
-    private val context: Context
+    private val context: Context,
+    private val customerDao: CustomerDao? = null
 ) {
     
     companion object {
@@ -99,6 +102,15 @@ class SyncManager(
                     pullResult = SyncResult(success = false, error = "Нет подключения к серверу")
                 }
                 
+                // Синхронизация клиентской базы
+                try {
+                    syncCustomers()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    Log.d(TAG, "Синхронизация клиентов отменена")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Ошибка синхронизации клиентов: ${e.message}")
+                }
+
                 // Возвращаем результат: успех только если оба успешны
                 // Но это не критично - приложение продолжает работать с локальными данными
                 SyncResult(
@@ -132,6 +144,9 @@ class SyncManager(
      */
     suspend fun pushChanges(): SyncResult = withContext(Dispatchers.IO) {
         try {
+            // Сначала синхронизируем новых клиентов (если есть)
+            pushPendingCustomers()
+            
             // Получаем заказы, ожидающие синхронизации (новые и измененные)
             val pendingOrders = repository.getPendingOrders()
             Log.d(TAG, "Найдено ${pendingOrders.size} заказов для синхронизации (создание/обновление)")
@@ -542,6 +557,91 @@ class SyncManager(
         }
     }
     
+    /**
+     * Синхронизация клиентской базы с сервером
+     * Загружает всех клиентов с сервера и обновляет локальную БД
+     */
+    private suspend fun syncCustomers() = withContext(Dispatchers.IO) {
+        if (customerDao == null) {
+            Log.w(TAG, "CustomerDao не инициализирован, пропускаем синхронизацию клиентов")
+            return@withContext
+        }
+        
+        try {
+            Log.d(TAG, "Начало синхронизации клиентов")
+            val customers = RetrofitClient.apiService.getCustomers()
+            Log.d(TAG, "Получено ${customers.size} клиентов с сервера")
+            
+            for (customer in customers) {
+                if (customer.id != null) {
+                    val existing = customerDao.getCustomerByServerId(customer.id)
+                    if (existing != null) {
+                        // Обновляем существующего клиента
+                        val updated = CustomerEntity.fromCustomer(customer).copy(
+                            localId = existing.localId
+                        )
+                        customerDao.updateCustomer(updated)
+                    } else {
+                        // Новый клиент — вставляем
+                        customerDao.insertCustomer(CustomerEntity.fromCustomer(customer))
+                    }
+                }
+            }
+            
+            Log.d(TAG, "Синхронизация клиентов завершена")
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка синхронизации клиентов", e)
+        }
+    }
+
+    /**
+     * Отправка локально созданных клиентов на сервер
+     */
+    private suspend fun pushPendingCustomers() {
+        if (customerDao == null) return
+        
+        try {
+            val pendingCustomers = customerDao.getPendingCustomers()
+            if (pendingCustomers.isEmpty()) return
+            
+            Log.d(TAG, "Найдено ${pendingCustomers.size} клиентов для отправки на сервер")
+            
+            for (entity in pendingCustomers) {
+                try {
+                    val request = egx.relab_app.network.ApiService.CreateCustomerRequest(
+                        full_name = entity.fullName,
+                        phone = entity.phone,
+                        email = entity.email,
+                        messenger = entity.messenger,
+                        extra_info = entity.extraInfo,
+                        is_blacklisted = entity.isBlacklisted,
+                        blacklist_reason = entity.blacklistReason,
+                        notes = entity.notes
+                    )
+                    
+                    val created = egx.relab_app.network.RetrofitClient.apiService.createCustomer(request)
+                    
+                    // Обновляем локального клиента серверным ID
+                    val updatedEntity = entity.copy(serverId = created.id, syncStatus = "SYNCED")
+                    customerDao.updateCustomer(updatedEntity)
+                    
+                    // Обновляем все локальные заказы, которые ссылаются на этот временный ID (-localId)
+                    val localRefId = -entity.localId.toInt()
+                    val pendingOrders = repository.getPendingOrders().filter { it.customerRefId == localRefId }
+                    for (order in pendingOrders) {
+                        repository.updateOrder(order.copy(customerRefId = created.id))
+                    }
+                    
+                    Log.d(TAG, "Клиент ${entity.fullName} успешно отправлен (ID: ${created.id})")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Ошибка отправки клиента ${entity.fullName}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка в pushPendingCustomers", e)
+        }
+    }
+
     /**
      * Результат синхронизации
      */

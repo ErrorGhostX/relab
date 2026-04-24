@@ -313,8 +313,9 @@ class OrderDetailFragment : Fragment() {
             binding.createdByAvatar.setImageResource(R.mipmap.ic_launcher_round)
         }
 
-// Форматируем текст: жирный до двоеточия, обычный после
-        val customerText = "Клиент: ${order.customer}"
+        // Форматируем текст: жирный до двоеточия, обычный после
+        val customerName = order.customerDetail?.fullName ?: order.customer ?: "—"
+        val customerText = "Клиент: $customerName"
         val customerSpannable = SpannableString(customerText)
 
         val customerColonIndex = customerText.indexOf(":")
@@ -331,7 +332,7 @@ class OrderDetailFragment : Fragment() {
 
 
         // Контактная информация - делаем кликабельным только текст контакта
-        val contactText = order.contactInfo ?: "—"
+        val contactText = order.customerDetail?.phone?.takeIf { it.isNotBlank() } ?: order.contactInfo ?: "—"
         val contactInfoText = "Контакты: $contactText"
         val contactInfoSpannable = android.text.SpannableString(contactInfoText)
         val contactColonIndex = contactInfoText.indexOf(":")
@@ -340,7 +341,8 @@ class OrderDetailFragment : Fragment() {
         }
         contactInfo.text = contactInfoSpannable
 
-        val extraInfoText = "Доп. инфо: ${order.extraInfo}"
+        val extraInfoVal = order.customerDetail?.extraInfo?.takeIf { it.isNotBlank() } ?: order.extraInfo ?: "—"
+        val extraInfoText = "Доп. инфо: $extraInfoVal"
         val extraInfoSpannable = android.text.SpannableString(extraInfoText)
         val extraColonIndex = extraInfoText.indexOf(":")
         if (extraColonIndex > 0) {
@@ -349,22 +351,22 @@ class OrderDetailFragment : Fragment() {
         extraInfo.text = extraInfoSpannable
 
         // Мессенджер - префикс жирный, значение подчеркнуто и синее
-        val telegramText = order.telegram ?: "—"
-        val fullTelegramText = "Мессенджер: $telegramText"
-        val spannable = android.text.SpannableString(fullTelegramText)
-        val colonIndex = fullTelegramText.indexOf(":")
+        val messengerVal = order.customerDetail?.messenger?.takeIf { it.isNotBlank() } ?: order.messenger ?: "—"
+        val fullMessengerText = "Мессенджер: $messengerVal"
+        val spannable = android.text.SpannableString(fullMessengerText)
+        val colonIndex = fullMessengerText.indexOf(":")
         // Префикс (до двоеточия включительно) делаем жирным
         if (colonIndex > 0) {
             spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, colonIndex + 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         // Значение (после "Мессенджер: ") подчеркиваем и делаем синим
         val prefixLength = "Мессенджер: ".length
-        if (telegramText != "—") {
-            spannable.setSpan(android.text.style.UnderlineSpan(), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            spannable.setSpan(android.text.style.ForegroundColorSpan(android.graphics.Color.parseColor("#1976D2")), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), prefixLength, fullTelegramText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (messengerVal != "—") {
+            spannable.setSpan(android.text.style.UnderlineSpan(), prefixLength, fullMessengerText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(android.graphics.Color.parseColor("#1976D2")), prefixLength, fullMessengerText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), prefixLength, fullMessengerText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-        telegram.text = spannable
+        messenger.text = spannable
 
         // Делаем номер заказа, контакты и мессенджер кликабельными для копирования
         orderNumber.setOnClickListener {
@@ -384,9 +386,9 @@ class OrderDetailFragment : Fragment() {
             Toast.makeText(requireContext(), "Контакты скопированы: $text", Toast.LENGTH_SHORT).show()
         }
 
-        telegram.setOnClickListener {
+        messenger.setOnClickListener {
             // Копируем только текст мессенджера без префикса "Мессенджер: "
-            val text = telegramText
+            val text = messengerVal
             val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Мессенджер", text)
             clipboard.setPrimaryClip(clip)
@@ -1351,7 +1353,7 @@ class OrderDetailFragment : Fragment() {
 
                     // Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
-                    val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext())
+                    val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext(), requireContext().app.customerDao)
                     lifecycleScope.launch {
                         syncManager.pushChanges() // Запускаем в фоне
                     }

@@ -56,6 +56,29 @@
             app:exitAnim="@anim/nav_default_exit_anim" />
 
     </fragment>
+    
+    <fragment
+        android:id="@+id/nav_customers"
+        android:name="egx.relab_app.ui.customers.CustomerListFragment"
+        android:label="База Клиентов"
+        tools:layout="@layout/fragment_customer_list" >
+        <action
+            android:id="@+id/action_customerListFragment_to_customerDetailFragment"
+            app:destination="@id/customerDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+        
+    <fragment
+        android:id="@+id/customerDetailFragment"
+        android:name="egx.relab_app.ui.customers.CustomerDetailFragment"
+        android:label="Карточка клиента"
+        tools:layout="@layout/fragment_customer_detail">
+        <argument
+            android:name="customer"
+            app:argType="egx.relab_app.models.Customer" />
+    </fragment>
+
     <fragment
         android:id="@+id/analyticsFragment"
         android:name="egx.relab_app.ui.orders.AnalyticsFragment"

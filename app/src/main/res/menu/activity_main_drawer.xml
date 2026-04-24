@@ -14,6 +14,10 @@
             android:id="@+id/nav_orders"
             android:title="Заказы"/>
 
+        <item
+            android:id="@+id/nav_customers"
+            android:title="База Клиентов"/>
+
 
         <item
             android:id="@+id/nav_analytics"

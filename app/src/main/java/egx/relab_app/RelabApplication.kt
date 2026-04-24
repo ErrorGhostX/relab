@@ -23,6 +23,9 @@ class RelabApplication : Application() {
         )
     }
     
+    // DAO для клиентов — для использования в SyncManager и фрагментах
+    val customerDao by lazy { database.customerDao() }
+    
     override fun onCreate() {
         super.onCreate()
         // Здесь можно выполнить другие инициализации при необходимости
@@ -34,4 +37,3 @@ class RelabApplication : Application() {
  */
 val android.content.Context.app: RelabApplication
     get() = applicationContext as RelabApplication
-

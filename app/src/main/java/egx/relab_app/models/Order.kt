@@ -14,6 +14,16 @@ data class Order(
     @SerializedName("order_number")
     val orderNumber: String? = null,
 
+    // ========== Клиент (новая логика) ==========
+    // ID клиента из базы клиентов
+    @SerializedName("customer_ref")
+    val customerRef: Int? = null,
+
+    // Полный объект клиента (read-only, приходит с сервера)
+    @SerializedName("customer_detail")
+    val customerDetail: @RawValue Customer? = null,
+
+    // Старые текстовые поля (для обратной совместимости)
     @SerializedName("customer")
     val customer: String? = null,
 
@@ -23,8 +33,9 @@ data class Order(
     @SerializedName("extra_info")
     val extraInfo: String? = null,
 
-    @SerializedName("telegram")
-    val telegram: String? = null,
+    // Переименовано: telegram → messenger (обобщённое название)
+    @SerializedName("messenger")
+    val messenger: String? = null,
 
     @SerializedName("device_name")
     val deviceName: String? = null,

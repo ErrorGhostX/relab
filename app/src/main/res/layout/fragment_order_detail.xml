@@ -33,6 +33,18 @@
                     android:id="@+id/photosViewPager"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnDeletePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="10dp"
+                    android:contentDescription="Удалить фото"
+                    android:elevation="5dp"
+                    android:src="@drawable/trash_can_svgrepo_com"
+                    app:backgroundTint="@color/error_red"
+                    app:tint="@color/white" />
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Левая стрелка -->
@@ -61,17 +73,6 @@
                 android:elevation="8dp"/>
             
             <!-- Кнопка удаления текущего фото -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnDeletePhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top|end"
-                android:layout_margin="10dp"
-                android:src="@drawable/trash_can_svgrepo_com"
-                app:tint="@color/white"
-                app:backgroundTint="@color/error_red"
-                android:contentDescription="Удалить фото"
-                android:elevation="5dp"/>
         </FrameLayout>
 
 
@@ -420,8 +421,8 @@
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
-                    android:id="@+id/telegram"
-                    android:text="Мессенджер: @ivan_telegram"
+                    android:id="@+id/messenger"
+                    android:text="Мессенджер: @ivan_messenger"
                     android:clickable="true"
                     android:focusable="true"
                     android:background="?attr/selectableItemBackground"
