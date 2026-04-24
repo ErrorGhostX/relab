@@ -3,21 +3,80 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
+class Customer(models.Model):
+    """
+    Клиент сервиса — отдельная сущность.
+    Позволяет видеть историю ремонтов, LTV, вести чёрный список.
+    """
+    full_name = models.CharField(max_length=255, verbose_name='ФИО')
+    phone = models.CharField(max_length=50, blank=True, default='', verbose_name='Телефон')
+    email = models.EmailField(blank=True, default='', verbose_name='E-mail')
+    messenger = models.CharField(max_length=255, blank=True, default='', verbose_name='Мессенджер / Соц. сеть')
+    extra_info = models.TextField(blank=True, default='', verbose_name='Доп. информация')
+
+    # Чёрный список
+    is_blacklisted = models.BooleanField(default=False, verbose_name='Чёрный список')
+    blacklist_reason = models.TextField(blank=True, default='', verbose_name='Причина ЧС')
+
+    # Заметки сотрудников о клиенте
+    notes = models.TextField(blank=True, default='', verbose_name='Заметки')
+
+    # Кто создал запись о клиенте
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name='created_customers',
+        verbose_name='Создатель записи'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['full_name']
+        verbose_name = 'Клиент'
+        verbose_name_plural = 'Клиенты'
+
+    def __str__(self):
+        return f"#{self.id} {self.full_name}"
+
+    def get_total_orders(self):
+        """Количество заказов клиента"""
+        return self.orders.count()
+
+    def get_ltv(self):
+        """LTV — сколько денег клиент принёс за всё время"""
+        from django.db.models import Sum
+        total = Service.objects.filter(
+            order__customer_ref=self,
+            order__status='done'
+        ).aggregate(total=Sum('price'))['total']
+        return float(total or 0)
+
+
 class Order(models.Model):
     # Номер заказа задаёт сам пользователь (например, «12345»)
     order_number = models.CharField(max_length=255, default='')
 
-    # Имя клиента
+    # ========== Клиент (новая логика) ==========
+    # Ссылка на клиента из базы клиентов
+    customer_ref = models.ForeignKey(
+        'Customer',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='orders',
+        verbose_name='Клиент'
+    )
+
+    # Старые текстовые поля — для обратной совместимости и PDF-отчётов
+    # При создании заказа с customer_ref эти поля заполняются автоматически
     customer = models.CharField(max_length=255, default='')
-
-    # Контактная информация (телефон, e-mail и т.п.)
     contact_info = models.CharField(max_length=255, default='')
-
-    # Дополнительная инфо (необязательно)
     extra_info = models.TextField(blank=True, default='')
-
-    # Telegram-ник (необязательно)
-    telegram = models.CharField(max_length=255, blank=True, default='')
+    # Переименовано: telegram → messenger (обобщённое название)
+    messenger = models.CharField(max_length=255, blank=True, default='', verbose_name='Мессенджер / Соц. сеть')
 
     # Название и тип устройства
     device_name = models.CharField(max_length=255, default='')

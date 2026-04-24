@@ -10,8 +10,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend_relab_app import settings
 from . import models
-from .models import Order, Service, OrderPhoto, OrderCollaborator
-from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer
+from .models import Order, Service, OrderPhoto, OrderCollaborator, Customer
+from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer, CustomerSerializer
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -86,6 +86,26 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         order = serializer.save(created_by=self.request.user)
+        
+        # Если указан клиент из базы — автозаполняем текстовые поля заказа
+        if order.customer_ref:
+            customer = order.customer_ref
+            update_fields = []
+            if not order.customer:
+                order.customer = customer.full_name
+                update_fields.append('customer')
+            if not order.contact_info:
+                order.contact_info = customer.phone
+                update_fields.append('contact_info')
+            if not order.messenger:
+                order.messenger = customer.messenger
+                update_fields.append('messenger')
+            if not order.extra_info:
+                order.extra_info = customer.extra_info
+                update_fields.append('extra_info')
+            if update_fields:
+                order.save(update_fields=update_fields)
+        
         # Если заказ не общий — сразу назначаем создателя исполнителем
         if not order.is_public:
             order.assigned_to = self.request.user
@@ -567,7 +587,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order_fields = [
             ("Имя клиента", order.customer),
             ("Контакты", order.contact_info),
-            ("Telegram", order.telegram or "—"),
+            ("Мессенджер", order.messenger or "—"),
             ("Устройство", f"{order.device_type} — {order.device_name}"),
             ("Производитель", order.manufacturer),
             ("Модель", order.model),
@@ -623,6 +643,59 @@ class OrderDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class CustomerViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для работы с клиентской базой.
+    GET    /api/customers/           — список клиентов (с поиском ?search=...)
+    POST   /api/customers/           — создать клиента
+    GET    /api/customers/{id}/      — получить клиента
+    PUT    /api/customers/{id}/      — обновить клиента
+    DELETE /api/customers/{id}/      — удалить клиента
+    """
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Поддержка поиска: ?search=имя_или_телефон
+        """
+        qs = Customer.objects.all()
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(full_name__icontains=search) |
+                Q(phone__icontains=search) |
+                Q(email__icontains=search) |
+                Q(messenger__icontains=search)
+            )
+        return qs.order_by('full_name')
+
+    def perform_create(self, serializer):
+        """При создании клиента автоматически привязываем создателя"""
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['get'])
+    def stats(self, request, pk=None):
+        """
+        GET /api/customers/{id}/stats/
+        Статистика клиента: LTV, кол-во заказов, история заказов
+        """
+        customer = self.get_object()
+        orders = customer.orders.all().order_by('-created_at')
+        order_serializer = OrderSerializer(orders, many=True, context={'request': request})
+        
+        return Response({
+            'id': customer.id,
+            'full_name': customer.full_name,
+            'total_orders': customer.get_total_orders(),
+            'ltv': customer.get_ltv(),
+            'is_blacklisted': customer.is_blacklisted,
+            'orders': order_serializer.data
+        })
 
 
 from django.db.models import Sum, Count

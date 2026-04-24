@@ -1,7 +1,42 @@
 from djoser.conf import User
 from rest_framework import serializers
-from .models import Order, Service, UserProfile, OrderPhoto, OrderCollaborator
+from .models import Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer
 
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    """Сериализатор для клиентов"""
+    total_orders = serializers.SerializerMethodField()
+    ltv = serializers.SerializerMethodField()
+    created_by_username = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Customer
+        fields = [
+            'id', 'full_name', 'phone', 'email', 'messenger', 'extra_info',
+            'is_blacklisted', 'blacklist_reason', 'notes',
+            'total_orders', 'ltv', 'created_by', 'created_by_username',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+    
+    def get_total_orders(self, obj):
+        return obj.get_total_orders()
+    
+    def get_ltv(self, obj):
+        return obj.get_ltv()
+    
+    def get_created_by_username(self, obj):
+        if obj.created_by:
+            return obj.created_by.username
+        return None
+
+
+class CustomerShortSerializer(serializers.ModelSerializer):
+    """Краткий сериализатор клиента для вложения в заказ"""
+    class Meta:
+        model = Customer
+        fields = ['id', 'full_name', 'phone', 'email', 'messenger', 'is_blacklisted']
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -118,6 +153,9 @@ class OrderSerializer(serializers.ModelSerializer):
     complexity_level = serializers.SerializerMethodField()
     # Количество коллабораторов
     collaborators_count = serializers.SerializerMethodField()
+    
+    # Данные о клиенте из базы клиентов
+    customer_detail = CustomerShortSerializer(source='customer_ref', read_only=True)
 
     created_by = serializers.SlugRelatedField(
         read_only=True,
