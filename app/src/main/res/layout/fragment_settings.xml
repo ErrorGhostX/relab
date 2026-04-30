@@ -136,6 +136,69 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Настройки ИИ -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Искусственный интеллект"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Провайдер по умолчанию"
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerAiProvider"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvAiStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Статус серверов: проверка..."
+                        android:textColor="@color/gray_700"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:id="@+id/viewAiStatusIndicator"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:background="@drawable/bg_status_indicator" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Дополнительные настройки -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

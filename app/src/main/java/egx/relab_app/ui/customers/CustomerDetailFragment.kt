@@ -64,8 +64,8 @@ class CustomerDetailFragment : Fragment() {
         }
 
         view.findViewById<View>(R.id.fabEditCustomer).setOnClickListener {
-            // TODO: Edit customer
-            android.widget.Toast.makeText(requireContext(), "Редактирование клиента в разработке", android.widget.Toast.LENGTH_SHORT).show()
+            val bundle = Bundle().apply { putParcelable("customer", customer) }
+            findNavController().navigate(R.id.action_customerDetailFragment_to_customerFormFragment, bundle)
         }
 
         setupOrdersList(view)
@@ -91,9 +91,13 @@ class CustomerDetailFragment : Fragment() {
         
         lifecycleScope.launch {
             repository.getAllOrders().collectLatest { allOrders ->
-                // Фильтруем заказы этого клиента (по customerRef или по имени, если это старые заказы)
+                // Фильтруем заказы этого клиента
                 val customerOrders = allOrders.filter { 
-                    it.customerRef == customer.id || (it.customer == customer.fullName && it.customerRef == null)
+                    if (customer.id != null) {
+                        it.customerRef == customer.id
+                    } else {
+                        it.customerRef == null && it.customer == customer.fullName
+                    }
                 }
                 
                 orderAdapter.updateList(customerOrders)

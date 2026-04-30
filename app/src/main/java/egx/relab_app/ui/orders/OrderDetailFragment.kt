@@ -97,12 +97,12 @@ class OrderDetailFragment : Fragment() {
         val photos: List<String> = try {
             android.util.Log.d("OrderDetail", "Загрузка фото: photos.size = ${currentOrder.photos.size}, photo = ${currentOrder.photo}")
             
-            // ВАЖНО: Приоритет на фото с сервера (photos)
+            //  Приоритет на фото с сервера (photos)
             if (currentOrder.photos.isNotEmpty()) {
                 // Фото с сервера - используем photoUrl, убираем дубликаты
                 val photoUrls = currentOrder.photos
                     .mapNotNull { it.photoUrl }
-                    .distinct() // ВАЖНО: Убираем дубликаты URL
+                    .distinct() //  Убираем дубликаты URL
                 android.util.Log.d("OrderDetail", "Используем фото из photos: ${photoUrls.size} уникальных фото (было ${currentOrder.photos.size})")
                 photoUrls.forEachIndexed { index, url -> 
                     android.util.Log.d("OrderDetail", "Фото $index: $url")
@@ -217,6 +217,21 @@ class OrderDetailFragment : Fragment() {
         binding.buttonDelete.setOnClickListener { showDeleteConfirmationDialog() }
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
+        
+        binding.buttonAiHelp.setOnClickListener {
+            val orderInfo = """
+                Помоги с заказом №${currentOrder.orderNumber ?: currentOrder.id}.
+                Устройство: ${currentOrder.manufacturer ?: ""} ${currentOrder.deviceName ?: ""}.
+                Описание проблемы: ${currentOrder.description ?: "нет описания"}.
+                Текущий статус: ${statusMap[currentOrder.status] ?: currentOrder.status}.
+            """.trimIndent()
+            
+            val action = OrderDetailFragmentDirections.actionOrderDetailFragmentToChatFragment(
+                initialMessage = orderInfo,
+                orderId = currentOrder.id ?: -1
+            )
+            findNavController().navigate(action)
+        }
     }
 //Адаптер Фоток
     class PhotoPagerAdapter(
@@ -472,7 +487,7 @@ class OrderDetailFragment : Fragment() {
                 }
                 deleteServiceByDescription(
                     orderId = order.id,
-                    serviceId = svc.id,
+                    serviceId = svc.id ?: 0,
                     description = svc.description,
                     price = svc.price,
                     serviceIndex = index
@@ -496,9 +511,9 @@ class OrderDetailFragment : Fragment() {
             
             cbStatus.isEnabled = canToggleStatus
             
-            if (canToggleStatus && order.id != null && svc.id > 0) {
+            if (canToggleStatus && order.id != null && (svc.id ?: 0) > 0) {
                 cbStatus.setOnClickListener {
-                    toggleServiceStatus(order.id!!, svc.id)
+                    toggleServiceStatus(order.id!!, svc.id ?: 0)
                 }
             } else if (svc.serviceStatus == "done" && !canToggleStatus) {
                 cbStatus.setOnClickListener {
@@ -557,7 +572,7 @@ class OrderDetailFragment : Fragment() {
                         .setTitle("Удалить услугу")
                         .setMessage("Вы уверены, что хотите удалить услугу \"${svc.description}\"?")
                         .setPositiveButton("Удалить") { _, _ ->
-                            deleteService(order.id!!, svc.id)
+                            deleteService(order.id!!, svc.id ?: 0)
                         }
                         .setNegativeButton("Отмена", null)
                         .show()
@@ -1559,6 +1574,10 @@ class OrderDetailFragment : Fragment() {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = android.view.Gravity.CENTER_VERTICAL
                     setPadding(0, 4, 0, 4)
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
                 }
                 
                 val avatarView = ImageView(requireContext()).apply {
@@ -1588,6 +1607,8 @@ class OrderDetailFragment : Fragment() {
                     text = collab.fullName ?: collab.username
                     setTextColor(resources.getColor(R.color.gray_900, null))
                     textSize = 13f
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
                 

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="4dp">
+
+    <!-- AI Message (Left) -->
+    <LinearLayout
+        android:id="@+id/layoutAi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginEnd="16dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:src="@android:drawable/ic_menu_help"
+            app:shapeAppearanceOverlay="@style/CircleImage"
+            app:strokeColor="@color/gray_200"
+            app:strokeWidth="1dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_message_ai"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ИИ-Помощник"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/gray_800"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvAiMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AI message here"
+                android:textColor="@color/black"
+                android:textIsSelectable="true" />
+
+            <LinearLayout
+                android:id="@+id/layoutAiThinking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+                <ProgressBar
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="8dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Думаю..."
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_600" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvAiTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp"
+                android:textSize="10sp"
+                android:textColor="@color/gray_800" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- User Message (Right) -->
+    <LinearLayout
+        android:id="@+id/layoutUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginStart="64dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_message_user"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User Name"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone"/>
+
+            <ImageView
+                android:id="@+id/ivUserImage"
+                android:layout_width="200dp"
+                android:layout_height="150dp"
+                android:scaleType="centerCrop"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                android:adjustViewBounds="true"/>
+
+            <TextView
+                android:id="@+id/tvUserMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User message here"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/tvUserTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp"
+                android:textSize="10sp"
+                android:textColor="@color/white" />
+        </LinearLayout>
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivUserAvatar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="8dp"
+            android:src="@mipmap/ic_launcher_round"
+            app:shapeAppearanceOverlay="@style/CircleImage"
+            app:strokeColor="@color/gray_200"
+            app:strokeWidth="1dp" />
+    </LinearLayout>
+
+</LinearLayout>

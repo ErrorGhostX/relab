@@ -266,7 +266,20 @@ class OrderRepository(
         // Создаем Entity для нового заказа (статус PENDING, serverId = null)
         val entity = OrderEntity.fromNewOrder(order)
         // Вставляем в локальную БД
-        return orderDao.insertOrder(entity)
+        val localId = orderDao.insertOrder(entity)
+        
+        // ВАЖНО: Сохраняем услуги заказа, если они есть
+        if (order.services.isNotEmpty()) {
+            val serviceEntities = order.services.map { service ->
+                ServiceEntity.fromService(service, localId, null)
+            }
+            serviceDao.insertServices(serviceEntities)
+            
+            // Пересчитываем сложность
+            recalculateOrderComplexity(localId)
+        }
+        
+        return localId
     }
     
     /**
@@ -315,6 +328,19 @@ class OrderRepository(
         )
 
         orderDao.updateOrder(updatedEntity)
+        
+        // ВАЖНО: Обновляем услуги заказа
+        // Удаляем старые услуги и вставляем новые
+        serviceDao.deleteServicesByOrderLocalId(localId)
+        if (order.services.isNotEmpty()) {
+            val serviceEntities = order.services.map { service ->
+                ServiceEntity.fromService(service, localId, existingEntity.serverId)
+            }
+            serviceDao.insertServices(serviceEntities)
+        }
+        
+        // Пересчитываем сложность
+        recalculateOrderComplexity(localId)
     }
     
     /**

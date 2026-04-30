@@ -48,6 +48,9 @@ object RetrofitClient {
 
     private fun getClient(): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
             .build()
@@ -118,6 +121,7 @@ object RetrofitClient {
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
             parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
             parts["customer_ref"],
+            parts["services"],
             photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
@@ -187,6 +191,7 @@ object RetrofitClient {
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
             parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
             parts["customer_ref"],
+            parts["services"],
             photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
@@ -206,9 +211,12 @@ object RetrofitClient {
 
     private fun makeParts(o:Order): Map<String, RequestBody> {
         val mt="text/plain".toMediaType()
+        val jsonMt = "application/json".toMediaType()
         // Форматируем дату в формат YYYY-MM-DD для сервера
         val formattedDate = formatDateForServer(o.date)
         android.util.Log.d("RetrofitClient", "Форматирование даты: '${o.date}' -> '$formattedDate'")
+        
+        val servicesJson = com.google.gson.Gson().toJson(o.services)
         
         return mapOf(
             "order_number" to o.orderNumber.orEmpty().toRequestBody(mt),
@@ -226,9 +234,10 @@ object RetrofitClient {
             "status"       to o.status.orEmpty().toRequestBody(mt),
             "order_type"   to o.orderType.orEmpty().toRequestBody(mt),
             "is_public"    to (if (o.isPublic) "1" else "0").toRequestBody(mt),
-            "customer_ref" to (o.customerRef?.toString() ?: "").toRequestBody(mt)
+            "customer_ref" to (o.customerRef?.toString() ?: "").toRequestBody(mt),
+            "services"     to servicesJson.toRequestBody(mt) // Передаем как текст для Multipart, бэкенд распарсит JSON
         ).also { 
-            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic} -> ${if (o.isPublic) "1" else "0"}, customerRef=${o.customerRef}")
+            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic}, services count=${o.services.size}")
         }
     }
     

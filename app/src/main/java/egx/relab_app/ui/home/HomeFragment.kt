@@ -73,6 +73,12 @@ class HomeFragment : Fragment() {
         binding.cardTools.setOnClickListener {
             findNavController().navigate(R.id.toolsFragment)
         }
+
+        binding.cardAssistant.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_home_to_chatFragment)
+        }
+
+
     }
     
     private fun updateUserData() {

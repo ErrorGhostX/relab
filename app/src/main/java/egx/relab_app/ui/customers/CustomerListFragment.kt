@@ -48,8 +48,7 @@ class CustomerListFragment : Fragment() {
         recyclerView.adapter = adapter
 
         view.findViewById<View>(R.id.fabAddCustomer).setOnClickListener {
-            // Переход на экран создания клиента или показать диалог (покажем тост)
-            android.widget.Toast.makeText(requireContext(), "Здесь будет создание клиента", android.widget.Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.action_customerListFragment_to_customerFormFragment)
         }
 
         setupSearch()

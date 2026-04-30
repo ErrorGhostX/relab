@@ -21,6 +21,7 @@ import egx.relab_app.data.DeviceDatabase
 import egx.relab_app.databinding.FragmentOrderCreateBinding
 import egx.relab_app.models.Customer
 import egx.relab_app.models.Order
+import egx.relab_app.models.Service
 import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
 import egx.relab_app.storage.TokenManager
@@ -213,6 +214,12 @@ class OrderFormFragment : Fragment() {
         }
         binding.buttonChoosePhotos.setOnClickListener { pickImages.launch("image/*") }
 
+        binding.btnAddServiceManually.setOnClickListener {
+            addServiceView()
+        }
+
+        binding.buttonSave.setOnClickListener { saveOrUpdate() }
+        
         // В режиме редактирования загружаем localId заказа
         if (isEditMode) {
             loadOrderLocalId()
@@ -224,8 +231,328 @@ class OrderFormFragment : Fragment() {
 
         binding.buttonSave.setOnClickListener { saveOrUpdate() }
         
+        // Настройка голосового ввода
+        setupVoiceInput()
+
+        // Настройка ручного ввода (Локальный и ИИ)
+        binding.btnLocalParse.setOnClickListener {
+            val text = binding.editTextAiInput.text?.toString() ?: ""
+            if (text.isNotBlank()) {
+                performLocalParsing(text)
+            } else {
+                Toast.makeText(context, "Сначала введите или вставьте текст", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnAiParse.setOnClickListener {
+            val text = binding.editTextAiInput.text?.toString() ?: ""
+            if (text.isNotBlank()) {
+                processTextWithAi(text)
+            } else {
+                Toast.makeText(context, "Сначала введите или вставьте текст", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Добавляем валидацию при вводе для обязательных полей
         setupFieldValidation()
+    }
+
+    private fun setupVoiceInput() {
+        val speechRecognizer = android.speech.SpeechRecognizer.createSpeechRecognizer(requireContext())
+        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+
+        speechRecognizer.setRecognitionListener(object : android.speech.RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                binding.fabVoice.setImageResource(android.R.drawable.ic_media_pause)
+                Toast.makeText(context, "Говорите...", Toast.LENGTH_SHORT).show()
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {
+                binding.fabVoice.setImageResource(android.R.drawable.ic_btn_speak_now)
+            }
+            override fun onError(error: Int) {
+                binding.fabVoice.setImageResource(android.R.drawable.ic_btn_speak_now)
+                val message = when (error) {
+                    android.speech.SpeechRecognizer.ERROR_NETWORK -> "Ошибка сети"
+                    android.speech.SpeechRecognizer.ERROR_AUDIO -> "Ошибка аудио"
+                    else -> "Ошибка распознавания ($error)"
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    val text = matches[0]
+                    binding.editTextAiInput.setText(text)
+                    processTextWithAi(text)
+                }
+            }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+
+        binding.fabVoice.setOnClickListener {
+            // Проверка разрешений
+            if (androidx.core.content.ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                androidx.core.app.ActivityCompat.requestPermissions(requireActivity(), arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
+            } else {
+                speechRecognizer.startListening(intent)
+            }
+        }
+    }
+
+    private val addedServicesList = mutableListOf<View>()
+
+    private fun addServiceView(description: String = "", price: Double = 0.0, complexity: Int = 1) {
+        val serviceView = layoutInflater.inflate(R.layout.item_order_service_add, binding.layoutServicesContainer, false)
+        val editName = serviceView.findViewById<android.widget.EditText>(R.id.editServiceName)
+        val editPrice = serviceView.findViewById<android.widget.EditText>(R.id.editServicePrice)
+        val btnRemove = serviceView.findViewById<android.view.View>(R.id.btnRemoveService)
+
+        editName.setText(description)
+        editPrice.setText(if (price > 0) price.toString() else "")
+
+        btnRemove.setOnClickListener {
+            binding.layoutServicesContainer.removeView(serviceView)
+            addedServicesList.remove(serviceView)
+            updateNoServicesVisibility()
+        }
+
+        binding.layoutServicesContainer.addView(serviceView)
+        addedServicesList.add(serviceView)
+        updateNoServicesVisibility()
+    }
+
+    private fun updateNoServicesVisibility() {
+        binding.textNoServices.visibility = if (addedServicesList.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * ЛОКАЛЬНЫЙ разбор текста (без интернета)
+     * Ищет совпадения в базе устройств и регулярные выражения
+     */
+    private fun performLocalParsing(text: String) {
+        Log.d("LocalParse", "Parsing: $text")
+        val lowerText = text.lowercase()
+
+        // 1. Поиск производителя в тексте
+        val manufacturer = DeviceDatabase.getAllManufacturers().find {
+            lowerText.contains(it.lowercase())
+        }
+        if (manufacturer != null) {
+            binding.editTextManufacturer.setText(manufacturer)
+        }
+
+        // 2. Поиск типа устройства
+        val deviceType = DeviceDatabase.getAllDeviceTypes().find {
+            lowerText.contains(it.lowercase())
+        }
+        if (deviceType != null) {
+            binding.editTextDeviceType.setText(deviceType)
+        }
+
+        // 3. Поиск модели (если есть производитель, ищем среди его моделей)
+        val models = if (manufacturer != null) {
+            DeviceDatabase.getModelsByManufacturer(manufacturer)
+        } else {
+            DeviceDatabase.getAllModels()
+        }
+        val model = models.find { lowerText.contains(it.lowercase()) }
+        if (model != null) {
+            binding.editTextDeviceName.setText(model)
+        }
+
+        // 4. Поиск номера телефона (регулярка)
+        val phoneRegex = Regex("""(\+7|8)[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}""")
+        val phoneMatch = phoneRegex.find(text)
+        if (phoneMatch != null) {
+            binding.btnAddNewCustomer.performClick()
+            binding.editTextContactInfo.setText(phoneMatch.value)
+        }
+
+        // 5. Описание заказа
+        binding.editTextDescription.setText(text)
+
+        Toast.makeText(context, "Локальный разбор завершен", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun processTextWithAi(text: String) {
+        // Логика "умного" парсинга через Бэкенд + LLM
+        Log.d("VoiceOrder", "Recognized: $text")
+        
+        lifecycleScope.launch {
+            try {
+                binding.btnAiParse.isEnabled = false
+                val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
+                val provider = prefs.getString("ai_provider", "ollama") ?: "ollama"
+                
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.parseAiText(ApiService.AiParseRequest(text, provider))
+                }
+                
+                // 1. Извлекаем данные
+                val customerName = response.customer_name
+                val phone = response.phone
+                val deviceType = response.device_type
+                val manufacturer = response.manufacturer
+                val model = response.model
+                val kit = response.kit
+                val orderType = response.order_type
+                val summary = response.summary_description
+                val suggestedServices = response.suggested_services
+                
+                // Заполняем сгенерированное описание
+                binding.editTextDescription.setText(summary ?: text)
+
+                // 2. Клиент
+                if (!customerName.isNullOrBlank()) {
+                    val foundCustomers = withContext(Dispatchers.IO) {
+                        requireContext().app.customerDao.searchCustomersSync("%$customerName%")
+                    }
+                    if (foundCustomers.isNotEmpty()) {
+                        selectCustomer(foundCustomers.first().toCustomer())
+                    } else {
+                        binding.btnAddNewCustomer.performClick()
+                        binding.editTextCustomerName.setText(customerName)
+                        if (!phone.isNullOrBlank()) binding.editTextContactInfo.setText(phone)
+                    }
+                }
+
+                // 3. Устройство (нормализуем через базу данных)
+                val snappedType = DeviceDatabase.snapToDeviceType(deviceType)
+                val snappedManufacturer = DeviceDatabase.snapToManufacturer(manufacturer)
+                val snappedModel = DeviceDatabase.snapToModel(model, snappedManufacturer)
+                
+                if (!snappedType.isNullOrBlank()) binding.editTextDeviceType.setText(snappedType)
+                if (!snappedManufacturer.isNullOrBlank()) binding.editTextManufacturer.setText(snappedManufacturer)
+                if (!snappedModel.isNullOrBlank()) binding.editTextDeviceName.setText(snappedModel)
+                if (!kit.isNullOrBlank()) binding.editTextKit.setText(kit)
+
+                // 4. Тип заказа
+                if (orderType == "repair") {
+                    binding.orderTypeSpinner.setText("Ремонт", false)
+                } else if (orderType == "diagnosis") {
+                    binding.orderTypeSpinner.setText("Диагностика", false)
+                }
+
+                // 5. Предложенные услуги
+                if (!suggestedServices.isNullOrEmpty()) {
+                    // Очищаем старые если были
+                    binding.layoutServicesContainer.removeAllViews()
+                    addedServicesList.clear()
+                    
+                    suggestedServices.forEach { service ->
+                        addServiceView(service.description, service.price, service.complexity_points)
+                    }
+                }
+                
+                Toast.makeText(context, "ИИ заполнил все поля и задачи", Toast.LENGTH_SHORT).show()
+                
+            } catch (e: Exception) {
+                Log.e("VoiceOrder", "AI Parse Error", e)
+                Toast.makeText(context, "Ошибка ИИ: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                if (isAdded) {
+                    binding.btnAiParse.isEnabled = true
+                    binding.btnAiParse.text = "Распознать ИИ"
+                }
+            }
+        }
+    }
+
+    private fun fallbackLocalParsing(text: String) {
+        val customerName = extractName(text)
+        val phone = extractPhone(text)
+        val device = extractDevice(text)
+        val manufacturer = extractManufacturer(text)
+        val kit = extractKit(text)
+        
+        binding.editTextDescription.setText(text)
+
+        if (customerName != null) {
+            lifecycleScope.launch {
+                val foundCustomers = withContext(Dispatchers.IO) {
+                    requireContext().app.customerDao.searchCustomersSync("%$customerName%")
+                }
+                if (foundCustomers.isNotEmpty()) {
+                    selectCustomer(foundCustomers.first().toCustomer())
+                } else {
+                    binding.btnAddNewCustomer.performClick()
+                    binding.editTextCustomerName.setText(customerName)
+                    if (phone != null) binding.editTextContactInfo.setText(phone)
+                }
+            }
+        }
+
+        if (device != null) {
+            binding.editTextDeviceType.setText(device)
+            if (device.contains("ПК", true)) binding.editTextDeviceType.setText("Системный блок")
+        }
+        if (manufacturer != null) binding.editTextManufacturer.setText(manufacturer)
+        if (kit != null) binding.editTextKit.setText(kit)
+        
+        // Попытка определить тип заказа
+        if (text.contains("диагностик", true)) {
+            binding.orderTypeSpinner.setText("Диагностика", false)
+        } else if (text.contains("ремонт", true) || text.contains("почин", true)) {
+            binding.orderTypeSpinner.setText("Ремонт", false)
+        }
+    }
+
+    private fun extractKit(text: String): String? {
+        val kitKeywords = listOf("зарядка", "блок питания", "чехол", "сумка", "кабель", "коробка")
+        val found = kitKeywords.filter { text.contains(it, ignoreCase = true) }
+        return if (found.isNotEmpty()) found.joinToString(", ") else null
+    }
+
+    private fun extractManufacturer(text: String): String? {
+        val brands = listOf("Asus", "HP", "Acer", "Lenovo", "Apple", "Samsung", "Xiaomi", "Dell", "MSI", "Gigabyte")
+        for (b in brands) {
+            if (text.contains(b, ignoreCase = true)) return b
+        }
+        return null
+    }
+
+    private fun extractName(text: String): String? {
+        // 1. Поиск по паттернам "у [Имени]", "от [Имени]", "для [Имени]"
+        val patterns = listOf("у", "от", "для", "клиент", "заказчик")
+        for (p in patterns) {
+            val regex = Regex("$p ([А-Я][а-я]+)", RegexOption.IGNORE_CASE)
+            val match = regex.find(text)
+            if (match != null) return match.groupValues[1].replaceFirstChar { it.uppercase() }
+        }
+
+        // 2. Поиск слов с большой буквы (STT часто выделяет имена так)
+        val capitalized = Regex("([А-Я][а-я]+)").findAll(text)
+            .map { it.value }
+            .filter { it.length > 2 }
+            .toList()
+        
+        // Возвращаем первое встреченное "имя", исключая начало предложения если оно не в списке имен
+        val commonNames = listOf("Евгений", "Роман", "Иван", "Мария", "Александр", "Дмитрий", "Сергей", "Андрей", "Ольга")
+        for (name in capitalized) {
+            if (commonNames.contains(name)) return name
+        }
+        
+        return capitalized.firstOrNull()
+    }
+
+    private fun extractPhone(text: String): String? {
+        return Regex("\\+?\\d{10,12}").find(text.replace(" ", ""))?.value
+    }
+
+    private fun extractDevice(text: String): String? {
+        val devices = listOf("ПК", "ноутбук", "телефон", "айфон", "iPhone", "монитор", "принтер")
+        for (d in devices) {
+            if (text.contains(d, ignoreCase = true)) return d
+        }
+        return null
     }
     
     /**
@@ -615,29 +942,29 @@ class OrderFormFragment : Fragment() {
                                 val fromDB = DeviceDatabase.searchManufacturers(query)
                                 val fromOrders = allOrders.mapNotNull { it.manufacturer }
                                     .filter { it.isNotBlank() && it.lowercase().contains(query) }
-                                    .distinct()
-                                (fromDB + fromOrders).distinct().sorted()
+                                    .toSet().toList()
+                                (fromDB + fromOrders).toSet().toList().sorted()
                             }
                             AutocompleteFieldType.DEVICE_TYPE -> {
                                 val fromDB = DeviceDatabase.searchDeviceTypes(query)
                                 val fromOrders = allOrders.mapNotNull { it.deviceType }
                                     .filter { it.isNotBlank() && it.lowercase().contains(query) }
-                                    .distinct()
-                                (fromDB + fromOrders).distinct().sorted()
+                                    .toSet().toList()
+                                (fromDB + fromOrders).toSet().toList().sorted()
                             }
                             AutocompleteFieldType.DEVICE_NAME -> {
                                 val fromDB = DeviceDatabase.searchDeviceNames(query)
                                 val fromOrders = allOrders.mapNotNull { it.deviceName }
                                     .filter { it.isNotBlank() && it.lowercase().contains(query) }
-                                    .distinct()
-                                (fromDB + fromOrders).distinct().sorted()
+                                    .toSet().toList()
+                                (fromDB + fromOrders).toSet().toList().sorted()
                             }
                             AutocompleteFieldType.MODEL -> {
                                 val fromDB = DeviceDatabase.searchModels(query)
                                 val fromOrders = allOrders.mapNotNull { it.model }
                                     .filter { it.isNotBlank() && it.lowercase().contains(query) }
-                                    .distinct()
-                                (fromDB + fromOrders).distinct().sorted()
+                                    .toSet().toList()
+                                (fromDB + fromOrders).toSet().toList().sorted()
                             }
                             else -> emptyList()
                         }
@@ -892,8 +1219,27 @@ class OrderFormFragment : Fragment() {
             isPublic = isPublicChecked,
             assignedToUsername = if (!isPublicChecked) tokenManager.username else null,
             assignedToFullName = if (!isPublicChecked) tokenManager.fullName else null,
-            assignedToAvatar = if (!isPublicChecked) tokenManager.avatarUrl else null
+            assignedToAvatar = if (!isPublicChecked) tokenManager.avatarUrl else null,
+            services = collectServicesFromUI()
         )
+    }
+
+    private fun collectServicesFromUI(): List<Service> {
+        val servicesList = mutableListOf<Service>()
+        addedServicesList.forEach { view ->
+            val name = view.findViewById<android.widget.EditText>(R.id.editServiceName).text.toString()
+            val priceStr = view.findViewById<android.widget.EditText>(R.id.editServicePrice).text.toString()
+            val price = priceStr.toDoubleOrNull() ?: 0.0
+            
+            if (name.isNotBlank()) {
+                servicesList.add(Service(
+                    description = name,
+                    price = price,
+                    complexityPoints = 1
+                ))
+            }
+        }
+        return servicesList
     }
 
     

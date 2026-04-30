@@ -12,6 +12,13 @@ import androidx.fragment.app.Fragment
 import egx.relab_app.databinding.FragmentSettingsBinding
 import egx.relab_app.storage.TokenManager
 import java.io.File
+import android.widget.ArrayAdapter
+import android.widget.AdapterView
+import android.content.Context
+import android.graphics.Color
+import androidx.lifecycle.lifecycleScope
+import egx.relab_app.network.RetrofitClient
+import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
 
@@ -47,7 +54,14 @@ class SettingsFragment : Fragment() {
                 // Убеждаемся, что URL заканчивается на /
                 val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
                 tokenManager.serverUrl = url
-                Toast.makeText(requireContext(), "Настройки применены", Toast.LENGTH_SHORT).show()
+                
+                // ВАЖНО: Сбрасываем Retrofit, чтобы он подхватил новый URL
+                RetrofitClient.recreateRetrofit()
+                
+                // Проверяем подключение
+                testConnection()
+                
+                Toast.makeText(requireContext(), "Настройки сохранены", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
             }
@@ -112,6 +126,78 @@ class SettingsFragment : Fragment() {
                     .show()
             } catch (e: PackageManager.NameNotFoundException) {
                 Toast.makeText(requireContext(), "Ошибка получения информации", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        setupAiSettings()
+    }
+    
+    private fun setupAiSettings() {
+        val providers = listOf("ollama", "lmstudio")
+        val adapter = ArrayAdapter(requireContext(), egx.relab_app.R.layout.item_spinner_black, providers)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerAiProvider.adapter = adapter
+
+        val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
+        val currentProvider = prefs.getString("ai_provider", "ollama")
+        val selection = providers.indexOf(currentProvider)
+        if (selection >= 0) {
+            binding.spinnerAiProvider.setSelection(selection)
+        }
+
+        binding.spinnerAiProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selected = providers[position]
+                prefs.edit().putString("ai_provider", selected).apply()
+                checkAiStatus()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        checkAiStatus()
+    }
+
+    private fun checkAiStatus() {
+        if (!isAdded) return
+        lifecycleScope.launch {
+            try {
+                val status = RetrofitClient.apiService.getAiStatus()
+                if (!isAdded || _binding == null) return@launch
+                
+                val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
+                val current = prefs.getString("ai_provider", "ollama") ?: "ollama"
+                
+                val isOnline = status[current] == "online"
+                
+                binding.tvAiStatus.text = "Статус $current: ${if (isOnline) "В СЕТИ" else "ОФФЛАЙН"}"
+                binding.viewAiStatusIndicator.background?.setTint(
+                    if (isOnline) Color.GREEN else Color.RED
+                )
+            } catch (e: Exception) {
+                if (isAdded && _binding != null) {
+                    binding.tvAiStatus.text = "Ошибка связи с бэкендом"
+                    binding.viewAiStatusIndicator.background?.setTint(Color.GRAY)
+                }
+            }
+        }
+    }
+
+    private fun testConnection() {
+        if (!isAdded) return
+        lifecycleScope.launch {
+            try {
+                // Пытаемся получить профиль пользователя как проверку связи
+                val user = RetrofitClient.apiService.getCurrentUser()
+                if (isAdded) {
+                    Toast.makeText(context, "✅ Связь с сервером установлена!\nВы вошли как: ${user.username}", Toast.LENGTH_LONG).show()
+                    // Если связь есть, обновляем и статус ИИ
+                    checkAiStatus()
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    android.util.Log.e("Settings", "Connection test failed", e)
+                    Toast.makeText(context, "❌ Ошибка подключения: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

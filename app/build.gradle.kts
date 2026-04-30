@@ -16,9 +16,12 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 8
-        versionName = "9.2.6-alpha"
+        versionName = "10.0.0-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
     }
 
     buildTypes {
@@ -72,6 +75,13 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.alphacephei:vosk-android:0.3.38") {
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
+    implementation(libs.flexbox)
+    implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.markwon.core)
+    implementation("net.java.dev.jna:jna:5.10.0@aar")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

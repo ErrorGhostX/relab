@@ -22,6 +22,15 @@
         <action
             android:id="@+id/action_homeFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_toolsFragment"
+            app:destination="@id/toolsFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_nav_customers"
+            app:destination="@id/nav_customers" />
+        <action
+            android:id="@+id/action_nav_home_to_chatFragment"
+            app:destination="@id/chatFragment" />
 
     </fragment>
 
@@ -67,6 +76,9 @@
             app:destination="@id/customerDetailFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_customerListFragment_to_customerFormFragment"
+            app:destination="@id/customerFormFragment" />
     </fragment>
         
     <fragment
@@ -77,6 +89,21 @@
         <argument
             android:name="customer"
             app:argType="egx.relab_app.models.Customer" />
+        <action
+            android:id="@+id/action_customerDetailFragment_to_customerFormFragment"
+            app:destination="@id/customerFormFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/customerFormFragment"
+        android:name="egx.relab_app.ui.customers.CustomerFormFragment"
+        android:label="Клиент"
+        tools:layout="@layout/fragment_customer_form">
+        <argument
+            android:name="customer"
+            app:argType="egx.relab_app.models.Customer"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <fragment
@@ -96,6 +123,8 @@
         android:name="egx.relab_app.ui.tools.ToolsFragment"
         android:label="Инструменты"
         tools:layout="@layout/fragment_tools" />
+
+
 
     <fragment
         android:id="@+id/orderFormFragment"
@@ -124,6 +153,11 @@
             app:destination="@id/orderFormFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_orderDetailFragment_to_chatFragment"
+            app:destination="@id/chatFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
@@ -138,5 +172,21 @@
     </fragment>
 
 
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="egx.relab_app.ui.chat.ChatFragment"
+        android:label="Помощник"
+        tools:layout="@layout/fragment_chat">
+        <argument
+            android:name="initialMessage"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="orderId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
 
 </navigation>

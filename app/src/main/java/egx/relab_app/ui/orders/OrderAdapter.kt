@@ -90,6 +90,7 @@ class OrderAdapter(
         private val createdByAvatar: android.widget.ImageView = itemView.findViewById(R.id.createdByAvatar)
         private val orderCreatedText: android.widget.TextView = itemView.findViewById(R.id.orderCreatedText)
         private val badgePublic: View = itemView.findViewById(R.id.badgePublic)
+        private val orderDateText: android.widget.TextView? = itemView.findViewById(R.id.orderDateText)
 
         fun bind(order: Order) {
             orderIdText.text = if (order.id != null && order.id!! > 0) {
@@ -97,6 +98,8 @@ class OrderAdapter(
             } else {
                 "ID: Локальный"
             }
+
+            orderDateText?.text = order.date ?: ""
             
             deviceNameText.text = "Устройство: ${order.deviceName}"
 

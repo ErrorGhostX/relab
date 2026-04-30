@@ -98,7 +98,7 @@
             android:layout_marginBottom="16dp">
 
             <LinearLayout
-                android:layout_width="382dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
@@ -110,42 +110,55 @@
                     android:gravity="center"
                     android:orientation="horizontal">
 
-                    <!-- Кнопки действия -->
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/buttonAddService"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_margin="4dp"
                         android:src="@drawable/tools_svgrepo_com"
-                        android:tint="@color/white"
-                        app:backgroundTint="#3F51B5" />
+                        app:tint="@color/white"
+                        app:backgroundTint="#3F51B5"
+                        app:fabSize="mini" />
 
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/buttonPrint"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_margin="4dp"
                         android:src="@drawable/document_send_svgrepo_com"
-                        android:tint="@color/white"
-                        app:backgroundTint="#3F51B5" />
+                        app:tint="@color/white"
+                        app:backgroundTint="#3F51B5"
+                        app:fabSize="mini" />
 
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/buttonEdit"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_margin="4dp"
                         android:src="@drawable/pencil_file_svgrepo_com"
-                        android:tint="@color/white"
-                        app:backgroundTint="#3F51B5" />
+                        app:tint="@color/white"
+                        app:backgroundTint="#3F51B5"
+                        app:fabSize="mini" />
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/buttonAiHelp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:src="@drawable/ai_magic_wand_svgrepo_com"
+                        app:tint="@color/white"
+                        app:backgroundTint="#9C27B0"
+                        app:fabSize="mini" />
 
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/buttonDelete"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_margin="4dp"
                         android:src="@drawable/trash_can_svgrepo_com"
-                        android:tint="@color/white"
-                        app:backgroundTint="#F44336" />
+                        app:tint="@color/white"
+                        app:backgroundTint="#F44336"
+                        app:fabSize="mini" />
                 </LinearLayout>
 
                 <!-- Разделитель -->
@@ -197,12 +210,14 @@
                         android:id="@+id/status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
                         android:text="НОВЫЙ"
                         android:textColor="@color/white"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textStyle="bold"
+                        android:gravity="center"
+                        android:layout_marginStart="8dp"
                         android:background="@color/gray_800" />
                 </LinearLayout>
 
@@ -300,12 +315,14 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="8dp" />
 
-                <!-- Кнопки управления коллаборацией -->
-                <LinearLayout
+                <!-- Кнопки управления коллаборацией (сделаем две строки если нужно) -->
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/layoutCollabButtons"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_horizontal"
+                    app:flexDirection="row"
+                    app:flexWrap="wrap"
+                    app:justifyContent="center"
                     android:layout_marginTop="4dp">
 
                     <com.google.android.material.button.MaterialButton
@@ -316,7 +333,7 @@
                         android:textSize="11sp"
                         app:backgroundTint="#4CAF50"
                         app:cornerRadius="8dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_margin="2dp"
                         android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButton
@@ -327,7 +344,7 @@
                         android:textSize="11sp"
                         app:backgroundTint="#F44336"
                         app:cornerRadius="8dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_margin="2dp"
                         android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButton
@@ -338,7 +355,7 @@
                         android:textSize="11sp"
                         app:backgroundTint="#3F51B5"
                         app:cornerRadius="8dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_margin="2dp"
                         android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButton
@@ -349,7 +366,7 @@
                         android:textSize="11sp"
                         app:backgroundTint="#FF9800"
                         app:cornerRadius="8dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_margin="2dp"
                         android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButton
@@ -360,8 +377,9 @@
                         android:textSize="11sp"
                         app:backgroundTint="#607D8B"
                         app:cornerRadius="8dp"
+                        android:layout_margin="2dp"
                         android:visibility="gone" />
-                </LinearLayout>
+                </com.google.android.flexbox.FlexboxLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

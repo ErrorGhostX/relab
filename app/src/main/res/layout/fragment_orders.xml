@@ -215,8 +215,8 @@
         android:layout_gravity="bottom|center"
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
-        android:tint="@android:color/white"
-        app:backgroundTint="@android:color/system_text_secondary_and_tertiary_inverse_dark"
+        app:tint="@android:color/white"
+        app:backgroundTint="@color/gray_900"
         app:maxImageSize="56dp"
         app:useCompatPadding="false"
         app:fabSize="normal"/>

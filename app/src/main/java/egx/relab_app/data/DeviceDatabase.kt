@@ -143,7 +143,7 @@ object DeviceDatabase {
     }
     
     /**
-     * Поиск названий устройств по запросу
+     * Поиск названий устройств по запросу (производитель + модель)
      */
     fun searchDeviceNames(query: String): List<String> {
         if (query.isBlank()) return getAllDeviceNames()
@@ -151,6 +151,25 @@ object DeviceDatabase {
         return getAllDeviceNames()
             .filter { it.lowercase().contains(lowerQuery) }
             .sorted()
+    }
+    
+    /**
+     * "Примагничивание" (нормализация) названия к ближайшему из базы
+     */
+    fun snapToManufacturer(input: String?): String? {
+        if (input.isNullOrBlank()) return null
+        return getAllManufacturers().find { it.equals(input, ignoreCase = true) || input.contains(it, ignoreCase = true) } ?: input
+    }
+
+    fun snapToDeviceType(input: String?): String? {
+        if (input.isNullOrBlank()) return null
+        return getAllDeviceTypes().find { it.equals(input, ignoreCase = true) || input.contains(it, ignoreCase = true) } ?: input
+    }
+
+    fun snapToModel(input: String?, manufacturer: String? = null): String? {
+        if (input.isNullOrBlank()) return null
+        val models = if (manufacturer != null) getModelsByManufacturer(manufacturer) else getAllModels()
+        return models.find { it.equals(input, ignoreCase = true) || input.contains(it, ignoreCase = true) } ?: input
     }
 }
 

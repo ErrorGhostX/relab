@@ -1,20 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Разрешаем HTTP для локальной разработки -->
+    <!-- Разрешаем HTTP глобально для удобства отладки в локальной сети -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Оставляем специфичные домены на всякий случай -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">192.168.0.102</domain>
-        <domain includeSubdomains="true">192.168.1.103</domain>
-        <domain includeSubdomains="true">10.8.0.18</domain>
-        <domain includeSubdomains="true">10.36.0.2</domain>
-    </domain-config>
-
-    <!-- Твой прод-домен (если нужен) -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">x.baseblock.ru</domain>
-        <domain includeSubdomains="true">errorghostx.ru</domain>
-        <domain includeSubdomains="true">rb.errorghostx.ru</domain>
         <domain includeSubdomains="true">baseblock.ru</domain>
     </domain-config>
 </network-security-config>

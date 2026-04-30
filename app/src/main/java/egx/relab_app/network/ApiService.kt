@@ -56,6 +56,7 @@ interface ApiService {
         @Part("order_type")     orderType: RequestBody,
         @Part("is_public")      isPublic: RequestBody,
         @Part("customer_ref")   customerRef: RequestBody?,
+        @Part("services")       services: RequestBody?,
         @Part                   photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -79,6 +80,7 @@ interface ApiService {
         @Part("order_type") orderType: RequestBody,
         @Part("is_public") isPublic: RequestBody,
         @Part("customer_ref") customerRef: RequestBody?,
+        @Part("services") services: RequestBody?,
         @Part photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -310,4 +312,44 @@ interface ApiService {
     // Получить клиента по ID
     @GET("customers/{id}/")
     suspend fun getCustomer(@Path("id") id: Int): Customer
+
+    // =============================================
+    // Эндпоинты для ИИ
+    // =============================================
+    data class AiParseRequest(val text: String, val provider: String = "ollama")
+    data class AiServiceItem(
+        val description: String,
+        val price: Double,
+        val complexity_points: Int = 1
+    )
+
+    data class AiParseResponse(
+        val customer_name: String? = null,
+        val phone: String? = null,
+        val device_type: String? = null,
+        val manufacturer: String? = null,
+        val model: String? = null,
+        val kit: String? = null,
+        val order_type: String? = null,
+        val summary_description: String? = null,
+        val suggested_services: List<AiServiceItem>? = null
+    )
+
+    @POST("ai/parse_text/")
+    suspend fun parseAiText(@Body request: AiParseRequest): AiParseResponse
+
+    data class ChatRequest(
+        val message: String, 
+        val provider: String? = "ollama",
+        val order_id: Int? = null
+    )
+    
+    @POST("ai/chat/")
+    suspend fun chatWithAi(@Body request: ChatRequest): egx.relab_app.ui.chat.ChatMessage
+
+    @GET("ai/chat_history/")
+    suspend fun getChatHistory(@Query("order_id") orderId: Int? = null): List<egx.relab_app.ui.chat.ChatMessage>
+
+    @GET("ai/ai_status/")
+    suspend fun getAiStatus(): Map<String, String>
 }

@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingHorizontal="18dp"
-        android:paddingTop="80dp"
+        android:paddingTop="30dp"
         android:paddingBottom="5dp">
 
         <com.google.android.material.card.MaterialCardView
@@ -58,8 +58,8 @@
 
                     <ImageView
                         android:id="@+id/logoImageView"
-                        android:layout_width="216dp"
-                        android:layout_height="236dp"
+                        android:layout_width="160dp"
+                        android:layout_height="160dp"
                         android:layout_marginBottom="0dp"
                         android:contentDescription="Relab Logo"
                         android:scaleType="fitCenter"
@@ -120,7 +120,7 @@
                 android:id="@+id/cardOrders"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_marginEnd="12dp"
                 android:layout_weight="1"
                 android:clickable="true"
@@ -137,11 +137,11 @@
 
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="7dp">
 
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="73dp"
+                        android:layout_width="76dp"
+                        android:layout_height="67dp"
                         android:contentDescription="Заказы"
                         android:src="?attr/actionModePasteDrawable"
                         app:tint="@color/white" />
@@ -162,7 +162,7 @@
                 android:id="@+id/cardProfile"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_marginEnd="12dp"
                 android:layout_weight="1"
                 android:clickable="true"
@@ -191,7 +191,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="1dp"
                         android:text="Профиль"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
                         android:textColor="@color/white"
@@ -204,7 +204,7 @@
                 android:id="@+id/cardCustomers"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -218,7 +218,7 @@
                     android:background="@color/gray_900"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="5dp">
 
                     <ImageView
                         android:layout_width="80dp"
@@ -230,7 +230,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="1dp"
                         android:text="Клиенты"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
                         android:textColor="@color/white"
@@ -243,7 +243,7 @@
         <LinearLayout
             android:id="@+id/secondRowContainer"
             android:layout_width="0dp"
-            android:layout_height="140dp"
+            android:layout_height="120dp"
             android:layout_marginTop="16dp"
             android:gravity="center"
             android:orientation="horizontal"
@@ -256,7 +256,7 @@
                 android:id="@+id/cardAnalytics"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_marginEnd="12dp"
                 android:layout_weight="1"
                 android:clickable="true"
@@ -271,7 +271,7 @@
                     android:background="@color/gray_900"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="8dp">
 
                     <ImageView
                         android:layout_width="80dp"
@@ -283,7 +283,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="1dp"
                         android:text="Аналитика"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
                         android:textColor="@color/white"
@@ -296,7 +296,7 @@
                 android:id="@+id/cardSettings"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_marginEnd="12dp"
                 android:layout_weight="1"
                 android:clickable="true"
@@ -336,7 +336,7 @@
                 android:id="@+id/cardTools"
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -350,7 +350,7 @@
                     android:background="@color/gray_900"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="2dp">
+                    android:padding="5dp">
 
                     <ImageView
                         android:layout_width="59dp"
@@ -362,7 +362,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:text="Инструменты"
                         android:textAlignment="center"
                         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
@@ -373,6 +373,67 @@
 
 
         </LinearLayout>
+
+        <!-- Третий ряд - Помощник -->
+        <LinearLayout
+            android:id="@+id/thirdRowContainer"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/secondRowContainer">
+
+            <!-- Помощник -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAssistant"
+                style="@style/Widget.MaterialComponents.CardView"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray_900"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:contentDescription="Помощник"
+                        android:src="@drawable/ai_magic_wand_svgrepo_com"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Помощник"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:textColor="@color/white"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Пустые карточки для выравнивания -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_weight="2" />
+
+        </LinearLayout>
+
+
 
 
 

@@ -265,7 +265,7 @@ class ProfileFragment : Fragment() {
         val fullName = binding.editTextFullName.text.toString().trim()
         val phone = binding.editTextPhone.text.toString().trim()
         
-        // ВАЖНО: Сохраняем СРАЗУ в локальное хранилище (TokenManager)
+        // Сохраняем СРАЗУ в локальное хранилище (TokenManager)
         tokenManager.fullName = fullName
         tokenManager.phone = phone
         

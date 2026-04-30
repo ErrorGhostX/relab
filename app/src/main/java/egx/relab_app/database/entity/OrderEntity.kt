@@ -8,18 +8,10 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import egx.relab_app.models.Order
 import egx.relab_app.models.OrderCollaborator
+import egx.relab_app.models.Service
 
 /**
  * Entity для хранения заказов в локальной базе данных Room
- * 
- * @property localId - Локальный уникальный ID (автогенерируемый)
- * @property serverId - ID заказа на сервере (null для новых, не синхронизированных заказов)
- * @property syncStatus - Статус синхронизации (SYNCED, PENDING, ERROR)
- * @property lastModified - Время последнего изменения (локальный timestamp в миллисекундах)
- * @property lastSynced - Время последней успешной синхронизации (null если еще не синхронизирован)
- * @property isDeleted - Флаг удаления (для мягкого удаления)
- * 
- * Остальные поля соответствуют модели Order из API
  */
 @Entity(
     tableName = "orders",
@@ -68,26 +60,15 @@ data class OrderEntity(
     val assignedToFullName: String? = null,
     val assignedToAvatar: String? = null,
     val assignedAt: String? = null,
-    val collaboratorsJson: String? = null  // JSON список коллабораторов
+    val collaboratorsJson: String? = null,  // JSON список коллабораторов
+    val servicesJson: String? = null       // JSON список услуг (для новых заказов)
 ) {
-    /**
-     * Статусы синхронизации заказа
-     */
     enum class SyncStatus {
-        SYNCED,   // Синхронизирован с сервером
-        PENDING,   // Ожидает синхронизации
-        ERROR      // Ошибка при синхронизации
+        SYNCED, PENDING, ERROR
     }
     
-    /**
-     * Конвертация Entity в модель Order для использования в UI
-     * Если serverId отрицательный (временный ID), возвращаем null
-     * Это позволяет UI различать локальные и синхронизированные заказы
-     */
     fun toOrder(): Order {
-        // Если serverId отрицательный (временный ID), возвращаем null
-        // Отрицательные ID - это временные локальные ID, которые будут заменены при синхронизации
-        val displayId = if (serverId != null && serverId!! < 0) null else serverId
+        val displayId = if (serverId != null && serverId < 0) null else serverId
         
         return Order(
             id = displayId,
@@ -110,7 +91,7 @@ data class OrderEntity(
             createdByUsername = createdByUsername,
             createdByFullName = createdByFullName,
             createdByAvatar = createdByAvatar,
-            services = emptyList(),  // Services загружаются отдельно
+            services = parseServices(servicesJson),
             complexityPercentage = complexityPercentage,
             complexityLevel = complexityLevel,
             isPublic = isPublic,
@@ -131,11 +112,18 @@ data class OrderEntity(
             emptyList()
         }
     }
+
+    private fun parseServices(json: String?): List<Service> {
+        if (json.isNullOrEmpty()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<Service>>() {}.type
+            Gson().fromJson(json, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
     
     companion object {
-        /**
-         * Создание Entity из модели Order (при получении с сервера)
-         */
         fun fromOrder(order: Order, syncStatus: SyncStatus = SyncStatus.SYNCED): OrderEntity {
             return OrderEntity(
                 serverId = order.id,
@@ -168,19 +156,12 @@ data class OrderEntity(
                 assignedToFullName = order.assignedToFullName,
                 assignedToAvatar = order.assignedToAvatar,
                 assignedAt = order.assignedAt,
-                collaboratorsJson = Gson().toJson(order.collaborators)
+                collaboratorsJson = Gson().toJson(order.collaborators),
+                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null
             )
         }
         
-        /**
-         * Создание Entity для нового заказа (еще не синхронизированного
-         * Генерируем временный отрицательный ID для локальных заказов
-         * Этот ID будет заменен на серверный ID при синхронизации
-         */
         fun fromNewOrder(order: Order): OrderEntity {
-            // Генерируем временный отрицательный ID для локальных заказов
-            // Отрицательные числа гарантируют, что они не конфликтуют с серверными ID (которые всегда положительные)
-            // Используем timestamp в миллисекундах, но делаем отрицательным
             val tempId = -(System.currentTimeMillis() % Int.MAX_VALUE).toInt()
             
             return OrderEntity(
@@ -214,7 +195,8 @@ data class OrderEntity(
                 assignedToFullName = order.assignedToFullName,
                 assignedToAvatar = order.assignedToAvatar,
                 assignedAt = order.assignedAt,
-                collaboratorsJson = Gson().toJson(order.collaborators)
+                collaboratorsJson = Gson().toJson(order.collaborators),
+                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null
             )
         }
     }
