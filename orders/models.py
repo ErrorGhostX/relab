@@ -331,3 +331,33 @@ def save_user_profile(sender, instance, **kwargs):
     """Сохранять профиль при сохранении пользователя"""
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+
+class ChatMessage(models.Model):
+    """
+    Сообщение в чате. Может быть как общим чатом с ИИ, 
+    так и внутренним чатом по конкретному заказу.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_messages')
+    order = models.ForeignKey(
+        'Order', 
+        null=True, 
+        blank=True, 
+        on_delete=models.CASCADE, 
+        related_name='chat_messages',
+        verbose_name='Заказ'
+    )
+    message = models.TextField(verbose_name='Сообщение', blank=True, default='')
+    image = models.ImageField(upload_to='chat_photos/', null=True, blank=True, verbose_name='Изображение')
+    is_from_ai = models.BooleanField(default=False, verbose_name='От ИИ')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Сообщение чата'
+        verbose_name_plural = 'Сообщения чата'
+
+    def __str__(self):
+        sender = "AI" if self.is_from_ai else self.user.username
+        order_str = f" [Заказ {self.order.id}]" if self.order else ""
+        return f"{sender}{order_str}: {self.message[:50]}..."

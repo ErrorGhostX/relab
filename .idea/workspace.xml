@@ -7,11 +7,11 @@
     <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend_relab_app/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/serializers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,7 +167,16 @@
       <workItem from="1776547553321" duration="184000" />
       <workItem from="1776599733250" duration="3379000" />
       <workItem from="1776611502986" duration="5342000" />
-      <workItem from="1777042455210" duration="2489000" />
+      <workItem from="1777042455210" duration="3102000" />
+      <workItem from="1777048296047" duration="811000" />
+      <workItem from="1777062128509" duration="1911000" />
+      <workItem from="1777124782819" duration="3907000" />
+      <workItem from="1777130531804" duration="6697000" />
+      <workItem from="1777145790829" duration="1404000" />
+      <workItem from="1777223743375" duration="2470000" />
+      <workItem from="1777234130525" duration="4613000" />
+      <workItem from="1777491451337" duration="972000" />
+      <workItem from="1777499953392" duration="1193000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />

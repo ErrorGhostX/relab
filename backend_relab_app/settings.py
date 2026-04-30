@@ -73,10 +73,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "https://baseblock.ru",
     "https://www.baseblock.ru",
-    "http://baseblock.ru",  # если используешь HTTP
+    "http://baseblock.ru",
 ]
 
 ROOT_URLCONF = 'backend_relab_app.urls'

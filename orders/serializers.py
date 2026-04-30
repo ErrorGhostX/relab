@@ -143,7 +143,7 @@ class OrderCollaboratorSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
 
-    services = ServiceSerializer(many=True, read_only=True)
+    services = ServiceSerializer(many=True, required=False)
     photos = OrderPhotoSerializer(many=True, read_only=True)
     collaborators = OrderCollaboratorSerializer(many=True, read_only=True)
     # Для обратной совместимости оставляем поле photo (первое фото или старое значение)
@@ -175,6 +175,18 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
+
+    def create(self, validated_data):
+        services_data = validated_data.pop('services', [])
+        order = Order.objects.create(**validated_data)
+        
+        for service_data in services_data:
+            Service.objects.create(
+                order=order,
+                created_by=order.created_by,
+                **service_data
+            )
+        return order
     
     def get_complexity_percentage(self, obj):
         """Получить процент сложности заказа"""

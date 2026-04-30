@@ -14,7 +14,12 @@ from .models import Order, Service, OrderPhoto, OrderCollaborator, Customer
 from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer, CustomerSerializer
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+import requests
+import json
+import base64
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 # views.py
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -130,14 +135,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        
-        # ВАЖНО: Обрабатываем новые фото, если они переданы
-        # Если переданы фото, ДОБАВЛЯЕМ их к существующим
+
         if request.FILES:
             max_index = instance.photos.aggregate(Max('order_index'))['order_index__max'] or -1
             photo_keys = [key for key in request.FILES.keys() if key.startswith('photo')]
-            
-            # ВАЖНО: Если есть несколько фото с одинаковым именем 'photos', обрабатываем их все
+
             if 'photos' in request.FILES:
                 # Если есть поле 'photos' (может быть несколько файлов с одинаковым именем)
                 photos_list = request.FILES.getlist('photos')
@@ -172,7 +174,17 @@ class OrderViewSet(viewsets.ModelViewSet):
         Поддерживает загрузку нескольких фото через поля photo[], photo[0], photo[1] и т.д.
         Возвращает полный объект заказа для синхронизации с мобильным приложением
         """
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        
+        # Если услуги переданы как JSON-строка (обычно для multipart), парсим их
+        services_raw = data.get('services')
+        if services_raw and isinstance(services_raw, str):
+            try:
+                data['services'] = json.loads(services_raw)
+            except json.JSONDecodeError:
+                pass
+
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         order = serializer.save(created_by=request.user)
         
@@ -797,6 +809,315 @@ class AnalyticsViewSet(viewsets.ViewSet):
             "count": count,
             "message": f"Создано заказов: {count}"
         })
+
+class AiViewSet(viewsets.ViewSet):
+    """
+    Эндпоинт для работы с ИИ (Ollama / Llama.cpp)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def parse_text(self, request):
+        raw_text = request.data.get('text', '')
+        provider = request.data.get('provider', 'ollama') # 'ollama' or 'lmstudio'
+        
+        if not raw_text:
+            return Response({"error": "Текст не передан"}, status=status.HTTP_400_BAD_REQUEST)
+
+        system_prompt = (
+            "Ты — профессиональный ассистент сервисного центра. Твоя задача — извлечь данные из заявки и вернуть СТРОГИЙ JSON. "
+            "Ключи: 'customer_name' (ФИО), 'phone' (номер), 'device_type' (тип), 'manufacturer' (бренд), 'model' (модель), "
+            "'kit' (подробная комплектация), 'order_type' (тип ремонта), 'summary_description' (суть проблемы), "
+            "'suggested_services' (список услуг). "
+            "ВАЖНО: 'suggested_services' должен быть списком объектов: [{\"description\": \"название\", \"price\": 1000}]. "
+            "Если цена за услугу указана в тексте, обязательно извлеки её как число. Если нет — ставь 0."
+        )
+
+        try:
+            if provider == 'ollama':
+                try:
+                    model_name = "qwen3-vl:8b" 
+                    # Переходим на /api/chat, он стабильнее для современных моделей
+                    messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": raw_text}
+                    ]
+                    response = requests.post(
+                        "http://localhost:11434/api/chat",
+                        json={
+                            "model": model_name,
+                            "messages": messages,
+                            "stream": False,
+                            "format": "json"
+                        },
+                        timeout=180
+                    )
+                    if response.status_code == 200:
+                        # В /api/chat ответ лежит в message.content
+                        raw_ai_response = response.json().get('message', {}).get('content', '')
+                        if not raw_ai_response:
+                            return Response({"error": "Ollama (chat) вернул пустой ответ"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        
+                        # Очистка JSON
+                        clean_json = raw_ai_response.strip()
+                        if "```json" in clean_json:
+                            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                        elif "```" in clean_json:
+                            clean_json = clean_json.split("```")[1].split("```")[0].strip()
+                        
+                        try:
+                            parsed_data = json.loads(clean_json)
+                            
+                            # ЛОГИКА ТРАНСФОРМАЦИИ УСЛУГ (чтобы приложение не падало)
+                            services = parsed_data.get('suggested_services', [])
+                            if isinstance(services, list):
+                                fixed_services = []
+                                for s in services:
+                                    if isinstance(s, str):
+                                        fixed_services.append({"description": s, "price": 0, "complexity_points": 1})
+                                    elif isinstance(s, dict):
+                                        fixed_services.append(s)
+                                parsed_data['suggested_services'] = fixed_services
+                                
+                            return Response(parsed_data)
+                        except json.JSONDecodeError as e:
+                            return Response({
+                                "error": f"Ошибка парсинга JSON: {str(e)}",
+                                "raw_response": raw_ai_response
+                            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    else:
+                        return Response({"error": f"Ollama error {response.status_code}: {response.text}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                except requests.exceptions.RequestException as e:
+                    return Response({"error": f"Ollama offline: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+            elif provider == 'lmstudio':
+                try:
+                    # LM Studio (OpenAI Compatible)
+                    response = requests.post(
+                        "http://localhost:1234/v1/chat/completions",
+                        json={
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": raw_text}
+                            ],
+                            "temperature": 0.7,
+                            "response_format": { "type": "json_object" }
+                        },
+                        timeout=180
+                    )
+                    if response.status_code == 200:
+                        content = response.json()['choices'][0]['message']['content']
+                        if not content:
+                            return Response({"error": "LM Studio вернул пустой ответ"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        
+                        # Очистка
+                        clean_json = content.strip()
+                        if "```json" in clean_json:
+                            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                        
+                        try:
+                            parsed_data = json.loads(clean_json)
+                            
+                            # ЛОГИКА ТРАНСФОРМАЦИИ УСЛУГ (чтобы приложение не падало)
+                            services = parsed_data.get('suggested_services', [])
+                            if isinstance(services, list):
+                                fixed_services = []
+                                for s in services:
+                                    if isinstance(s, str):
+                                        fixed_services.append({"description": s, "price": 0, "complexity_points": 1})
+                                    elif isinstance(s, dict):
+                                        fixed_services.append(s)
+                                parsed_data['suggested_services'] = fixed_services
+                                
+                            return Response(parsed_data)
+                        except json.JSONDecodeError as e:
+                            return Response({
+                                "error": f"Ошибка парсинга JSON от LM Studio: {str(e)}",
+                                "raw_response": content
+                            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    else:
+                        return Response({"error": f"LM Studio error {response.status_code}: {response.text}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                except requests.exceptions.RequestException as e:
+                    return Response({"error": f"LM Studio offline: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            return Response({"error": f"Неизвестный провайдер: {provider}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def chat(self, request):
+        """
+        POST /api/ai/chat/
+        { "message": "Привет", "provider": "ollama", "order_id": 123 }
+        """
+        user_message = request.data.get('message', '')
+        provider = request.data.get('provider') # Может быть None для простого сообщения
+        order_id = request.data.get('order_id')
+        
+        if not user_message and not request.FILES.get('image'):
+            return Response({"error": "Сообщение или изображение не может быть пустым"}, status=status.HTTP_400_BAD_REQUEST)
+
+        order = None
+        if order_id:
+            order = get_object_or_404(models.Order, id=order_id)
+
+        # 1. Сохраняем сообщение пользователя
+        chat_msg = models.ChatMessage.objects.create(
+            user=request.user, 
+            message=user_message, 
+            is_from_ai=False,
+            order=order,
+            image=request.FILES.get('image')
+        )
+
+        # Если провайдер не указан, это просто сообщение в чат сотрудников
+        if not provider:
+            return Response({
+                "id": chat_msg.id,
+                "message": chat_msg.message,
+                "is_from_ai": False,
+                "created_at": chat_msg.created_at,
+                "image": chat_msg.image.url if chat_msg.image else None
+            })
+
+        # 2. Получаем контекст (последние 10 сообщений именно этого чата)
+        history_query = models.ChatMessage.objects.filter(user=request.user)
+        if order:
+            history_query = models.ChatMessage.objects.filter(order=order)
+        else:
+            history_query = history_query.filter(order__isnull=True)
+            
+        history = history_query.order_by('-created_at')[:15]
+        history = reversed(history)
+        
+        system_prompt = "Ты эксперт-помощник в CRM Relab. Отвечай кратко. Твоя задача — помогать мастерам по ремонту."
+        if order:
+            system_prompt += f" Сейчас ты помогаешь с заказом №{order.order_number or order.id} ({order.device_name})."
+            
+        messages = [{"role": "system", "content": system_prompt}]
+        for h in history:
+            role = "assistant" if h.is_from_ai else "user"
+            msg_dict = {"role": role, "content": h.message}
+            if h.image:
+                try:
+                    with h.image.open('rb') as img_file:
+                        img_data = img_file.read()
+                        msg_dict["images"] = [base64.b64encode(img_data).decode('utf-8')]
+                except Exception as e:
+                    print(f"[AI CHAT] Error reading image: {e}")
+            messages.append(msg_dict)
+
+        def stream_generator():
+            ai_full_text = ""
+            print(f"[AI CHAT] Starting stream for user {request.user.username}, provider: {provider}")
+            print(f"[AI CHAT] Context messages: {len(messages)}")
+            
+            # 1. Создаем пустое сообщение в БД для имитации состояния "Думаю..." у других пользователей
+            ai_db_message = models.ChatMessage.objects.create(
+                user=request.user, 
+                message="", 
+                is_from_ai=True,
+                order=order
+            )
+
+            try:
+                if provider == 'ollama':
+                    resp = requests.post("http://localhost:11434/api/chat", json={
+                        "model": "qwen3-vl:8b",
+                        "messages": messages,
+                        "stream": True
+                    }, timeout=180, stream=True)
+                    
+                    first_token = True
+                    for line in resp.iter_lines():
+                        if line:
+                            if first_token:
+                                print("[AI CHAT] First token received from Ollama")
+                                first_token = False
+                                
+                            chunk = json.loads(line.decode('utf-8'))
+                            token = chunk.get('message', {}).get('content', '')
+                            ai_full_text += token
+                            # Формат SSE
+                            yield f"data: {json.dumps({'text': token})}\n\n"
+                            if chunk.get('done'):
+                                print(f"[AI CHAT] Stream finished. Length: {len(ai_full_text)}")
+                                break
+                                
+                elif provider == 'lmstudio':
+                    resp = requests.post("http://localhost:1234/v1/chat/completions", json={
+                        "messages": messages,
+                        "temperature": 0.8,
+                        "stream": True
+                    }, timeout=180, stream=True)
+                    
+                    for line in resp.iter_lines():
+                        line = line.decode('utf-8').strip()
+                        if line.startswith("data: "):
+                            if line == "data: [DONE]": break
+                            chunk = json.loads(line[6:])
+                            token = chunk['choices'][0]['delta'].get('content', '')
+                            ai_full_text += token
+                            yield f"data: {json.dumps({'text': token})}\n\n"
+
+                # После завершения стрима обновляем сообщение в БД полным текстом
+                if ai_full_text:
+                    ai_db_message.message = ai_full_text
+                    ai_db_message.save()
+                else:
+                    ai_db_message.delete()
+            except Exception as e:
+                ai_db_message.delete()
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        from django.http import StreamingHttpResponse
+        response = StreamingHttpResponse(stream_generator(), content_type='text/event-stream')
+        response['X-Accel-Buffering'] = 'no'
+        response['Cache-Control'] = 'no-cache'
+        return response
+
+    @action(detail=False, methods=['get'])
+    def chat_history(self, request):
+        """История переписки (глобальная или по заказу)"""
+        order_id = request.query_params.get('order_id')
+        if order_id:
+            messages = models.ChatMessage.objects.filter(order_id=order_id).order_by('created_at')
+        else:
+            messages = models.ChatMessage.objects.filter(user=request.user, order__isnull=True).order_by('created_at')
+            
+        data = []
+        for m in messages:
+            avatar_url = None
+            if m.user.profile.avatar:
+                avatar_url = request.build_absolute_uri(m.user.profile.avatar.url)
+            
+            data.append({
+                "id": m.id,
+                "message": m.message,
+                "is_from_ai": m.is_from_ai,
+                "created_at": m.created_at,
+                "user_name": m.user.profile.full_name or m.user.username,
+                "avatar": avatar_url,
+                "image": m.image.url if m.image else None
+            })
+        return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def ai_status(self, request):
+        """Проверка статуса серверов ИИ"""
+        providers = {
+            "ollama": "http://localhost:11434/api/tags",
+            "lmstudio": "http://localhost:1234/v1/models"
+        }
+        results = {}
+        for name, url in providers.items():
+            try:
+                resp = requests.get(url, timeout=2)
+                results[name] = "online" if resp.status_code == 200 else "offline"
+            except:
+                results[name] = "offline"
+        return Response(results)
 
     @action(detail=False, methods=['get'])
     def employee_efficiency(self, request):
