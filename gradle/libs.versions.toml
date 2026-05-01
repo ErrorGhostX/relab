@@ -27,6 +27,8 @@ firebaseCrashlyticsBuildtools = "3.0.6"
 flexbox = "3.0.0"
 swiperefreshlayout = "1.1.0"
 markwon = "4.6.2"
+googleServices = "4.4.1"
+firebaseBom = "32.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,8 +61,11 @@ firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "fireb
 flexbox = { group = "com.google.android.flexbox", name = "flexbox", version.ref = "flexbox" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 navigation-safeargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

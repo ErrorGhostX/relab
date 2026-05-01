@@ -214,6 +214,36 @@ class ProfileFragment : Fragment() {
                 binding.profileImage.setImageResource(R.drawable.relab)
             }
             
+            // Статистика
+            if (user.completed_orders_count != null || user.total_revenue != null) {
+                val count = user.completed_orders_count ?: 0
+                val revenue = user.total_revenue ?: 0.0
+                binding.tvStats.text = "Завершено: $count | Доход: ${revenue.toInt()} ₽"
+                binding.tvStats.visibility = View.VISIBLE
+            } else {
+                binding.tvStats.visibility = View.GONE
+            }
+
+            // Недавние заказы
+            if (!user.recent_orders.isNullOrEmpty()) {
+                binding.tvRecentOrdersTitle.visibility = View.VISIBLE
+                binding.rvRecentOrders.visibility = View.VISIBLE
+                
+                binding.rvRecentOrders.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+                val adapter = egx.relab_app.orders.OrderAdapter { order ->
+                    val bundle = android.os.Bundle().apply {
+                        putParcelable("order", order)
+                    }
+                    findNavController().navigate(R.id.orderDetailFragment, bundle)
+                }
+                adapter.isGridView = false
+                adapter.updateList(user.recent_orders)
+                binding.rvRecentOrders.adapter = adapter
+            } else {
+                binding.tvRecentOrdersTitle.visibility = View.GONE
+                binding.rvRecentOrders.visibility = View.GONE
+            }
+            
             if (!isReadOnly) {
                 // Сохраняем в TokenManager ПЕРЕД обновлением навигации
                 tokenManager.fullName = user.full_name

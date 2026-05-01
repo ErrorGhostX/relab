@@ -53,6 +53,8 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        requestNeededPermissions()
 
         // ------------------ Toolbar ------------------
         val toolbar = binding.appBarMain.toolbar
@@ -281,6 +283,27 @@ class MainActivity : AppCompatActivity() {
                 // Обновляем UI с данными с сервера (с сохраненными значениями для full_name и avatar)
                 updateNavBar(userWithSavedData)
                 updateConnectionIndicator(true)
+                
+                // Отправляем токен Firebase на сервер, так как пользователь авторизован
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        android.util.Log.d("MainActivity", "------------------------------------------")
+                        android.util.Log.d("MainActivity", "MY FCM TOKEN: $token")
+                        android.util.Log.d("MainActivity", "------------------------------------------")
+                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                RetrofitClient.apiService.registerDevice(egx.relab_app.network.ApiService.RegisterDeviceRequest(token))
+                                android.util.Log.d("MainActivity", "FCM токен успешно отправлен на сервер")
+                            } catch (e: Exception) {
+                                android.util.Log.e("MainActivity", "Ошибка отправки FCM токена: ${e.message}")
+                            }
+                        }
+                    } else {
+                        android.util.Log.e("MainActivity", "Не удалось получить FCM токен", task.exception)
+                    }
+                }
+
             } catch (e: Exception) {
                 // Если ошибка сети, просто показываем что нет подключения, но не выкидываем
                 updateConnectionIndicator(false)

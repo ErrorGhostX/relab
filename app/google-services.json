@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "509814563542",
+    "project_id": "relabapp-3cad230a",
+    "storage_bucket": "relabapp-3cad230a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:509814563542:android:ebf7eed02adbc5780cdf77",
+        "android_client_info": {
+          "package_name": "egx.relab_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdxTsyUo6Oz_r-hz_cKTFIazh2cd1usHI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

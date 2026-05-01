@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.navigation.safeargs)
     id("kotlin-kapt")
     id("kotlin-parcelize")
+    alias(libs.plugins.google.services)
 }
 
 
@@ -16,7 +17,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 8
-        versionName = "10.0.0-alpha"
+        versionName = "12.5.0-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -82,9 +83,13 @@ dependencies {
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.markwon.core)
     implementation("net.java.dev.jna:jna:5.10.0@aar")
+    
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-
 }

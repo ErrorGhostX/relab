@@ -842,9 +842,9 @@ class OrderFormFragment : Fragment() {
                 }
                 
                 // Если не нашли по serverId, возможно заказ еще не синхронизирован
-                // В этом случае ищем по другим признакам (например, по orderNumber)
-                if (orderLocalId == null && order.orderNumber != null) {
-                    // Можно добавить поиск по orderNumber, но пока оставим так
+                // В этом случае ищем по другим признакам (например, по orderName)
+                if (orderLocalId == null && order.orderName != null) {
+                    // Можно добавить поиск по orderName, но пока оставим так
                     // В реальности нужно хранить localId в навигационных аргументах
                 }
             } catch (e: Exception) {
@@ -885,7 +885,7 @@ class OrderFormFragment : Fragment() {
                 if (response.isSuccessful) {
                     // Обновляем список заказов с сервера
                     val serverOrders = response.body().orEmpty()
-                    allOrders = (allOrders + serverOrders).distinctBy { it.id ?: it.orderNumber }
+                    allOrders = (allOrders + serverOrders).distinctBy { it.id ?: it.orderName }
                     setupAutocompleteAdapters()
                 }
             }
@@ -999,7 +999,7 @@ class OrderFormFragment : Fragment() {
 
     private fun populateEditFields() {
         val o = args.order!!
-        binding.editTextOrderNumber.setText(o.orderNumber)
+        binding.editTextOrderNumber.setText(o.orderName)
         
         // Если есть привязанный клиент — показываем его в карточке
         if (o.customerDetail != null) {
@@ -1094,15 +1094,15 @@ class OrderFormFragment : Fragment() {
                     // ========== РЕЖИМ РЕДАКТИРОВАНИЯ ==========
                     // Находим локальный ID заказа
                     val localId = orderLocalId ?: run {
-                        // Если нет локального ID, ищем по serverId или orderNumber
+                        // Если нет локального ID, ищем по serverId или orderName
                         val foundId = filledOrder.id?.let { serverId ->
                             repository.getOrderEntityByServerId(serverId)?.localId
                         } ?: run {
-                            // Если нет serverId, ищем по orderNumber
-                            if (filledOrder.orderNumber != null) {
+                            // Если нет serverId, ищем по orderName
+                            if (filledOrder.orderName != null) {
                                 val allEntities = repository.getAllOrderEntities()
                                 allEntities.firstOrNull {
-                                    it.orderNumber == filledOrder.orderNumber && !it.isDeleted
+                                    it.orderName == filledOrder.orderName && !it.isDeleted
                                 }?.localId
                             } else {
                                 null
@@ -1198,7 +1198,7 @@ class OrderFormFragment : Fragment() {
 
         return Order(
             id = null,
-            orderNumber = binding.editTextOrderNumber.text.toString(),
+            orderName = binding.editTextOrderNumber.text.toString(),
             customerRef = customerRefId,
             customer = customerName,
             contactInfo = contactInfo,

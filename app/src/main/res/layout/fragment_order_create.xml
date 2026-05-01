@@ -111,7 +111,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Номер заказа -->
+        <!-- Название заказа -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -143,7 +143,7 @@
                      <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Номер заказа"
+                        android:text="Название заказа"
                         android:textColor="@color/gray_900"
                         android:textStyle="bold"
                         android:textSize="14sp" />
@@ -152,7 +152,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Введите номер заказа"
+                    android:hint="Введите название заказа"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="8dp"
                     app:boxCornerRadiusTopEnd="8dp"

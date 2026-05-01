@@ -33,7 +33,7 @@ data class OrderEntity(
     val customerRefId: Int? = null,
     
     // Данные заказа (соответствуют модели Order)
-    val orderNumber: String? = null,
+    val orderName: String? = null,
     val customer: String? = null,
     val contactInfo: String? = null,
     val extraInfo: String? = null,
@@ -72,7 +72,7 @@ data class OrderEntity(
         
         return Order(
             id = displayId,
-            orderNumber = orderNumber,
+            orderName = orderName,
             customerRef = customerRefId,
             customer = customer,
             contactInfo = contactInfo,
@@ -131,7 +131,7 @@ data class OrderEntity(
                 lastModified = System.currentTimeMillis(),
                 lastSynced = System.currentTimeMillis(),
                 customerRefId = order.customerRef,
-                orderNumber = order.orderNumber,
+                orderName = order.orderName,
                 customer = order.customer,
                 contactInfo = order.contactInfo,
                 extraInfo = order.extraInfo,
@@ -170,7 +170,7 @@ data class OrderEntity(
                 lastModified = System.currentTimeMillis(),
                 lastSynced = null,
                 customerRefId = order.customerRef,
-                orderNumber = order.orderNumber,
+                orderName = order.orderName,
                 customer = order.customer,
                 contactInfo = order.contactInfo,
                 extraInfo = order.extraInfo,

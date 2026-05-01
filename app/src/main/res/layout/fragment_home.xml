@@ -392,6 +392,7 @@
                 style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
                 android:layout_height="120dp"
+                android:layout_marginEnd="12dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -425,11 +426,110 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Пустые карточки для выравнивания -->
-            <View
+            <!-- Сотрудники -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEmployees"
+                style="@style/Widget.MaterialComponents.CardView"
                 android:layout_width="0dp"
                 android:layout_height="120dp"
-                android:layout_weight="2" />
+                android:layout_marginEnd="12dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray_900"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:contentDescription="Сотрудники"
+                        android:src="@drawable/ic_group"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Сотрудники"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:textColor="@color/white"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Чаты -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardChats"
+                style="@style/Widget.MaterialComponents.CardView"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray_900">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:contentDescription="Чаты"
+                            android:src="@drawable/ic_chat"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Чаты"
+                            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                            android:textColor="@color/white"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvChatsBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_avatar"
+                        android:backgroundTint="#F44336"
+                        android:gravity="center"
+                        android:minWidth="24dp"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:text="0"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        tools:text="3" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 

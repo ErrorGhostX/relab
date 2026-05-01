@@ -15,5 +15,8 @@ data class UserResponse(
     val last_name: String? = null,
     val rank: String? = null,
     val rank_display: String? = null,
-    val specialization: String? = null
+    val specialization: String? = null,
+    val completed_orders_count: Int? = null,
+    val total_revenue: Double? = null,
+    val recent_orders: @kotlinx.parcelize.RawValue List<Order>? = null
 ): Parcelable

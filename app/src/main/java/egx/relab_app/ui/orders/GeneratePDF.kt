@@ -110,7 +110,7 @@ class GeneratePDF(
             val dst = RectF(margin, margin, margin + logoWidth, margin + logoHeight)
             canvas.drawBitmap(logoBitmap, null, RectFToRect(dst), null)
 
-            canvas.drawText("ЗАКАЗ №${order.orderNumber ?: "-"}", margin + logoWidth + 20f, margin + 28f, titlePaint)
+            canvas.drawText("${order.orderName ?: "Заказ"}", margin + logoWidth + 20f, margin + 28f, titlePaint)
             bottom = margin + logoHeight + 15f
         } else {
             canvas.drawText("Relab — сервисный центр", margin, margin + 28f, titlePaint)

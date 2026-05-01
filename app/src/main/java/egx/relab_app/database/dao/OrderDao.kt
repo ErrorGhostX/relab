@@ -21,6 +21,12 @@ interface OrderDao {
     fun getAllOrders(): Flow<List<OrderEntity>>
     
     /**
+     * Получить все заказы синхронно (для фильтрации)
+     */
+    @Query("SELECT * FROM orders WHERE isDeleted = 0")
+    suspend fun getAllOrdersSync(): List<OrderEntity>
+    
+    /**
      * Получить заказ по локальному ID
      */
     @Query("SELECT * FROM orders WHERE localId = :localId")

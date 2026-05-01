@@ -56,6 +56,22 @@ class LoginFragment : Fragment() {
 
                 updateNavBar(currentUser)
 
+                // Регистрация устройства для Push-уведомлений
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        lifecycleScope.launch {
+                            try {
+                                RetrofitClient.apiService.registerDevice(ApiService.RegisterDeviceRequest(token))
+                                android.util.Log.d("FCM", "Токен успешно зарегистрирован: $token")
+                            } catch (e: Exception) {
+                                android.util.Log.e("FCM", "Ошибка регистрации токена", e)
+                            }
+                        }
+                    } else {
+                        android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                    }
+                }
 
                 findNavController().navigate(
                     R.id.nav_home,
@@ -77,6 +93,7 @@ class LoginFragment : Fragment() {
         
         // Также сохраняем данные в TokenManager
         val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        tokenManager.userId = user.id
         tokenManager.username = user.username
         tokenManager.email = user.email
         tokenManager.fullName = user.full_name

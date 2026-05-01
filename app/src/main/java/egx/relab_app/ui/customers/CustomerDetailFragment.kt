@@ -82,7 +82,7 @@ class CustomerDetailFragment : Fragment() {
                 val bundle = Bundle().apply { putParcelable("order", order) }
                 findNavController().navigate(R.id.orderDetailFragment, bundle)
             } catch (e: Exception) {
-                android.widget.Toast.makeText(requireContext(), "Заказ: ${order.orderNumber}", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(requireContext(), "Заказ: ${order.orderName}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
         

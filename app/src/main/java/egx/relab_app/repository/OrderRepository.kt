@@ -299,7 +299,7 @@ class OrderRepository(
         // ВАЖНО: Обновляем данные, сохраняя поля синхронизации
         // Статус меняется на PENDING - заказ будет синхронизирован через SyncManager
         val updatedEntity = existingEntity.copy(
-            orderNumber = order.orderNumber,
+            orderName = order.orderName,
             customerRefId = order.customerRef,
             customer = order.customer,
             contactInfo = order.contactInfo,

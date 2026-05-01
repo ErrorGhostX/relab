@@ -98,7 +98,16 @@ class ChatViewModel : ViewModel() {
     fun sendMessage(text: String, provider: String?, imagePart: okhttp3.MultipartBody.Part? = null) {
         viewModelScope.launch {
             // 1. Добавляем сообщение пользователя локально (с временным превью, если есть)
-            val userMsg = ChatMessage(message = text, isFromAi = false, orderId = orderId)
+            val userName = RetrofitClient.tokenManager.fullName ?: RetrofitClient.tokenManager.username ?: "Вы"
+            val avatarUrl = RetrofitClient.tokenManager.avatarUrl
+            
+            val userMsg = ChatMessage(
+                message = text, 
+                isFromAi = false, 
+                orderId = orderId,
+                userName = userName,
+                avatar = avatarUrl
+            )
             val currentList = _messages.value?.toMutableList() ?: mutableListOf()
             currentList.add(userMsg)
             _messages.value = currentList
@@ -135,25 +144,32 @@ class ChatViewModel : ViewModel() {
                     val baseUrl = RetrofitClient.tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
                     val token = RetrofitClient.tokenManager.accessToken
                     
-                    val requestBody = okhttp3.MultipartBody.Builder()
-                        .setType(okhttp3.MultipartBody.FORM)
-                        .addFormDataPart("message", text)
-                        .addFormDataPart("provider", provider)
-                    
-                    if (orderId != null) {
-                        requestBody.addFormDataPart("order_id", orderId.toString())
-                    }
-                    
+                    val requestBody: okhttp3.RequestBody
                     if (imagePart != null) {
-                        requestBody.addPart(imagePart)
+                        val builder = okhttp3.MultipartBody.Builder()
+                            .setType(okhttp3.MultipartBody.FORM)
+                            .addFormDataPart("message", text)
+                            .addFormDataPart("provider", provider)
+                        
+                        if (orderId != null) {
+                            builder.addFormDataPart("order_id", orderId.toString())
+                        }
+                        builder.addPart(imagePart)
+                        requestBody = builder.build()
+                    } else {
+                        val jsonObject = JSONObject().apply {
+                            put("message", text)
+                            put("provider", provider)
+                            if (orderId != null) {
+                                put("order_id", orderId)
+                            }
+                        }
+                        requestBody = jsonObject.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
                     }
-
-                    // Для простоты: стриминг с фото сделаем через стандартный multipart POST
-                    // (Обычно стриминг идет по тексту, а фото загружается целиком в начале)
                     
                     val request = Request.Builder()
                         .url("${baseUrl}ai/chat/")
-                        .post(requestBody.build())
+                        .post(requestBody)
                         .addHeader("Authorization", "Bearer $token")
                         .build()
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
@@ -197,6 +198,39 @@
                     android:textColor="@color/gray_900" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/tvStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="#F5F5F5"
+            android:padding="12dp"
+            android:gravity="center"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:text="Завершено: 42 | Доход: 150000 ₽" />
+
+        <TextView
+            android:id="@+id/tvRecentOrdersTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Недавние заказы"
+            android:textColor="@color/gray_900"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvRecentOrders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:nestedScrollingEnabled="false"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         <!-- КНОПКИ -->
         <com.google.android.material.button.MaterialButton

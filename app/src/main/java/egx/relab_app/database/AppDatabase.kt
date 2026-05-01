@@ -24,7 +24,7 @@ import egx.relab_app.database.entity.ServiceEntity
  */
 @Database(
     entities = [OrderEntity::class, ServiceEntity::class, CustomerEntity::class],
-    version = 6,  // v6: Добавлена таблица клиентов (customers), поле customerRefId в заказах, telegram → messenger
+    version = 7,  // v7: Переименование orderNumber → orderName
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 abstract class AppDatabase : RoomDatabase() {

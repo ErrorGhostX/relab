@@ -115,7 +115,7 @@ object RetrofitClient {
         
         val parts = makeParts(order)
         apiService.createOrder(
-            parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
+            parts["order_name"]!!, parts["customer"]!!, parts["contact_info"]!!,
             parts["extra_info"]!!, parts["messenger"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
@@ -185,7 +185,7 @@ object RetrofitClient {
         val parts = makeParts(order)
         apiService.updateOrder(
             id,
-            parts["order_number"]!!, parts["customer"]!!, parts["contact_info"]!!,
+            parts["order_name"]!!, parts["customer"]!!, parts["contact_info"]!!,
             parts["extra_info"]!!, parts["messenger"]!!, parts["device_name"]!!,
             parts["device_type"]!!, parts["manufacturer"]!!, parts["model"]!!,
             parts["kit"]!!, parts["description"]!!, parts["date"]!!,
@@ -219,7 +219,7 @@ object RetrofitClient {
         val servicesJson = com.google.gson.Gson().toJson(o.services)
         
         return mapOf(
-            "order_number" to o.orderNumber.orEmpty().toRequestBody(mt),
+            "order_name" to o.orderName.orEmpty().toRequestBody(mt),
             "customer"     to o.customer.orEmpty().toRequestBody(mt),
             "contact_info" to o.contactInfo.orEmpty().toRequestBody(mt),
             "extra_info"   to o.extraInfo.orEmpty().toRequestBody(mt),

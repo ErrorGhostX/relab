@@ -11,8 +11,8 @@ data class Order(
     @SerializedName("id")
     val id: Int? = null,
 
-    @SerializedName("order_number")
-    val orderNumber: String? = null,
+    @SerializedName("order_name")
+    val orderName: String? = null,
 
     // ========== Клиент (новая логика) ==========
     // ID клиента из базы клиентов

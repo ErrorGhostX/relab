@@ -90,6 +90,9 @@ class ChatFragment : Fragment() {
             binding.toolbar.title = "Чат по заказу #$orderId"
         }
 
+        val layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        layoutManager.stackFromEnd = true
+        binding.rvChat.layoutManager = layoutManager
         binding.rvChat.adapter = adapter
 
         binding.swipeRefresh.setOnRefreshListener {

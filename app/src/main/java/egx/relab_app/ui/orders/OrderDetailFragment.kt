@@ -25,6 +25,7 @@ import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -219,18 +220,25 @@ class OrderDetailFragment : Fragment() {
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
         
         binding.buttonAiHelp.setOnClickListener {
-            val orderInfo = """
-                Помоги с заказом №${currentOrder.orderNumber ?: currentOrder.id}.
-                Устройство: ${currentOrder.manufacturer ?: ""} ${currentOrder.deviceName ?: ""}.
-                Описание проблемы: ${currentOrder.description ?: "нет описания"}.
-                Текущий статус: ${statusMap[currentOrder.status] ?: currentOrder.status}.
-            """.trimIndent()
-            
-            val action = OrderDetailFragmentDirections.actionOrderDetailFragmentToChatFragment(
-                initialMessage = orderInfo,
-                orderId = currentOrder.id ?: -1
-            )
-            findNavController().navigate(action)
+            val orderId = currentOrder.id
+            if (orderId != null && orderId > 0) {
+                // Создаём/находим чат заказа через API, затем переходим в новый чат
+                val messagingVM = ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+                messagingVM.getOrCreateOrderChat(orderId) { room ->
+                    if (room != null) {
+                        val bundle = Bundle().apply {
+                            putInt("roomId", room.id)
+                            putString("roomName", room.name ?: "Заказ #$orderId")
+                            putInt("orderId", orderId)
+                        }
+                        findNavController().navigate(R.id.action_orderDetailFragment_to_chatDetailFragment, bundle)
+                    } else {
+                        Toast.makeText(requireContext(), "Не удалось открыть чат", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                Toast.makeText(requireContext(), "Сначала сохраните заказ на сервере", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 //Адаптер Фоток
@@ -304,8 +312,8 @@ class OrderDetailFragment : Fragment() {
             "ID: Локальный (ожидает синхронизации)"
         }
         
-        // ВАЖНО: Номер заказа перемещен выше, рядом с ID
-        orderNumber.text = "Номер заказа: ${order.orderNumber ?: "-"}"
+        // ВАЖНО: Название заказа перемещено выше, рядом с ID
+        orderNumber.text = "Название: ${order.orderName ?: "-"}"
 
 // Имя создателя
         val creatorName = order.createdByFullName
@@ -385,11 +393,11 @@ class OrderDetailFragment : Fragment() {
 
         // Делаем номер заказа, контакты и мессенджер кликабельными для копирования
         orderNumber.setOnClickListener {
-            val text = order.orderNumber ?: "-"
+            val text = order.orderName ?: "-"
             val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Номер заказа", text)
+            val clip = ClipData.newPlainText("Название заказа", text)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(requireContext(), "Номер заказа скопирован: $text", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Название заказа скопировано: $text", Toast.LENGTH_SHORT).show()
         }
 
         contactInfo.setOnClickListener {
@@ -742,10 +750,10 @@ class OrderDetailFragment : Fragment() {
                 // Находим заказ в локальной БД
                 val orderEntity = if (currentOrder.id != null) {
                     repository.getOrderEntityByServerId(currentOrder.id!!)
-                } else if (currentOrder.orderNumber != null) {
+                } else if (currentOrder.orderName != null) {
                     val allEntities = repository.getAllOrderEntities()
                     allEntities.firstOrNull {
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
+                        it.orderName == currentOrder.orderName && !it.isDeleted
                     }
                 } else {
                     null
@@ -825,11 +833,11 @@ class OrderDetailFragment : Fragment() {
                 // Находим заказ в локальной БД
                 val orderEntity = if (orderId != null && orderId > 0) {
                     repository.getOrderEntityByServerId(orderId)
-                } else if (currentOrder.orderNumber != null) {
-                    // Если нет serverId, ищем по orderNumber
+                } else if (currentOrder.orderName != null) {
+                    // Если нет serverId, ищем по orderName
                     val allEntities = repository.getAllOrderEntities()
                     allEntities.firstOrNull {
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
+                        it.orderName == currentOrder.orderName && !it.isDeleted
                     }
                 } else {
                     null
@@ -991,11 +999,11 @@ class OrderDetailFragment : Fragment() {
      * Загрузить заказ из локальной БД
      *
      * ВАЖНО: Приоритет на локальность - это основной метод загрузки данных
-     * Поддерживает поиск как по serverId, так и по orderNumber (для несинхронизированных заказов)
+     * Поддерживает поиск как по serverId, так и по orderName (для несинхронизированных заказов)
      *
      * Логика поиска:
      * 1. Если есть serverId - ищем по serverId
-     * 2. Если нет serverId, но есть orderNumber - ищем по orderNumber
+     * 2. Если нет serverId, но есть orderName - ищем по orderName
      * 3. Загружаем услуги из локальной БД
      * 4. Обновляем UI с данными из локальной БД
      */
@@ -1009,19 +1017,19 @@ class OrderDetailFragment : Fragment() {
                 // Ищем по serverId
                 orderEntity = repository.getOrderEntityByServerId(currentOrder.id!!)
                 localOrder = repository.getOrderByServerId(currentOrder.id!!)
-            } else if (currentOrder.orderNumber != null) {
-                // Если нет serverId, ищем по orderNumber
-                // Получаем все заказы и ищем по orderNumber
+            } else if (currentOrder.orderName != null) {
+                // Если нет serverId, ищем по orderName
+                // Получаем все заказы и ищем по orderName
                 val allOrders = repository.getAllOrders().first()
-                localOrder = allOrders.firstOrNull { it.orderNumber == currentOrder.orderNumber }
+                localOrder = allOrders.firstOrNull { it.orderName == currentOrder.orderName }
                 if (localOrder != null && localOrder.id != null) {
                     orderEntity = repository.getOrderEntityByServerId(localOrder.id!!)
                 } else {
-                    // Если не нашли по serverId, ищем по orderNumber в Entity
-                    // Нужно получить все Entity и найти по orderNumber
+                    // Если не нашли по serverId, ищем по orderName в Entity
+                    // Нужно получить все Entity и найти по orderName
                     val allEntities = repository.getAllOrderEntities()
                     orderEntity = allEntities.firstOrNull {
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
+                        it.orderName == currentOrder.orderName && !it.isDeleted
                     }
                     if (orderEntity != null) {
                         localOrder = orderEntity.toOrder()
@@ -1101,7 +1109,7 @@ class OrderDetailFragment : Fragment() {
                     generatePdfLocally(currentOrder, isEmployee)
                 }
 
-                val orderId = currentOrder.id ?: currentOrder.orderNumber ?: "local"
+                val orderId = currentOrder.id ?: currentOrder.orderName ?: "local"
                 val file = File(requireContext().cacheDir, "Order_${orderId}_Отчет.pdf")
                 FileOutputStream(file).use { it.write(pdfBytes) }
 
@@ -1347,11 +1355,11 @@ class OrderDetailFragment : Fragment() {
                 // Находим заказ в локальной БД
                 val orderEntity = if (currentOrder.id != null) {
                     repository.getOrderEntityByServerId(currentOrder.id!!)
-                } else if (currentOrder.orderNumber != null) {
-                    // Если нет serverId, ищем по orderNumber
+                } else if (currentOrder.orderName != null) {
+                    // Если нет serverId, ищем по orderName
                     val allEntities = repository.getAllOrderEntities()
                     allEntities.firstOrNull {
-                        it.orderNumber == currentOrder.orderNumber && !it.isDeleted
+                        it.orderName == currentOrder.orderName && !it.isDeleted
                     }
                 } else {
                     null

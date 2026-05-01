@@ -13,6 +13,10 @@ class TokenManager(context: Context) {
         get() = prefs.getString("REFRESH_TOKEN", null)
         set(v) = prefs.edit().putString("REFRESH_TOKEN", v).apply()
 
+    var userId: Int?
+        get() = prefs.getInt("USER_ID", 0).let { if (it == 0) null else it }
+        set(value) = prefs.edit().putInt("USER_ID", value ?: 0).apply()
+
     var username: String?
         get() = prefs.getString("USERNAME", null)
         set(value) = prefs.edit().putString("USERNAME", value).apply()

@@ -40,7 +40,7 @@ interface ApiService {
     @Multipart
     @POST("orders/create-with-photo/")
     fun createOrder(
-        @Part("order_number")   orderNumber: RequestBody,
+        @Part("order_name")   orderName: RequestBody,
         @Part("customer")       customer: RequestBody,
         @Part("contact_info")   contactInfo: RequestBody,
         @Part("extra_info")     extraInfo: RequestBody,
@@ -64,7 +64,7 @@ interface ApiService {
     @PATCH("orders/{id}/")
     fun updateOrder(
         @Path("id") id: String,
-        @Part("order_number") orderNumber: RequestBody,
+        @Part("order_name") orderName: RequestBody,
         @Part("customer") customer: RequestBody,
         @Part("contact_info") contactInfo: RequestBody,
         @Part("extra_info") extraInfo: RequestBody,
@@ -352,4 +352,159 @@ interface ApiService {
 
     @GET("ai/ai_status/")
     suspend fun getAiStatus(): Map<String, String>
+
+    // =============================================
+    // Сотрудники (Фаза 1)
+    // =============================================
+
+    @GET("employees/")
+    suspend fun getEmployees(): List<UserResponse>
+
+    @GET("employees/{id}/")
+    suspend fun getEmployeeDetail(@Path("id") id: Int): EmployeeDetail
+
+    data class EmployeeStats(
+        val total_completed: Int,
+        val total_revenue: Double
+    )
+
+    data class EmployeeOrder(
+        val id: Int,
+        val order_name: String?,
+        val device_name: String?,
+        val device_type: String?,
+        val manufacturer: String?,
+        val model: String?,
+        val status: String?,
+        val date: String?,
+        val created_at: String?
+    )
+
+    data class EmployeeDetail(
+        val id: Int,
+        val username: String?,
+        val full_name: String?,
+        val avatar: String?,
+        val phone: String?,
+        val rank: String?,
+        val rank_display: String?,
+        val specialization: String?,
+        val completed_orders: List<EmployeeOrder>,
+        val stats: EmployeeStats
+    )
+
+    // =============================================
+    // Чаты (Фаза 1 — REST)
+    // =============================================
+
+    @GET("chats/")
+    suspend fun getChatRooms(): List<ChatRoom>
+
+    @GET("chats/{id}/messages/")
+    suspend fun getChatMessages(
+        @Path("id") roomId: Int,
+        @Query("limit") limit: Int = 50,
+        @Query("before_id") beforeId: Int? = null
+    ): List<RoomMessage>
+
+    @POST("chats/{id}/send_message/")
+    suspend fun sendChatMessage(
+        @Path("id") roomId: Int,
+        @Body body: SendMessageRequest
+    ): RoomMessage
+
+    @Multipart
+    @POST("chats/{id}/send_message/")
+    suspend fun sendChatMessageWithImage(
+        @Path("id") roomId: Int,
+        @Part("text") text: okhttp3.RequestBody?,
+        @Part image: okhttp3.MultipartBody.Part
+    ): RoomMessage
+
+    @POST("chats/{id}/mark_read/")
+    suspend fun markChatRead(@Path("id") roomId: Int): Map<String, String>
+
+    @POST("chats/get_or_create_direct/")
+    suspend fun getOrCreateDirect(@Body body: DirectChatRequest): ChatRoom
+
+    @POST("chats/get_or_create_order_chat/")
+    suspend fun getOrCreateOrderChat(@Body body: OrderChatRequest): ChatRoom
+
+    data class SendMessageRequest(val text: String)
+    data class DirectChatRequest(val user_id: Int)
+    data class OrderChatRequest(val order_id: Int)
+
+    data class ChatRoomParticipant(
+        val user_id: Int,
+        val username: String?,
+        val full_name: String?,
+        val avatar: String?
+    )
+
+    data class ChatRoomLastMessage(
+        val text: String?,
+        val sender_name: String?,
+        val created_at: String?,
+        val is_from_ai: Boolean
+    )
+
+    data class ChatRoom(
+        val id: Int,
+        val name: String?,
+        val order: Int?,
+        val order_name: String?,
+        val order_device: String?,
+        val is_direct: Boolean,
+        val created_at: String?,
+        val unread_count: Int,
+        val last_message: ChatRoomLastMessage?,
+        val participants_info: List<ChatRoomParticipant>?
+    )
+
+    data class RoomMessage(
+        val id: Int,
+        val room: Int,
+        val sender: Int,
+        val sender_username: String?,
+        val sender_full_name: String?,
+        val sender_avatar: String?,
+        val text: String?,
+        val image: String?,
+        val image_url: String?,
+        val is_from_ai: Boolean,
+        val created_at: String?
+    )
+
+    // =============================================
+    // Аналитика для админов (Фаза 3)
+    // =============================================
+
+    @GET("admin-analytics/staff-performance/")
+    suspend fun getStaffPerformance(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
+    ): List<StaffPerformance>
+
+    data class StaffPerformance(
+        val user_id: Int,
+        val username: String?,
+        val full_name: String?,
+        val avatar: String?,
+        val rank: String?,
+        val specialization: String?,
+        val total_revenue: Double,
+        val completed_orders_count: Int,
+        val created_orders_count: Int,
+        val average_completion_time_days: Double?,
+        val warranty_returns_count: Int
+    )
+
+    // =============================================
+    // Уведомления FCM (Фаза 4)
+    // =============================================
+
+    data class RegisterDeviceRequest(val token: String)
+
+    @POST("devices/")
+    suspend fun registerDevice(@Body request: RegisterDeviceRequest): retrofit2.Response<Unit>
 }

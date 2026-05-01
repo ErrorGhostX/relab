@@ -14,15 +14,28 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="Apps.Relab.app">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-04-29T22:14:55.477350200Z">
+        <option name="selectionMode" value="DIALOG" />
+        <DropdownSelection timestamp="2026-05-01T20:50:10.057749100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=ydqkmv95eiyxwwey" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\volni\.android\avd\Pixel_8_Pro_API_35.avd" />
             </handle>
           </Target>
         </DropdownSelection>
-        <DialogSelection />
+        <DialogSelection>
+          <targets>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=ydqkmv95eiyxwwey" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\volni\.android\avd\Pixel_8_Pro_API_35.avd" />
+              </handle>
+            </Target>
+          </targets>
+        </DialogSelection>
       </SelectionState>
     </selectionStates>
   </component>

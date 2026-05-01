@@ -38,6 +38,18 @@ class HomeFragment : Fragment() {
         
         // ЗАТЕМ загружаем данные с сервера в фоне
         loadUserData()
+
+        val messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+        messagingViewModel.totalUnreadCount.observe(viewLifecycleOwner) { count ->
+            if (count > 0) {
+                binding.tvChatsBadge.text = if (count > 99) "99+" else count.toString()
+                binding.tvChatsBadge.visibility = View.VISIBLE
+            } else {
+                binding.tvChatsBadge.visibility = View.GONE
+            }
+        }
+        // Загружаем список чатов, чтобы получить актуальные бейджи
+        messagingViewModel.loadChatRooms()
     }
     
     override fun onResume() {
@@ -47,6 +59,10 @@ class HomeFragment : Fragment() {
         updateUserData()
         // ЗАТЕМ пытаемся обновить с сервера
         loadUserData()
+        
+        // Обновляем бейджи чатов
+        val messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+        messagingViewModel.loadChatRooms()
     }
     
     private fun setupClickListeners() {
@@ -78,6 +94,13 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_nav_home_to_chatFragment)
         }
 
+        binding.cardEmployees.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_home_to_employeeListFragment)
+        }
+
+        binding.cardChats.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_home_to_chatListFragment)
+        }
 
     }
     
