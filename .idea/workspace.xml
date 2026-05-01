@@ -6,8 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend_relab_app/asgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/asgi.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend_relab_app/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/orders/profile_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/profile_views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/serializers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/views.py" afterDir="false" />
@@ -177,6 +180,9 @@
       <workItem from="1777234130525" duration="4613000" />
       <workItem from="1777491451337" duration="972000" />
       <workItem from="1777499953392" duration="1193000" />
+      <workItem from="1777575115490" duration="2055000" />
+      <workItem from="1777597272713" duration="2289000" />
+      <workItem from="1777649385752" duration="8960000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />

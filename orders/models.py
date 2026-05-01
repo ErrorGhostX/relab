@@ -56,8 +56,8 @@ class Customer(models.Model):
 
 
 class Order(models.Model):
-    # Номер заказа задаёт сам пользователь (например, «12345»)
-    order_number = models.CharField(max_length=255, default='')
+    # Название заказа задаёт сам пользователь (например, «Починка iPhone Ивана»)
+    order_name = models.CharField(max_length=255, default='', verbose_name='Название заказа')
 
     # ========== Клиент (новая логика) ==========
     # Ссылка на клиента из базы клиентов
@@ -178,7 +178,7 @@ class Order(models.Model):
             return "🔴"
 
     def __str__(self):
-        return f"{self.order_number} — {self.device_name}"
+        return f"{self.order_name} — {self.device_name}"
 
 class Service(models.Model):
     """
@@ -233,7 +233,7 @@ class Service(models.Model):
 
     def __str__(self):
         performer = self.performed_by.username if self.performed_by else 'Не назначен'
-        return f"{self.order.order_number}: {self.description} — {self.price:.2f} ({performer}, {self.get_service_status_display()})"
+        return f"{self.order.order_name}: {self.description} — {self.price:.2f} ({performer}, {self.get_service_status_display()})"
 
 
 class OrderPhoto(models.Model):
@@ -256,7 +256,7 @@ class OrderPhoto(models.Model):
         ]
 
     def __str__(self):
-        return f"Photo {self.order_index} for order {self.order.order_number}"
+        return f"Photo {self.order_index} for order {self.order.order_name}"
 
 
 class OrderCollaborator(models.Model):
@@ -283,7 +283,7 @@ class OrderCollaborator(models.Model):
         verbose_name_plural = 'Коллабораторы заказов'
 
     def __str__(self):
-        return f"{self.user.username} → {self.order.order_number}"
+        return f"{self.user.username} → {self.order.order_name}"
 
 
 class UserProfile(models.Model):
@@ -361,3 +361,123 @@ class ChatMessage(models.Model):
         sender = "AI" if self.is_from_ai else self.user.username
         order_str = f" [Заказ {self.order.id}]" if self.order else ""
         return f"{sender}{order_str}: {self.message[:50]}..."
+
+
+class ChatRoom(models.Model):
+    """
+    Комната чата.
+    - Привязана к заказу (order != null, is_direct=False) → чат по заказу
+    - Личные сообщения (order=null, is_direct=True) → ЛС между двумя сотрудниками
+    """
+    name = models.CharField(max_length=255, blank=True, default='', verbose_name='Название')
+    order = models.ForeignKey(
+        Order,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='chat_rooms',
+        verbose_name='Заказ'
+    )
+    is_direct = models.BooleanField(default=False, verbose_name='Личные сообщения')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Комната чата'
+        verbose_name_plural = 'Комнаты чата'
+
+    def __str__(self):
+        if self.order:
+            return f"Чат заказа: {self.order.order_name}"
+        elif self.is_direct:
+            users = ', '.join(p.user.username for p in self.participants.all()[:2])
+            return f"ЛС: {users}"
+        return self.name or f"Комната #{self.id}"
+
+
+class ChatParticipant(models.Model):
+    """
+    Участник комнаты чата.
+    last_read_at используется для расчёта бейджей непрочитанных сообщений:
+    unread_count = RoomMessage.filter(room=room, created_at > last_read_at).count()
+    """
+    room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        related_name='participants',
+        verbose_name='Комната'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='chat_participations',
+        verbose_name='Пользователь'
+    )
+    last_read_at = models.DateTimeField(auto_now_add=True, verbose_name='Последнее прочтение')
+
+    class Meta:
+        unique_together = ('room', 'user')
+        verbose_name = 'Участник чата'
+        verbose_name_plural = 'Участники чата'
+
+    def __str__(self):
+        return f"{self.user.username} в {self.room}"
+
+
+class RoomMessage(models.Model):
+    """
+    Сообщение в комнате чата.
+    Заменяет ChatMessage для чатов заказов и добавляет ЛС.
+    Поле is_from_ai=True используется для сообщений от ИИ-ассистента внутри чатов заказов.
+    """
+    room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Комната'
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_room_messages',
+        verbose_name='Отправитель'
+    )
+    text = models.TextField(blank=True, default='', verbose_name='Текст')
+    image = models.ImageField(
+        upload_to='chat_photos/',
+        null=True,
+        blank=True,
+        verbose_name='Изображение'
+    )
+    is_from_ai = models.BooleanField(default=False, verbose_name='От ИИ')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Сообщение чата'
+        verbose_name_plural = 'Сообщения чата'
+
+    def __str__(self):
+        sender_name = "AI" if self.is_from_ai else self.sender.username
+        return f"{sender_name} → {self.room}: {self.text[:50]}"
+
+class FCMDevice(models.Model):
+    """
+    Устройство пользователя для получения Push-уведомлений через Firebase Cloud Messaging.
+    Один пользователь может иметь несколько устройств (например, телефон и планшет).
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='fcm_devices',
+        verbose_name='Пользователь'
+    )
+    token = models.CharField(max_length=255, unique=True, verbose_name='FCM Токен')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'FCM Устройство'
+        verbose_name_plural = 'FCM Устройства'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.token[:20]}..."

@@ -1,6 +1,9 @@
 from djoser.conf import User
 from rest_framework import serializers
-from .models import Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer
+from .models import (
+    Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer,
+    ChatRoom, ChatParticipant, RoomMessage
+)
 
 
 
@@ -330,3 +333,216 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         profile.save()
         
         return instance
+
+
+# =============================================
+# Сериализаторы для системы чатов (RoomMessage)
+# =============================================
+
+class RoomMessageSerializer(serializers.ModelSerializer):
+    """Сериализатор сообщения в комнате чата"""
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    sender_full_name = serializers.SerializerMethodField()
+    sender_avatar = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RoomMessage
+        fields = [
+            'id', 'room', 'sender', 'sender_username', 'sender_full_name',
+            'sender_avatar', 'text', 'image', 'image_url', 'is_from_ai', 'created_at'
+        ]
+        read_only_fields = ['id', 'sender', 'created_at']
+
+    def get_sender_full_name(self, obj):
+        if hasattr(obj.sender, 'profile'):
+            return obj.sender.profile.full_name
+        return None
+
+    def get_sender_avatar(self, obj):
+        if hasattr(obj.sender, 'profile') and obj.sender.profile.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.sender.profile.avatar.url)
+        return None
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор комнаты чата.
+    Включает:
+    - unread_count — количество непрочитанных сообщений (аннотируется в ViewSet)
+    - last_message — последнее сообщение для превью
+    - participants_info — инфо об участниках (для ЛС — имя собеседника)
+    """
+    unread_count = serializers.IntegerField(read_only=True, default=0)
+    last_message = serializers.SerializerMethodField()
+    participants_info = serializers.SerializerMethodField()
+    order_name = serializers.CharField(source='order.order_name', read_only=True, default=None)
+    order_device = serializers.CharField(source='order.device_name', read_only=True, default=None)
+
+    class Meta:
+        model = ChatRoom
+        fields = [
+            'id', 'name', 'order', 'order_name', 'order_device',
+            'is_direct', 'created_at', 'unread_count',
+            'last_message', 'participants_info'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def get_last_message(self, obj):
+        """Последнее сообщение в комнате (для превью в списке чатов)"""
+        last_msg = obj.messages.order_by('-created_at').first()
+        if last_msg:
+            sender_name = "AI" if last_msg.is_from_ai else (
+                last_msg.sender.profile.full_name
+                if hasattr(last_msg.sender, 'profile') and last_msg.sender.profile.full_name
+                else last_msg.sender.username
+            )
+            return {
+                'text': last_msg.text[:100] if last_msg.text else '[Изображение]',
+                'sender_name': sender_name,
+                'created_at': last_msg.created_at,
+                'is_from_ai': last_msg.is_from_ai,
+            }
+        return None
+
+    def get_participants_info(self, obj):
+        """Список участников (имена, аватары)"""
+        request = self.context.get('request')
+        result = []
+        for participant in obj.participants.select_related('user__profile').all():
+            avatar_url = None
+            if hasattr(participant.user, 'profile') and participant.user.profile.avatar:
+                if request:
+                    avatar_url = request.build_absolute_uri(participant.user.profile.avatar.url)
+            result.append({
+                'user_id': participant.user.id,
+                'username': participant.user.username,
+                'full_name': participant.user.profile.full_name if hasattr(participant.user, 'profile') else None,
+                'avatar': avatar_url,
+            })
+        return result
+
+
+# =============================================
+# Сериализатор для списка сотрудников
+# =============================================
+
+class EmployeeOrderSerializer(serializers.ModelSerializer):
+    """Краткий сериализатор заказа для истории сотрудника"""
+    class Meta:
+        model = Order
+        fields = ['id', 'order_name', 'device_name', 'device_type',
+                  'manufacturer', 'model', 'status', 'date', 'created_at']
+
+
+class EmployeeDetailSerializer(serializers.ModelSerializer):
+    """
+    Детальный сериализатор сотрудника с историей заказов и статистикой.
+    Используется в /api/employees/{id}/
+    """
+    full_name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
+    rank_display = serializers.SerializerMethodField()
+    specialization = serializers.SerializerMethodField()
+    completed_orders = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'full_name', 'avatar', 'phone',
+            'rank', 'rank_display', 'specialization',
+            'completed_orders', 'stats'
+        ]
+
+    def get_full_name(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile.full_name if profile.full_name else None
+
+    def get_avatar(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        if profile and profile.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(profile.avatar.url)
+        return None
+
+    def get_phone(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile.phone if profile else None
+
+    def get_rank(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile.rank if profile else 'employee'
+
+    def get_rank_display(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile.get_rank_display() if profile else 'Сотрудник'
+
+    def get_specialization(self, obj):
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile.specialization if profile else None
+
+    def get_completed_orders(self, obj):
+        """Последние 20 заказов, где сотрудник был создателем или исполнителем"""
+        from django.db.models import Q
+        orders = Order.objects.filter(
+            Q(created_by=obj) | Q(assigned_to=obj),
+            status='done'
+        ).distinct().order_by('-date', '-created_at')[:20]
+        return EmployeeOrderSerializer(orders, many=True).data
+
+    def get_stats(self, obj):
+        """Статистика сотрудника"""
+        from django.db.models import Q, Sum, Count
+        # Количество завершённых заказов
+        completed_count = Order.objects.filter(
+            Q(created_by=obj) | Q(assigned_to=obj),
+            status='done'
+        ).distinct().count()
+
+        # Общий доход (сумма цен выполненных услуг этого сотрудника)
+        total_revenue = Service.objects.filter(
+            performed_by=obj,
+            service_status='done'
+        ).aggregate(total=Sum('price'))['total'] or 0
+
+        return {
+            'total_completed': completed_count,
+            'total_revenue': float(total_revenue),
+        }
+
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации устройства (FCM токена)"""
+    class Meta:
+        from .models import FCMDevice
+        model = FCMDevice
+        fields = ['token']
+
+    def create(self, validated_data):
+        from .models import FCMDevice
+        user = self.context['request'].user
+        token = validated_data.get('token')
+        
+        device, created = FCMDevice.objects.get_or_create(
+            token=token,
+            defaults={'user': user}
+        )
+        
+        # Если токен уже есть, но принадлежит другому пользователю (например, перелогинился)
+        if not created and device.user != user:
+            device.user = user
+            device.save(update_fields=['user'])
+            
+        return device

@@ -13,12 +13,40 @@ from django.shortcuts import get_object_or_404
 @permission_classes([IsAuthenticated])
 def get_user_by_id(request, pk):
     """
-    GET /api/auth/users/<pk>/ - Получить пользователя с профилем
+    GET /api/auth/users/<pk>/ - Получить пользователя с профилем и историей заказов
     """
     user = get_object_or_404(User, pk=pk)
     UserProfile.objects.get_or_create(user=user)
     serializer = UserSerializer(user, context={'request': request})
-    return Response(serializer.data)
+    data = serializer.data
+
+    # Добавляем историю заказов и статистику сотрудника
+    from django.db.models import Q, Sum
+    from .models import Order, Service
+
+    # Количество завершённых заказов
+    completed_count = Order.objects.filter(
+        Q(created_by=user) | Q(assigned_to=user),
+        status='done'
+    ).distinct().count()
+
+    # Общий доход (сумма выполненных услуг сотрудника)
+    total_revenue = Service.objects.filter(
+        performed_by=user,
+        service_status='done'
+    ).aggregate(total=Sum('price'))['total'] or 0
+
+    # Последние 10 заказов (для превью в профиле)
+    recent_orders = Order.objects.filter(
+        Q(created_by=user) | Q(assigned_to=user)
+    ).distinct().order_by('-created_at')[:10]
+
+    from .serializers import EmployeeOrderSerializer
+    data['completed_orders_count'] = completed_count
+    data['total_revenue'] = float(total_revenue)
+    data['recent_orders'] = EmployeeOrderSerializer(recent_orders, many=True).data
+
+    return Response(data)
 @api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([IsAuthenticated])
 def get_current_user(request):

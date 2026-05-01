@@ -49,6 +49,7 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # ASGI-сервер, должен быть перед django.contrib.staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -61,6 +62,7 @@ INSTALLED_APPS = [
     'djoser',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'channels',  # Django Channels для WebSocket
 ]
 
 MIDDLEWARE = [
@@ -100,6 +102,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend_relab_app.wsgi.application'
+ASGI_APPLICATION = 'backend_relab_app.asgi.application'
+
+# Django Channels — слой для WebSocket
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # Database

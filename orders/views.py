@@ -11,6 +11,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from backend_relab_app import settings
 from . import models
 from .models import Order, Service, OrderPhoto, OrderCollaborator, Customer
+from django.contrib.auth.models import User
 from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer, CustomerSerializer
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -116,6 +117,17 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.assigned_to = self.request.user
             order.assigned_at = timezone.now()
             order.save(update_fields=['assigned_to', 'assigned_at'])
+        else:
+            # Отправляем push-уведомление всем остальным сотрудникам
+            from django.contrib.auth.models import User
+            from .notifications import send_to_users
+            other_users = User.objects.exclude(id=self.request.user.id).filter(is_active=True)
+            send_to_users(
+                list(other_users),
+                title="Новый общий заказ!",
+                body=f"Заказ #{order.id}: {order.order_name}",
+                data={"order_id": str(order.id), "type": "new_public_order"}
+            )
 
     def perform_update(self, serializer):
         order = serializer.save()
@@ -193,6 +205,17 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.assigned_to = request.user
             order.assigned_at = timezone.now()
             order.save(update_fields=['assigned_to', 'assigned_at'])
+        elif order.is_public:
+            # Отправляем push-уведомление всем остальным сотрудникам
+            from django.contrib.auth.models import User
+            from .notifications import send_to_users
+            other_users = User.objects.exclude(id=request.user.id).filter(is_active=True)
+            send_to_users(
+                list(other_users),
+                title="Новый общий заказ (с фото)!",
+                body=f"Заказ #{order.id}: {order.order_name}",
+                data={"order_id": str(order.id), "type": "new_public_order"}
+            )
         
         # Обрабатываем несколько фото
         photos = []
@@ -592,7 +615,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         elements.append(Spacer(1, 12))
 
 
-        elements.append(Paragraph(f"Отчёт по заказу №{order.order_number}", styles['Normal']))
+        elements.append(Paragraph(f"Отчёт по заказу: {order.order_name}", styles['Normal']))
         elements.append(Spacer(1, 12))
 
 
@@ -993,7 +1016,7 @@ class AiViewSet(viewsets.ViewSet):
         
         system_prompt = "Ты эксперт-помощник в CRM Relab. Отвечай кратко. Твоя задача — помогать мастерам по ремонту."
         if order:
-            system_prompt += f" Сейчас ты помогаешь с заказом №{order.order_number or order.id} ({order.device_name})."
+            system_prompt += f" Сейчас ты помогаешь с заказом #{order.id} '{order.order_name}' ({order.device_name})."
             
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
@@ -1226,3 +1249,489 @@ class AiViewSet(viewsets.ViewSet):
             "efficiency": round(efficiency, 2),
             "status_statistics": status_stats
         })
+
+
+# =============================================
+# Аналитика для Админ-панели (Фаза 3)
+# =============================================
+
+from .permissions import IsAdmin
+
+
+class StaffAnalyticsViewSet(viewsets.ViewSet):
+    """
+    Аналитика эффективности сотрудников (только для admin).
+    
+    GET /api/admin-analytics/staff-performance/?start_date=2026-01-01&end_date=2026-04-30
+    
+    Возвращает массив объектов с метриками для каждого сотрудника:
+    - total_revenue: сумма цен ВЫПОЛНЕННЫХ услуг сотрудника
+    - completed_orders_count: количество завершённых заказов
+    - created_orders_count: количество созданных заказов
+    - average_completion_time_days: среднее время выполнения (дни)
+    - warranty_returns_count: количество гарантийных возвратов (placeholder)
+    """
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    @action(detail=False, methods=['get'], url_path='staff-performance')
+    def staff_performance(self, request):
+        from django.db.models import (
+            Sum, Count, Avg, F, Q, Value, FloatField,
+            ExpressionWrapper, DurationField
+        )
+        from django.db.models.functions import Coalesce
+        import datetime
+
+        # Параметры фильтрации по дате
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        # Базовые фильтры
+        date_filter = Q()
+        if start_date:
+            try:
+                date_filter &= Q(
+                    created_orders__date__gte=datetime.date.fromisoformat(start_date)
+                ) | Q(
+                    assigned_orders__date__gte=datetime.date.fromisoformat(start_date)
+                )
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                date_filter &= Q(
+                    created_orders__date__lte=datetime.date.fromisoformat(end_date)
+                ) | Q(
+                    assigned_orders__date__lte=datetime.date.fromisoformat(end_date)
+                )
+            except ValueError:
+                pass
+
+        # Фильтры для услуг (по дате завершения заказа)
+        service_date_filter = Q(performed_services__service_status='done')
+        if start_date:
+            try:
+                service_date_filter &= Q(
+                    performed_services__order__date__gte=datetime.date.fromisoformat(start_date)
+                )
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                service_date_filter &= Q(
+                    performed_services__order__date__lte=datetime.date.fromisoformat(end_date)
+                )
+            except ValueError:
+                pass
+
+        # Аннотируем каждого пользователя
+        users = User.objects.filter(
+            is_active=True
+        ).select_related('profile').annotate(
+            # Сумма цен выполненных услуг этого сотрудника
+            total_revenue=Coalesce(
+                Sum(
+                    'performed_services__price',
+                    filter=service_date_filter
+                ),
+                Value(0.0),
+                output_field=FloatField()
+            ),
+            # Количество завершённых заказов (как создатель ИЛИ исполнитель)
+            completed_orders_count=Count(
+                'created_orders',
+                filter=Q(created_orders__status='done'),
+                distinct=True
+            ) + Count(
+                'assigned_orders',
+                filter=Q(assigned_orders__status='done'),
+                distinct=True
+            ),
+            # Количество созданных заказов
+            created_orders_count=Count(
+                'created_orders',
+                distinct=True
+            ),
+        ).order_by('-total_revenue')
+
+        # Формируем ответ
+        result = []
+        for user in users:
+            profile = getattr(user, 'profile', None)
+
+            # Средний срок выполнения (вычисляем вручную, т.к. annotate с Duration сложнее)
+            avg_days = self._calc_avg_completion_days(user, start_date, end_date)
+
+            avatar_url = None
+            if profile and profile.avatar:
+                avatar_url = request.build_absolute_uri(profile.avatar.url)
+
+            result.append({
+                'user_id': user.id,
+                'username': user.username,
+                'full_name': profile.full_name if profile else None,
+                'avatar': avatar_url,
+                'rank': profile.rank if profile else 'employee',
+                'specialization': profile.specialization if profile else None,
+                'total_revenue': float(user.total_revenue),
+                'completed_orders_count': user.completed_orders_count,
+                'created_orders_count': user.created_orders_count,
+                'average_completion_time_days': avg_days,
+                'warranty_returns_count': 0,  # TODO: добавить когда появится статус warranty_return
+            })
+
+        return Response(result)
+
+    def _calc_avg_completion_days(self, user, start_date=None, end_date=None):
+        """Вычислить среднее время выполнения заказов в днях"""
+        import datetime
+
+        qs = Order.objects.filter(
+            Q(created_by=user) | Q(assigned_to=user),
+            status='done'
+        ).distinct()
+
+        if start_date:
+            try:
+                qs = qs.filter(date__gte=datetime.date.fromisoformat(start_date))
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                qs = qs.filter(date__lte=datetime.date.fromisoformat(end_date))
+            except ValueError:
+                pass
+
+        # Считаем разницу между date (дата завершения) и created_at
+        total_days = 0
+        count = 0
+        for order in qs.only('date', 'created_at'):
+            if order.date and order.created_at:
+                try:
+                    # date — DateField, created_at — DateTimeField
+                    completion_date = order.date
+                    if isinstance(completion_date, str):
+                        completion_date = datetime.date.fromisoformat(completion_date)
+                    creation_date = order.created_at.date()
+                    delta = (completion_date - creation_date).days
+                    if delta >= 0:
+                        total_days += delta
+                        count += 1
+                except (ValueError, TypeError):
+                    continue
+
+        if count == 0:
+            return None
+        return round(total_days / count, 1)
+
+
+# =============================================
+# Список сотрудников (по аналогии с CustomerViewSet)
+# =============================================
+
+class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet для просмотра списка сотрудников (только чтение).
+    GET  /api/employees/          — список всех сотрудников
+    GET  /api/employees/{id}/     — детали сотрудника + история заказов
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return User.objects.filter(is_active=True).select_related('profile').order_by('username')
+
+    def get_serializer_class(self):
+        from .serializers import UserSerializer, EmployeeDetailSerializer
+        if self.action == 'retrieve':
+            return EmployeeDetailSerializer
+        return UserSerializer
+
+
+# =============================================
+# Система чатов (REST API)
+# =============================================
+
+from .models import ChatRoom, ChatParticipant, RoomMessage
+from .serializers import ChatRoomSerializer, RoomMessageSerializer
+
+
+class ChatRoomViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для управления комнатами чата.
+
+    GET   /api/chats/                         — мои чаты (с unread_count)
+    GET   /api/chats/{id}/                    — детали комнаты
+    GET   /api/chats/{id}/messages/           — история сообщений
+    POST  /api/chats/{id}/send_message/       — отправить сообщение (REST-fallback)
+    POST  /api/chats/{id}/mark_read/          — отметить прочитанным
+    POST  /api/chats/get_or_create_direct/    — найти/создать ЛС
+    POST  /api/chats/get_or_create_order_chat/ — найти/создать чат заказа
+    """
+    serializer_class = ChatRoomSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Возвращает комнаты, в которых текущий пользователь является участником.
+        Аннотирует каждую комнату количеством непрочитанных сообщений.
+        """
+        user = self.request.user
+
+        # Подзапрос: получаем last_read_at для текущего пользователя в каждой комнате
+        from django.db.models import OuterRef, Subquery, Count, Q
+        from django.db.models.functions import Coalesce
+
+        participant_read = ChatParticipant.objects.filter(
+            room=OuterRef('pk'),
+            user=user
+        ).values('last_read_at')[:1]
+
+        # Аннотируем количеством непрочитанных сообщений:
+        # сообщения в комнате, созданные после last_read_at текущего пользователя
+        return ChatRoom.objects.filter(
+            participants__user=user
+        ).annotate(
+            _last_read=Subquery(participant_read),
+            unread_count=Count(
+                'messages',
+                filter=Q(messages__created_at__gt=Subquery(participant_read))
+            )
+        ).order_by('-created_at')
+
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        """
+        GET /api/chats/{pk}/messages/
+        Возвращает историю сообщений в комнате.
+        Опциональные query-параметры:
+          - limit (default=50)
+          - before_id — для пагинации (сообщения с id < before_id)
+        """
+        room = self.get_object()
+
+        # Проверяем, что пользователь — участник
+        if not room.participants.filter(user=request.user).exists():
+            return Response(
+                {"error": "Вы не являетесь участником этого чата"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        messages_qs = room.messages.select_related('sender__profile').all()
+
+        # Пагинация: before_id
+        before_id = request.query_params.get('before_id')
+        if before_id:
+            messages_qs = messages_qs.filter(id__lt=int(before_id))
+
+        # Лимит
+        limit = min(int(request.query_params.get('limit', 50)), 200)
+        messages_qs = messages_qs.order_by('-created_at')[:limit]
+
+        # Отдаём в хронологическом порядке
+        messages_list = list(reversed(messages_qs))
+
+        serializer = RoomMessageSerializer(
+            messages_list, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        """
+        POST /api/chats/{pk}/send_message/
+        Тело: { "text": "Привет!" }
+        REST-fallback для отправки сообщений (основной путь — WebSocket).
+        """
+        room = self.get_object()
+
+        # Проверяем участие
+        if not room.participants.filter(user=request.user).exists():
+            return Response(
+                {"error": "Вы не являетесь участником этого чата"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        text = request.data.get('text', '').strip()
+        image = request.FILES.get('image')
+
+        if not text and not image:
+            return Response(
+                {"error": "Сообщение не может быть пустым"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        message = RoomMessage.objects.create(
+            room=room,
+            sender=request.user,
+            text=text,
+            image=image,
+        )
+
+        # Обновляем last_read_at отправителя (он прочитал свою комнату)
+        ChatParticipant.objects.filter(
+            room=room, user=request.user
+        ).update(last_read_at=timezone.now())
+
+        serializer = RoomMessageSerializer(message, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """
+        POST /api/chats/{pk}/mark_read/
+        Обновляет last_read_at для текущего пользователя → бейджи обнуляются.
+        """
+        room = self.get_object()
+
+        updated = ChatParticipant.objects.filter(
+            room=room, user=request.user
+        ).update(last_read_at=timezone.now())
+
+        if not updated:
+            return Response(
+                {"error": "Вы не являетесь участником этого чата"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({"status": "ok"})
+
+    @action(detail=False, methods=['post'])
+    def get_or_create_direct(self, request):
+        """
+        POST /api/chats/get_or_create_direct/
+        Тело: { "user_id": 5 }
+        Находит или создаёт ЛС-комнату между текущим пользователем и указанным.
+        """
+        target_user_id = request.data.get('user_id')
+        if not target_user_id:
+            return Response(
+                {"error": "Укажите user_id"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if int(target_user_id) == request.user.id:
+            return Response(
+                {"error": "Нельзя создать чат с самим собой"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        target_user = get_object_or_404(User, pk=target_user_id)
+
+        # Ищем существующую ЛС-комнату между двумя пользователями
+        existing_room = ChatRoom.objects.filter(
+            is_direct=True,
+            participants__user=request.user
+        ).filter(
+            participants__user=target_user
+        ).first()
+
+        if existing_room:
+            serializer = self.get_serializer(existing_room)
+            return Response(serializer.data)
+
+        # Создаём новую ЛС-комнату
+        room = ChatRoom.objects.create(is_direct=True)
+        ChatParticipant.objects.create(room=room, user=request.user)
+        ChatParticipant.objects.create(room=room, user=target_user)
+
+        # Вручную аннотируем unread_count для нового объекта
+        room.unread_count = 0
+        serializer = self.get_serializer(room)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'])
+    def get_or_create_order_chat(self, request):
+        """
+        POST /api/chats/get_or_create_order_chat/
+        Тело: { "order_id": 10 }
+        Находит или создаёт чат-комнату для заказа.
+        Автоматически добавляет создателя, исполнителя и коллабораторов заказа.
+        """
+        order_id = request.data.get('order_id')
+        if not order_id:
+            return Response(
+                {"error": "Укажите order_id"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order = get_object_or_404(Order, pk=order_id)
+
+        # Ищем существующий чат заказа
+        existing_room = ChatRoom.objects.filter(
+            order=order, is_direct=False
+        ).first()
+
+        if existing_room:
+            # Добавляем текущего пользователя, если его нет
+            ChatParticipant.objects.get_or_create(
+                room=existing_room, user=request.user
+            )
+            existing_room.unread_count = 0
+            serializer = self.get_serializer(existing_room)
+            return Response(serializer.data)
+
+        # Создаём новую комнату для заказа
+        room_name = f"Заказ #{order.id}: {order.order_name}" if order.order_name else f"Заказ #{order.id}"
+        
+        room = ChatRoom.objects.create(
+            order=order,
+            is_direct=False,
+            name=room_name
+        )
+
+        # Добавляем участников заказа
+        participants_set = set()
+
+        # Создатель заказа
+        if order.created_by:
+            participants_set.add(order.created_by.id)
+
+        # Исполнитель
+        if order.assigned_to:
+            participants_set.add(order.assigned_to.id)
+
+        # Коллабораторы
+        for collab in order.collaborators.all():
+            participants_set.add(collab.user_id)
+
+        # Текущий пользователь (на всякий случай)
+        participants_set.add(request.user.id)
+
+        for user_id in participants_set:
+            ChatParticipant.objects.get_or_create(
+                room=room,
+                user_id=user_id
+            )
+
+        room.unread_count = 0
+        serializer = self.get_serializer(room)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class FCMDeviceViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для регистрации FCM токенов устройств.
+    POST /api/devices/ -> Регистрирует токен для текущего пользователя.
+    """
+    from .models import FCMDevice
+    queryset = FCMDevice.objects.all()
+    from .serializers import FCMDeviceSerializer
+    serializer_class = FCMDeviceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        token = request.data.get('token')
+        if not token:
+            return Response({"token": ["Это поле обязательно."]}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Если токен уже есть, просто обновляем его владельца
+        device, created = self.FCMDevice.objects.update_or_create(
+            token=token,
+            defaults={'user': request.user}
+        )
+        
+        serializer = self.get_serializer(device)
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=status_code)
