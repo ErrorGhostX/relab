@@ -332,6 +332,8 @@ interface ApiService {
         val model: String? = null,
         val kit: String? = null,
         val order_type: String? = null,
+        val execution_type: String? = null,
+        val address: String? = null,
         val summary_description: String? = null,
         val suggested_services: List<AiServiceItem>? = null
     )

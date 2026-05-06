@@ -68,11 +68,15 @@ class OrderFormFragment : Fragment() {
         "Завершён" to "done", "Ожидает" to "pending"
     )
     private val orderTypeMap = mapOf(
-        "Ремонт" to "repair", "Диагностика" to "diagnosis"
+        "Ремонт" to "repair", "Диагностика" to "diagnosis", "Компонентный ремонт" to "component_repair"
+    )
+    private val executionTypeMap = mapOf(
+        "Выездной" to "field", "Мастерская" to "workshop", "Удаленная" to "remote"
     )
 
     private val reverseStatusMap = statusMap.entries.associate { it.value to it.key }
     private val reverseOrderTypeMap = orderTypeMap.entries.associate { it.value to it.key }
+    private val reverseExecutionTypeMap = executionTypeMap.entries.associate { it.value to it.key }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -85,13 +89,20 @@ class OrderFormFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val types = listOf("Ремонт", "Диагностика")
+        val types = listOf("Ремонт", "Диагностика", "Компонентный ремонт")
+        val executionTypes = listOf("Выездной", "Мастерская", "Удаленная")
         val statuses = listOf("Новый", "В процессе", "Завершён", "Ожидает")
 
         val typeAdapter = ArrayAdapter(
             requireContext(),
             R.layout.item_spinner_black,
             types
+        )
+
+        val executionAdapter = ArrayAdapter(
+            requireContext(),
+            R.layout.item_spinner_black,
+            executionTypes
         )
 
         val statusAdapter = ArrayAdapter(
@@ -101,6 +112,7 @@ class OrderFormFragment : Fragment() {
         )
 
         binding.orderTypeSpinner.setAdapter(typeAdapter)
+        binding.executionTypeSpinner.setAdapter(executionAdapter)
         binding.statusSpinner.setAdapter(statusAdapter)
 
         // ВАЖНО: В режиме редактирования не устанавливаем значения по умолчанию
@@ -108,6 +120,7 @@ class OrderFormFragment : Fragment() {
         if (!isEditMode) {
             // значения по умолчанию только для нового заказа (чтобы hint не прыгал)
             binding.orderTypeSpinner.setText(types.first(), false)
+            binding.executionTypeSpinner.setText(executionTypes.first(), false)
             binding.statusSpinner.setText(statuses.first(), false)
             binding.textViewSelectedDate.text = "Выберите дату"
         }
@@ -406,6 +419,13 @@ class OrderFormFragment : Fragment() {
         // 5. Описание заказа
         binding.editTextDescription.setText(text)
 
+        // 6. Попытка найти адрес (очень простой паттерн)
+        val addressKeywords = listOf("ул.", "улица", "пр.", "проспект", "пер.", "переулок", "д.", "дом")
+        if (addressKeywords.any { lowerText.contains(it) }) {
+            // Если есть намек на адрес, копируем текст в поле адреса
+            binding.editTextAddress.setText(text)
+        }
+
         Toast.makeText(context, "Локальный разбор завершен", Toast.LENGTH_SHORT).show()
     }
 
@@ -434,6 +454,8 @@ class OrderFormFragment : Fragment() {
                 val model = response.model
                 val kit = response.kit
                 val orderType = response.order_type
+                val executionType = response.execution_type
+                val address = response.address
                 val suggestedServices = response.suggested_services
                 
                 // 0. Название заказа
@@ -473,6 +495,20 @@ class OrderFormFragment : Fragment() {
                     binding.orderTypeSpinner.setText("Ремонт", false)
                 } else if (orderType == "diagnosis") {
                     binding.orderTypeSpinner.setText("Диагностика", false)
+                } else if (orderType == "component_repair") {
+                    binding.orderTypeSpinner.setText("Компонентный ремонт", false)
+                }
+
+                // 4.1 Тип исполнения
+                if (!executionType.isNullOrBlank()) {
+                    reverseExecutionTypeMap[executionType]?.let {
+                        binding.executionTypeSpinner.setText(it, false)
+                    }
+                }
+                
+                // 4.2 Адрес
+                if (!address.isNullOrBlank()) {
+                    binding.editTextAddress.setText(address)
                 }
 
                 // 5. Предложенные услуги
@@ -1080,6 +1116,16 @@ class OrderFormFragment : Fragment() {
             }
         }
         
+        reverseExecutionTypeMap[o.executionType]?.let { executionText ->
+            try {
+                binding.executionTypeSpinner.setText(executionText, false)
+            } catch (e: Exception) {
+                binding.executionTypeSpinner.setText(executionText)
+            }
+        }
+        
+        binding.editTextAddress.setText(o.address ?: "")
+        
         binding.switchIsPublic.isChecked = o.isPublic
     }
 
@@ -1218,6 +1264,7 @@ class OrderFormFragment : Fragment() {
         // Получаем выбранные значения из MaterialAutoCompleteTextView
         val statusSelected = binding.statusSpinner.text.toString()
         val typeSelected = binding.orderTypeSpinner.text.toString()
+        val executionSelected = binding.executionTypeSpinner.text.toString()
         val isPublicChecked = binding.switchIsPublic.isChecked
 
         // Определяем данные клиента
@@ -1248,6 +1295,8 @@ class OrderFormFragment : Fragment() {
             date = dateString,
             status = statusMap[statusSelected] ?: "new",
             orderType = orderTypeMap[typeSelected] ?: "repair",
+            executionType = executionTypeMap[executionSelected] ?: "field",
+            address = binding.editTextAddress.text?.toString() ?: "",
             createdByUsername = tokenManager.username,
             createdByFullName = tokenManager.fullName,
             createdByAvatar = tokenManager.avatarUrl,

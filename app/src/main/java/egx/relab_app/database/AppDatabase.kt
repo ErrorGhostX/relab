@@ -36,7 +36,7 @@ import egx.relab_app.database.dao.ChatDao
         ChatRoomEntity::class,
         ChatMessageEntity::class
     ],
-    version = 8,  // v8: Добавлены сотрудники и чаты
+    version = 9,  // v9: Добавлены executionType и address в OrderEntity
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 @TypeConverters(Converters::class)

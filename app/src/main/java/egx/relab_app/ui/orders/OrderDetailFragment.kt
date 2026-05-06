@@ -71,7 +71,13 @@ class OrderDetailFragment : Fragment() {
     )
     private val orderTypeMap = mapOf(
         "repair" to "Ремонт",
-        "diagnosis" to "Диагностика"
+        "diagnosis" to "Диагностика",
+        "component_repair" to "Компонентный ремонт"
+    )
+    private val executionTypeMap = mapOf(
+        "field" to "Выездной",
+        "workshop" to "Мастерская",
+        "remote" to "Удаленная"
     )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -438,7 +444,9 @@ class OrderDetailFragment : Fragment() {
         kit.text = formatText("Комплектация: ${order.kit}")
         description.text = formatText("Описание: ${order.description}")
         date.text = formatText("Дата: ${order.date}")
-        orderType.text = formatText("Тип заказа: ${orderTypeMap[order.orderType] ?: order.orderType}")
+        executionType.text = formatText("Тип исполнения: ${executionTypeMap[order.executionType] ?: order.executionType ?: "Выездной"}")
+        address.text = formatText("Адрес: ${order.address ?: "не указан"}")
+        orderType.text = formatText("Вид работ: ${orderTypeMap[order.orderType] ?: order.orderType}")
         
         // Отображение статуса в виде бейджа
         bindStatusBadge(order.status)

@@ -536,8 +536,20 @@
 
                 <TextView
                     style="@style/DetailTextStyleBlack"
+                    android:id="@+id/executionType"
+                    android:text="Тип исполнения: Выездной"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
+                    android:id="@+id/address"
+                    android:text="Адрес: не указан"
+                    android:textColor="@color/gray_900"/>
+
+                <TextView
+                    style="@style/DetailTextStyleBlack"
                     android:id="@+id/orderType"
-                    android:text="Тип заказа: Ремонт"
+                    android:text="Вид работ: Ремонт"
                     android:textColor="@color/gray_900"/>
 
 

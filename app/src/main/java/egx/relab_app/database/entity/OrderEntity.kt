@@ -61,7 +61,9 @@ data class OrderEntity(
     val assignedToAvatar: String? = null,
     val assignedAt: String? = null,
     val collaboratorsJson: String? = null,  // JSON список коллабораторов
-    val servicesJson: String? = null       // JSON список услуг (для новых заказов)
+    val servicesJson: String? = null,       // JSON список услуг (для новых заказов)
+    val executionType: String? = null,
+    val address: String? = null
 ) {
     enum class SyncStatus {
         SYNCED, PENDING, ERROR
@@ -87,6 +89,8 @@ data class OrderEntity(
             description = description,
             date = date,
             orderType = orderType,
+            executionType = executionType,
+            address = address,
             status = status,
             createdByUsername = createdByUsername,
             createdByFullName = createdByFullName,
@@ -145,6 +149,8 @@ data class OrderEntity(
                 description = order.description,
                 date = order.date,
                 orderType = order.orderType,
+                executionType = order.executionType,
+                address = order.address,
                 status = order.status,
                 createdByUsername = order.createdByUsername,
                 createdByFullName = order.createdByFullName,
@@ -184,6 +190,8 @@ data class OrderEntity(
                 description = order.description,
                 date = order.date,
                 orderType = order.orderType,
+                executionType = order.executionType,
+                address = order.address,
                 status = order.status,
                 createdByUsername = order.createdByUsername,
                 createdByFullName = order.createdByFullName,

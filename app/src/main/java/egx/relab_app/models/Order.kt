@@ -64,6 +64,12 @@ data class Order(
     @SerializedName("order_type")
     val orderType: String? = null,
 
+    @SerializedName("execution_type")
+    val executionType: String? = null,
+
+    @SerializedName("address")
+    val address: String? = null,
+
     @SerializedName("status")
     val status: String? = null,
 
