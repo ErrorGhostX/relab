@@ -1,39 +1,38 @@
-<?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/gray_100"
-    app:strokeColor="@color/black_40"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/gray_50"
+    app:strokeColor="@color/gray_200"
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp">
+        android:padding="12dp">
 
-        <!-- Изображение заказа (слева) -->
+        <!-- Image -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/orderImage"
-            android:layout_width="90dp"
-            android:layout_height="90dp"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
             android:scaleType="centerCrop"
             app:shapeAppearanceOverlay="@style/RoundedImage"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- Основная информация (по центру) -->
+        <!-- Info -->
         <LinearLayout
             android:id="@+id/infoLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="16dp"
             android:orientation="vertical"
             app:layout_constraintStart_toEndOf="@id/orderImage"
             app:layout_constraintEnd_toStartOf="@id/rightLayout"
@@ -41,22 +40,24 @@
             app:layout_constraintBottom_toBottomOf="parent">
 
             <TextView
-                android:id="@+id/orderIdText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ID: 123"
-                android:textStyle="bold"
-                android:textColor="@color/gray_900"
-                android:textSize="14sp" />
-
-            <TextView
                 android:id="@+id/deviceNameText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Устройство: Телефон"
-                android:textColor="@color/gray_800"
-                android:textSize="13sp" />
+                android:text="iPhone 13 Pro Max"
+                android:textStyle="bold"
+                android:textColor="@color/text_premium_primary"
+                android:textSize="15sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/orderIdText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="#12345"
+                android:textColor="@color/text_premium_secondary"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
 
             <TextView
                 android:id="@+id/orderStatusText"
@@ -66,13 +67,14 @@
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="2dp"
                 android:text="НОВЫЙ"
-                android:textAllCaps="true"
-                android:textColor="@color/white"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="@color/accent_premium"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_glass_card"
+                android:backgroundTint="@color/gray_100" />
         </LinearLayout>
 
-        <!-- Правый блок (Сложность + Создатель) -->
+        <!-- Right Side -->
         <LinearLayout
             android:id="@+id/rightLayout"
             android:layout_width="wrap_content"
@@ -84,11 +86,11 @@
             app:layout_constraintBottom_toBottomOf="parent">
 
             <TextView
-                android:id="@+id/orderComplexityText"
+                android:id="@+id/orderDateText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Сложность: 50%"
-                android:textColor="@color/gray_700"
+                android:text="25.04"
+                android:textColor="@color/text_premium_secondary"
                 android:textSize="11sp" />
 
             <LinearLayout
@@ -99,48 +101,26 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/orderCreatedText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:text="Мастер"
-                    android:textColor="@color/gray_600"
-                    android:textSize="11sp" />
-
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/createdByAvatar"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/relab" />
+                    app:shapeAppearanceOverlay="@style/CircleImage"
+                    android:src="@mipmap/ic_launcher_round" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Плашка "Общий" -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Public Indicator -->
+        <TextView
             android:id="@+id/badgePublic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="🌐"
+            android:textSize="10sp"
             android:visibility="gone"
-            app:cardBackgroundColor="#E8F5E9"
-            app:cardCornerRadius="6dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#2E7D32"
-            app:strokeWidth="1dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:text="ОБЩИЙ"
-                android:textColor="#1B5E20"
-                android:textSize="8sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

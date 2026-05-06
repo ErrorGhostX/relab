@@ -75,7 +75,10 @@ class OrderListFragment : Fragment() {
         Log.d("OrderListFragment", "onViewCreated called")
 
         setupRecyclerView()
-        setupFilterSpinner()
+        setupFilterChips()
+        setupSearch()
+        setupFabScroll()
+        
         if (selectedStatus == "Все") {
             observeOrders()
         } else {
@@ -88,7 +91,6 @@ class OrderListFragment : Fragment() {
         setupFab()
         setupSyncButton()
         checkConnectionAndUpdateIndicator()
-        observeOrders()
         setupMenu()
         setupToggleViewMode()
     }
@@ -227,32 +229,38 @@ class OrderListFragment : Fragment() {
         adapter.notifyDataSetChanged()
     }
 
-    private fun setupFilterSpinner() {
-        statusOptions = listOf("Все") + statusMap.values.toList()
+    private fun setupFilterChips() {
+        binding.statusChipGroup.setOnCheckedChangeListener { group, checkedId ->
+            selectedStatus = when (checkedId) {
+                R.id.chipNew -> "Новый"
+                R.id.chipWork -> "В работе"
+                R.id.chipDone -> "Завершён"
+                else -> "Все"
+            }
+            refreshOrdersList()
+        }
+    }
 
-        val spinnerAdapter = ArrayAdapter(
-            requireContext(),
-            R.layout.item_spinner_black,
-            statusOptions
-        )
+    private fun setupSearch() {
+        binding.searchEditText.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                refreshOrdersList()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+    }
 
-        binding.statusFilterSpinner.setAdapter(spinnerAdapter)
-
-        spinnerAdapter.filter.filter(null)
-
-        binding.statusFilterSpinner.setText(selectedStatus, false)
-
-        binding.statusFilterSpinner.setOnItemClickListener { _, _, position, _ ->
-            selectedStatus = statusOptions[position]
-
-            if (selectedStatus == "Все") {
-                observeOrders()
-            } else {
-                reverseStatusMap[selectedStatus]?.let {
-                    observeOrdersByStatus(it)
+    private fun setupFabScroll() {
+        binding.ordersRecyclerView.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
+                if (dy > 10 && binding.add.isExtended) {
+                    binding.add.shrink()
+                } else if (dy < -10 && !binding.add.isExtended) {
+                    binding.add.extend()
                 }
             }
-        }
+        })
     }
 
 
@@ -435,7 +443,9 @@ class OrderListFragment : Fragment() {
 
     private fun filterOrdersByTab(orders: List<Order>): List<Order> {
         val currentUsername = tokenManager.username ?: ""
-        return when (selectedTab) {
+        val searchQuery = _binding?.searchEditText?.text?.toString()?.lowercase() ?: ""
+        
+        val filtered = when (selectedTab) {
             1 -> orders.filter { it.createdByUsername == currentUsername }
             2 -> orders.filter { 
                 it.isPublic && (it.assignedToUsername.isNullOrEmpty() || it.assignedToUsername == "null") 
@@ -445,6 +455,16 @@ class OrderListFragment : Fragment() {
                 it.collaborators.any { col -> col.username == currentUsername } 
             }
             else -> orders // "Все"
+        }
+        
+        return if (searchQuery.isEmpty()) {
+            filtered
+        } else {
+            filtered.filter { 
+                (it.deviceName?.lowercase()?.contains(searchQuery) == true) ||
+                (it.id?.toString()?.contains(searchQuery) == true) ||
+                (it.createdByUsername?.lowercase()?.contains(searchQuery) == true)
+            }
         }
     }
     /**
@@ -477,13 +497,7 @@ class OrderListFragment : Fragment() {
 
         if (_binding == null) return
 
-        val spinnerAdapter =
-            binding.statusFilterSpinner.adapter as? ArrayAdapter<*>
-
-        spinnerAdapter?.filter?.filter(null)
-
-
-        binding.statusFilterSpinner.setText(selectedStatus, false)
+        // Spinner logic removed as we use Chips now
         
         if (tokenManager.autoSyncEnabled) {
             startAutoSync()

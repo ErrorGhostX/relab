@@ -32,6 +32,7 @@ class ProfileFragment : Fragment() {
 
     private lateinit var tokenManager: TokenManager
     private var selectedAvatarUri: Uri? = null
+    private lateinit var messagingViewModel: egx.relab_app.ui.messaging.MessagingViewModel
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -57,6 +58,8 @@ class ProfileFragment : Fragment() {
 
         val userId = arguments?.getInt("userId", -1) ?: -1
         
+        messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+
         // Загружаем данные профиля
         loadUserProfile(userId)
 
@@ -255,13 +258,50 @@ class ProfileFragment : Fragment() {
                 // Обновляем навигацию в MainActivity сразу после загрузки
                 val activity = activity as? egx.relab_app.MainActivity
                 activity?.refreshNavBar()
+                
+                // Это мой профиль
+                binding.buttonSaveProfile.visibility = View.VISIBLE
+                binding.btnLogout.visibility = View.VISIBLE
+                binding.editTextFullName.isEnabled = true
+                binding.editTextPhone.isEnabled = true
+                binding.profileImage.isClickable = true
+                binding.layoutOtherProfileButtons.visibility = View.GONE
             } else {
-                // Режим только для чтения
+                // Режим только для чтения (чужой профиль)
                 binding.buttonSaveProfile.visibility = View.GONE
                 binding.btnLogout.visibility = View.GONE
                 binding.editTextFullName.isEnabled = false
                 binding.editTextPhone.isEnabled = false
                 binding.profileImage.isClickable = false
+                
+                binding.layoutOtherProfileButtons.visibility = View.VISIBLE
+                
+                binding.btnSendMessage.setOnClickListener {
+                    messagingViewModel.getOrCreateDirect(user.id ?: 0) { room ->
+                        if (room != null) {
+                            val bundle = android.os.Bundle().apply {
+                                putInt("roomId", room.id)
+                                putString("roomName", user.full_name ?: user.username)
+                            }
+                            findNavController().navigate(R.id.chatDetailFragment, bundle)
+                        } else {
+                            Toast.makeText(requireContext(), "Ошибка создания чата", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                
+                if (tokenManager.rank == "admin") {
+                    binding.btnAnalytics.visibility = View.VISIBLE
+                    binding.btnAnalytics.setOnClickListener {
+                        val bundle = android.os.Bundle().apply {
+                            putInt("userId", user.id ?: 0)
+                            putString("userName", user.full_name ?: user.username ?: "Сотрудник")
+                        }
+                        findNavController().navigate(R.id.analyticsFragment, bundle)
+                    }
+                } else {
+                    binding.btnAnalytics.visibility = View.GONE
+                }
             }
         } catch (e: Exception) {
             android.util.Log.e("ProfileFragment", "Ошибка при обновлении UI", e)

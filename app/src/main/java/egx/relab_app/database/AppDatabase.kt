@@ -11,6 +11,11 @@ import egx.relab_app.database.dao.ServiceDao
 import egx.relab_app.database.entity.CustomerEntity
 import egx.relab_app.database.entity.OrderEntity
 import egx.relab_app.database.entity.ServiceEntity
+import egx.relab_app.database.entity.EmployeeEntity
+import egx.relab_app.database.entity.ChatRoomEntity
+import egx.relab_app.database.entity.ChatMessageEntity
+import egx.relab_app.database.dao.EmployeeDao
+import egx.relab_app.database.dao.ChatDao
 
 /**
  * Главный класс базы данных Room
@@ -23,10 +28,18 @@ import egx.relab_app.database.entity.ServiceEntity
  * Room автоматически создает SQLite базу данных и генерирует код для работы с ней.
  */
 @Database(
-    entities = [OrderEntity::class, ServiceEntity::class, CustomerEntity::class],
-    version = 7,  // v7: Переименование orderNumber → orderName
+    entities = [
+        OrderEntity::class, 
+        ServiceEntity::class, 
+        CustomerEntity::class,
+        EmployeeEntity::class,
+        ChatRoomEntity::class,
+        ChatMessageEntity::class
+    ],
+    version = 8,  // v8: Добавлены сотрудники и чаты
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     
     /**
@@ -43,6 +56,16 @@ abstract class AppDatabase : RoomDatabase() {
      * Получить DAO для работы с клиентами
      */
     abstract fun customerDao(): CustomerDao
+    
+    /**
+     * Получить DAO для работы с сотрудниками
+     */
+    abstract fun employeeDao(): EmployeeDao
+
+    /**
+     * Получить DAO для работы с чатами
+     */
+    abstract fun chatDao(): ChatDao
     
     companion object {
         // Volatile гарантирует, что изменения видны всем потокам

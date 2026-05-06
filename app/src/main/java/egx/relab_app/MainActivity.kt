@@ -4,11 +4,14 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.View
+import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
@@ -54,7 +57,18 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        applyDisplayCutoutMode()
         requestNeededPermissions()
+
+        // Глобальный слушатель ошибок авторизации (401)
+        lifecycleScope.launch {
+            RetrofitClient.authErrorFlow.collect {
+                android.util.Log.w("MainActivity", "Global 401 detected, redirecting to login")
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                androidx.navigation.Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment_content_main)
+                    .navigate(R.id.loginFragment)
+            }
+        }
 
         // ------------------ Toolbar ------------------
         val toolbar = binding.appBarMain.toolbar
@@ -139,6 +153,8 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_logout -> {
+                    // Останавливаем фоновый сервис уведомлений WebSocket
+                    egx.relab_app.services.NotificationWebSocketService.stop(this)
                     tokenManager.accessToken = null
                     tokenManager.refreshToken = null
                     tokenManager.username = null
@@ -168,6 +184,9 @@ class MainActivity : AppCompatActivity() {
                         // ВАЖНО: ЗАТЕМ пытаемся загрузить свежие данные с сервера в ФОНОВОМ режиме
                         // Не блокирует отображение - пользователь уже видит локальные данные
                         loadProfileFromServer()
+                        
+                        // Запускаем фоновый сервис уведомлений через WebSocket (гарантированный канал)
+                        egx.relab_app.services.NotificationWebSocketService.start(this@MainActivity)
                     }
                 }
         
@@ -284,29 +303,39 @@ class MainActivity : AppCompatActivity() {
                 updateNavBar(userWithSavedData)
                 updateConnectionIndicator(true)
                 
-                // Отправляем токен Firebase на сервер, так как пользователь авторизован
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val token = task.result
-                        android.util.Log.d("MainActivity", "------------------------------------------")
-                        android.util.Log.d("MainActivity", "MY FCM TOKEN: $token")
-                        android.util.Log.d("MainActivity", "------------------------------------------")
-                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            try {
-                                RetrofitClient.apiService.registerDevice(egx.relab_app.network.ApiService.RegisterDeviceRequest(token))
-                                android.util.Log.d("MainActivity", "FCM токен успешно отправлен на сервер")
-                            } catch (e: Exception) {
-                                android.util.Log.e("MainActivity", "Ошибка отправки FCM токена: ${e.message}")
+                // Отправляем токен Firebase на сервер (если Firebase доступен)
+                try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val token = task.result
+                            android.util.Log.d("MainActivity", "MY FCM TOKEN: $token")
+                            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                try {
+                                    RetrofitClient.apiService.registerDevice(egx.relab_app.network.ApiService.RegisterDeviceRequest(token))
+                                    android.util.Log.d("MainActivity", "FCM токен успешно отправлен")
+                                } catch (e: Exception) {
+                                    android.util.Log.e("MainActivity", "Ошибка отправки FCM токена: ${e.message}")
+                                }
                             }
                         }
-                    } else {
-                        android.util.Log.e("MainActivity", "Не удалось получить FCM токен", task.exception)
                     }
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Firebase не инициализирован (отсутствует google-services.json)")
                 }
 
             } catch (e: Exception) {
                 // Если ошибка сети, просто показываем что нет подключения, но не выкидываем
                 updateConnectionIndicator(false)
+                
+                // ВАЖНО: Если сервер вернул 401 (Unauthorized), выкидываем на логин
+                if (e.message?.contains("401") == true || (e is retrofit2.HttpException && e.code() == 401)) {
+                    android.util.Log.w("MainActivity", "Сессия истекла (401), переход на логин")
+                    tokenManager.accessToken = null
+                    binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    androidx.navigation.Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment_content_main)
+                        .navigate(R.id.loginFragment)
+                }
+                
                 // Данные уже показаны из сохраненных в loadAndDisplaySavedProfile()
                 android.util.Log.d("MainActivity", "Не удалось загрузить профиль с сервера: ${e.message}")
             }
@@ -419,6 +448,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun applyDisplayCutoutMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (tokenManager.isDisplayCutoutEnabled) {
+                window.attributes.layoutInDisplayCutoutMode = 
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                
+                // Чтобы фон заезжал под статус-бар
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                
+                // Делаем контент на весь экран
+                window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE 
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+            } else {
+                window.attributes.layoutInDisplayCutoutMode = 
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            }
+        }
+        
+        // Обработка отступов (Safe Areas)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.drawerLayout) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val displayCutout = insets.displayCutout
+            binding.appBarMain.toolbar.setPadding(0, systemBars.top, 0, 0)
+            
+            insets
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
         return true
@@ -427,7 +485,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return if (navController.currentDestination?.id != R.id.nav_home) {
-            navController.popBackStack() // возвращаемся на предыдущий фрагмент
+            navController.popBackStack()
         } else {
             false
         }

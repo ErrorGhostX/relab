@@ -365,7 +365,7 @@
                         android:layout_marginTop="10dp"
                         android:text="Инструменты"
                         android:textAlignment="center"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+
                         android:textColor="@color/white"
                       />
                 </LinearLayout>
@@ -412,7 +412,7 @@
                         android:layout_width="60dp"
                         android:layout_height="60dp"
                         android:contentDescription="Помощник"
-                        android:src="@drawable/ai_magic_wand_svgrepo_com"
+                        android:src="@drawable/ic_smart_toy"
                         app:tint="@color/white" />
 
                     <TextView
@@ -420,7 +420,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="Помощник"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+
                         android:textColor="@color/white"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -460,7 +460,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="Сотрудники"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+
                         android:textColor="@color/white"
                         android:textStyle="bold" />
                 </LinearLayout>

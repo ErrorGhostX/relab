@@ -31,9 +31,71 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: android.view.View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Загружаем сохранённый URL сервера
+        val prefs = requireContext().getSharedPreferences("relab_prefs", android.content.Context.MODE_PRIVATE)
+        val savedUrl = prefs.getString("server_url", RetrofitClient.tokenManager.serverUrl ?: "http://192.168.1.100:8000/api/") ?: ""
+        binding.editTextServerUrl.setText(savedUrl.replace("/api/", "").replace("/api", ""))
+
+        binding.btnCheckConnection.setOnClickListener {
+            val rawUrl = binding.editTextServerUrl.text.toString().trim()
+            if (rawUrl.isBlank()) {
+                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val fullUrl = if (rawUrl.endsWith("/api/")) rawUrl
+                          else if (rawUrl.endsWith("/")) "${rawUrl}api/"
+                          else "$rawUrl/api/"
+
+            // Сохраняем URL
+            prefs.edit().putString("server_url", fullUrl).apply()
+            RetrofitClient.tokenManager.serverUrl = fullUrl
+            RetrofitClient.updateBaseUrl(fullUrl)
+
+            // Проверяем подключение
+            binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.GRAY
+            )
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    RetrofitClient.apiService.getAiStatus("ollama")
+                    if (!isAdded) return@launch
+                    binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#4CAF50")
+                    )
+                    Toast.makeText(requireContext(), "✅ Сервер доступен", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    // Даже 401 означает, что сервер отвечает
+                    if (!isAdded) return@launch
+                    if (e is retrofit2.HttpException && e.code() == 401) {
+                        binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.parseColor("#4CAF50")
+                        )
+                        Toast.makeText(requireContext(), "✅ Сервер доступен", Toast.LENGTH_SHORT).show()
+                    } else {
+                        binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.parseColor("#F44336")
+                        )
+                        Toast.makeText(requireContext(), "❌ Сервер недоступен", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
         binding.buttonLogin.setOnClickListener {
             val user = binding.editTextUsername.text.toString().trim()
             val pass = binding.editTextPassword.text.toString().trim()
+
+            // Сохраняем URL перед логином
+            val rawUrl = binding.editTextServerUrl.text.toString().trim()
+            if (rawUrl.isNotBlank()) {
+                val fullUrl = if (rawUrl.endsWith("/api/")) rawUrl
+                              else if (rawUrl.endsWith("/")) "${rawUrl}api/"
+                              else "$rawUrl/api/"
+                prefs.edit().putString("server_url", fullUrl).apply()
+                RetrofitClient.tokenManager.serverUrl = fullUrl
+                RetrofitClient.updateBaseUrl(fullUrl)
+            }
+
             if (user.isBlank() || pass.isBlank()) {
                 Toast.makeText(requireContext(), "Введите логин и пароль", Toast.LENGTH_SHORT).show()
             } else {
@@ -56,21 +118,25 @@ class LoginFragment : Fragment() {
 
                 updateNavBar(currentUser)
 
-                // Регистрация устройства для Push-уведомлений
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val token = task.result
-                        lifecycleScope.launch {
-                            try {
-                                RetrofitClient.apiService.registerDevice(ApiService.RegisterDeviceRequest(token))
-                                android.util.Log.d("FCM", "Токен успешно зарегистрирован: $token")
-                            } catch (e: Exception) {
-                                android.util.Log.e("FCM", "Ошибка регистрации токена", e)
+                // Регистрация устройства для Push-уведомлений (если доступно)
+                try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val token = task.result
+                            lifecycleScope.launch {
+                                try {
+                                    RetrofitClient.apiService.registerDevice(ApiService.RegisterDeviceRequest(token))
+                                    android.util.Log.d("FCM", "Токен успешно зарегистрирован: $token")
+                                } catch (e: Exception) {
+                                    android.util.Log.e("FCM", "Ошибка регистрации токена", e)
+                                }
                             }
+                        } else {
+                            android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
                         }
-                    } else {
-                        android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
                     }
+                } catch (e: Exception) {
+                    android.util.Log.w("FCM", "Firebase не инициализирован")
                 }
 
                 findNavController().navigate(

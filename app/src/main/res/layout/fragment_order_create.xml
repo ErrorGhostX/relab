@@ -79,6 +79,16 @@
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressAi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    app:indicatorColor="#3F51B5"
+                    app:trackColor="#E0E0E0" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -959,14 +969,27 @@
                     app:strokeColor="@color/gray_400"
                     android:textColor="@color/gray_900" />
 
-        <TextView
-            android:id="@+id/textPhotosChosen"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Фото не выбрано"
+                <TextView
+                    android:id="@+id/textPhotosChosen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Фото не выбрано"
                     android:textColor="@color/gray_700"
-            android:textStyle="italic"
+                    android:textStyle="italic"
                     android:paddingTop="8dp" />
+
+                <HorizontalScrollView
+                    android:id="@+id/scrollPhotosPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone">
+                    <LinearLayout
+                        android:id="@+id/layoutPhotosPreview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="80dp"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

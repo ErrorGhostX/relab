@@ -31,7 +31,7 @@
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\volni\.android\avd\Pixel_8_Pro_API_35.avd" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=282f1e72" />
               </handle>
             </Target>
           </targets>

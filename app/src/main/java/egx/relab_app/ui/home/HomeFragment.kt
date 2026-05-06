@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -91,8 +92,20 @@ class HomeFragment : Fragment() {
         }
 
         binding.cardAssistant.setOnClickListener {
-            findNavController().navigate(R.id.action_nav_home_to_chatFragment)
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val aiRoom = RetrofitClient.apiService.getOrCreateAiChat()
+                    val bundle = Bundle().apply {
+                        putInt("roomId", aiRoom.id)
+                        putString("roomName", aiRoom.name ?: "ИИ-Помощник")
+                    }
+                    findNavController().navigate(R.id.chatDetailFragment, bundle)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Ошибка открытия чата с ИИ: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
+
 
         binding.cardEmployees.setOnClickListener {
             findNavController().navigate(R.id.action_nav_home_to_employeeListFragment)

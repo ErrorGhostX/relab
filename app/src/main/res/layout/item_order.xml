@@ -1,30 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-
-    app:cardCornerRadius="15dp"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="24dp"
     app:cardElevation="2dp"
-    android:layout_marginTop="3dp"
-    app:cardBackgroundColor="@color/gray_100"
-    app:strokeColor="@color/black_40"
+    app:cardBackgroundColor="@color/white"
+    app:strokeColor="@color/gray_200"
+    app:strokeWidth="1dp"
     android:clipToOutline="true"
-
-    app:strokeWidth="2dp"
     app:cardPreventCornerOverlap="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
         android:orientation="vertical">
 
-        <!-- Картинка сверху, растягиваем до краев карточки -->
+        <!-- Image Container -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp">
+            android:layout_height="180dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/orderImage"
@@ -33,138 +29,119 @@
                 android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/RoundedImage" />
 
-            <!-- Плашка "Общий" -->
+            <!-- Glassmorphic Status Badge -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/statusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="12dp"
+                app:cardBackgroundColor="@color/glass_white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#33FFFFFF"
+                app:strokeWidth="1dp">
+
+                <TextView
+                    android:id="@+id/orderStatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="НОВЫЙ"
+                    android:textColor="@color/accent_premium"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Public Badge -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/badgePublic"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
-                android:layout_margin="8dp"
+                android:layout_margin="12dp"
                 android:visibility="gone"
                 app:cardBackgroundColor="#E8F5E9"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp"
-                app:strokeColor="#2E7D32"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp"
-                    android:text="ОБЩИЙ"
-                    android:textColor="#1B5E20"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                    android:text="🌐"
+                    android:textSize="12sp" />
             </com.google.android.material.card.MaterialCardView>
         </FrameLayout>
 
-
-
-        <!-- Блок текста с padding -->
+        <!-- Content -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="150dp"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="12dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            <TextView
+                android:id="@+id/deviceNameText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="iPhone 13 Pro Max"
+                android:textColor="@color/text_premium_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/orderIdText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="ID: 123"
-                android:textColor="@color/gray_900"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/orderDateText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="25.04.2026"
-                android:textColor="@color/gray_600"
+                android:layout_marginTop="2dp"
+                android:text="#12345"
+                android:textColor="@color/text_premium_secondary"
                 android:textSize="12sp" />
-        </LinearLayout>
-        <!-- Блок текста с padding
-        <TextView
-            android:id="@+id/orderNumberText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Номер: 12345"
-            android:textStyle="bold"
-            android:textColor="@color/gray_800"
-            android:textSize="16sp"
-            android:layout_marginTop="4dp" />
--->
-            <TextView
-                android:id="@+id/deviceNameText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:text="Устройство: Телефон"
-                android:textSize="12sp"
-                android:textColor="@color/gray_900" />
 
-
-            <!-- Статус -->
-            <TextView
-                android:id="@+id/orderStatusText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="3dp"
-                android:text="СТАТУС: В ПРОЦЕССЕ"
-                android:textAllCaps="true"
-                android:textColor="@color/white"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <!-- Сложность -->
-            <TextView
-                android:id="@+id/orderComplexityText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:textSize="12sp"
-                android:text="Сложность: не рассчитана"
-                android:textColor="@color/gray_800" />
-
-
-            <!-- Создатель с аватаркой -->
-            <LinearLayout
-                android:id="@+id/createdByLayout"
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="0dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_height="1dp"
+                android:layout_marginVertical="8dp"
+                android:background="@color/gray_100" />
 
-                <ImageView
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/createdByAvatar"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="6dp"
-                    android:contentDescription="Аватар создателя"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:scaleType="centerCrop"
+                    app:shapeAppearanceOverlay="@style/CircleImage"
                     android:src="@mipmap/ic_launcher_round" />
 
-                    <TextView
-                        android:id="@+id/orderCreatedText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Создан: Пользователь"
-                        android:textColor="@color/gray_700"
-                        android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/orderCreatedText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Александр"
+                    android:textColor="@color/text_premium_secondary"
+                    android:textSize="11sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/orderDateText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="25.04"
+                    android:textColor="@color/text_premium_secondary"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

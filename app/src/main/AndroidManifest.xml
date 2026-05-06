@@ -62,6 +62,12 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Фоновый сервис уведомлений (WebSocket) -->
+        <service
+            android:name=".services.NotificationWebSocketService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
+
         <!-- Firebase Messaging Service -->
         <service
             android:name=".services.MyFirebaseMessagingService"
@@ -71,5 +77,9 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name=".ui.messaging.ImageDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Relab" />
     </application>
 </manifest>

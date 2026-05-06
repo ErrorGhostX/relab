@@ -79,3 +79,19 @@ local.properties
 /Версии/Relab_Service_v8.0.0-alpha.apk
 /Версии/Relab_Service_v8.1.0-alpha.apk
 /imaes/Флаг_Луганской_Народной_республики.jpg
+
+# Python virtual environments
+**/.venv/
+**/venv/
+venv/
+.venv/
+
+# JVM crash and replay logs
+**/hs_err_pid*.log
+**/replay_pid*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# APK versions and images
+/Версии/
+/imaes/

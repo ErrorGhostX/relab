@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="#F8F9FA"
     android:fitsSystemWindows="true"
-    android:paddingTop="70dp"
     android:paddingHorizontal="16dp"
     android:paddingBottom="16dp">
 
@@ -13,6 +12,69 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
+        <!-- Заголовок для чужой аналитики -->
+        <TextView
+            android:id="@+id/tvAnalyticsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Аналитика"
+            android:textColor="@color/gray_900"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- Переключатель для админов -->
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroupAnalytics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedButton="@+id/btnMyAnalytics"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMyAnalytics"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Сотрудники"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCompanyAnalytics"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Компания"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Выбор сотрудника (для режима 'По сотрудникам') -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/employeeSelectorLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="Выберите сотрудника">
+
+            <AutoCompleteTextView
+                android:id="@+id/dropdownEmployee"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Личная аналитика (графики и карточки) -->
+        <LinearLayout
+            android:id="@+id/layoutMyAnalytics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
         <!-- Карточка: Заработано -->
         <com.google.android.material.card.MaterialCardView
@@ -270,6 +332,8 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
         </LinearLayout>
 
     </LinearLayout>

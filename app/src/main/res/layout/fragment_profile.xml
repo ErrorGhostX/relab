@@ -151,35 +151,12 @@
                         android:paddingHorizontal="12dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- ================= ДОП. ИНФОРМАЦИЯ ================= -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_200"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Дополнительная информация"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="12dp" />
-
+                <!-- Разделитель -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/gray_400"
+                    android:layout_marginBottom="16dp" />
 
                 <!-- Email -->
                 <TextView
@@ -188,7 +165,10 @@
                     android:layout_height="wrap_content"
                     android:text="Почта: email@example.com"
                     android:textSize="16sp"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="8dp" />
+                
+                <!-- Rank -->
                 <TextView
                     android:id="@+id/tvRank"
                     android:layout_width="wrap_content"
@@ -196,8 +176,11 @@
                     android:text="Ранг: —"
                     android:textSize="16sp"
                     android:textColor="@color/gray_900" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- ДОП. ИНФОРМАЦИЯ удалена (перенесена выше) -->
 
         <TextView
             android:id="@+id/tvStats"
@@ -231,6 +214,34 @@
             android:nestedScrollingEnabled="false"
             android:visibility="gone"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        <!-- КНОПКИ ДЛЯ ЧУЖОГО ПРОФИЛЯ -->
+        <LinearLayout
+            android:id="@+id/layoutOtherProfileButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Написать сообщение"
+                app:icon="@drawable/ic_chat"
+                app:iconGravity="textStart"
+                android:layout_marginBottom="11dp" />
+                
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAnalytics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Аналитика"
+                app:icon="@drawable/analytics_svgrepo_com"
+                app:iconGravity="textStart"
+                app:backgroundTint="@color/gray_900"
+                android:layout_marginBottom="11dp" />
+        </LinearLayout>
 
         <!-- КНОПКИ -->
         <com.google.android.material.button.MaterialButton

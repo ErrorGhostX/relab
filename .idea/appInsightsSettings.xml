@@ -9,10 +9,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="egx.relab_app" />
-                  <option name="mobileSdkAppId" value="1:509814563542:android:ebf7eed02adbc5780cdf77" />
-                  <option name="projectId" value="relabapp-3cad230a" />
-                  <option name="projectNumber" value="509814563542" />
+                  <option name="appId" value="PLACEHOLDER" />
+                  <option name="mobileSdkAppId" value="" />
+                  <option name="projectId" value="" />
+                  <option name="projectNumber" value="" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

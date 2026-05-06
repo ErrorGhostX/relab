@@ -69,4 +69,8 @@ class TokenManager(context: Context) {
     var isOrderGridView: Boolean
         get() = prefs.getBoolean("IS_ORDER_GRID_VIEW", true)
         set(value) = prefs.edit().putBoolean("IS_ORDER_GRID_VIEW", value).apply()
+
+    var isDisplayCutoutEnabled: Boolean
+        get() = prefs.getBoolean("IS_DISPLAY_CUTOUT_ENABLED", false)
+        set(value) = prefs.edit().putBoolean("IS_DISPLAY_CUTOUT_ENABLED", value).apply()
 }

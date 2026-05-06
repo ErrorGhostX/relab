@@ -106,6 +106,13 @@ class SettingsFragment : Fragment() {
                 .setNegativeButton("Отмена", null)
                 .show()
         }
+
+        // Настройки экрана (Cutout)
+        binding.switchDisplayCutout.isChecked = tokenManager.isDisplayCutoutEnabled
+        binding.switchDisplayCutout.setOnCheckedChangeListener { _, isChecked ->
+            tokenManager.isDisplayCutoutEnabled = isChecked
+            Toast.makeText(requireContext(), "Настройка применится после перезапуска приложения", Toast.LENGTH_LONG).show()
+        }
         
         // Экспорт данных
         // binding.buttonExportData.setOnClickListener {
@@ -159,25 +166,35 @@ class SettingsFragment : Fragment() {
 
     private fun checkAiStatus() {
         if (!isAdded) return
-        lifecycleScope.launch {
+        val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
+        val provider = prefs.getString("ai_provider", "ollama") ?: "ollama"
+
+        binding.tvAiStatus.text = "Статус $provider: проверка..."
+        binding.viewAiStatusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            android.graphics.Color.GRAY
+        )
+
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val status = RetrofitClient.apiService.getAiStatus()
-                if (!isAdded || _binding == null) return@launch
-                
-                val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
-                val current = prefs.getString("ai_provider", "ollama") ?: "ollama"
-                
-                val isOnline = status[current] == "online"
-                
-                binding.tvAiStatus.text = "Статус $current: ${if (isOnline) "В СЕТИ" else "ОФФЛАЙН"}"
-                binding.viewAiStatusIndicator.background?.setTint(
-                    if (isOnline) Color.GREEN else Color.RED
-                )
-            } catch (e: Exception) {
-                if (isAdded && _binding != null) {
-                    binding.tvAiStatus.text = "Ошибка связи с бэкендом"
-                    binding.viewAiStatusIndicator.background?.setTint(Color.GRAY)
+                val response = RetrofitClient.apiService.getAiStatus(provider)
+                if (!isAdded) return@launch
+                if (response.status == "online") {
+                    binding.tvAiStatus.text = "Статус $provider: в сети"
+                    binding.viewAiStatusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.GREEN
+                    )
+                } else {
+                    binding.tvAiStatus.text = "Статус $provider: ошибка"
+                    binding.viewAiStatusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.RED
+                    )
                 }
+            } catch (e: Exception) {
+                if (!isAdded) return@launch
+                binding.tvAiStatus.text = "Статус $provider: не в сети"
+                binding.viewAiStatusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.RED
+                )
             }
         }
     }

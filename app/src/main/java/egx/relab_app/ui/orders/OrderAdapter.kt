@@ -86,9 +86,8 @@ class OrderAdapter(
         private val orderIdText: android.widget.TextView = itemView.findViewById(R.id.orderIdText)
         private val deviceNameText: android.widget.TextView = itemView.findViewById(R.id.deviceNameText)
         private val orderStatusText: android.widget.TextView = itemView.findViewById(R.id.orderStatusText)
-        private val orderComplexityText: android.widget.TextView = itemView.findViewById(R.id.orderComplexityText)
         private val createdByAvatar: android.widget.ImageView = itemView.findViewById(R.id.createdByAvatar)
-        private val orderCreatedText: android.widget.TextView = itemView.findViewById(R.id.orderCreatedText)
+        private val orderCreatedText: android.widget.TextView? = itemView.findViewById(R.id.orderCreatedText)
         private val badgePublic: View = itemView.findViewById(R.id.badgePublic)
         private val orderDateText: android.widget.TextView? = itemView.findViewById(R.id.orderDateText)
 
@@ -107,7 +106,7 @@ class OrderAdapter(
                 ?: order.createdByUsername
                 ?: "Неизвестно"
 
-            orderCreatedText.text = creatorName
+            orderCreatedText?.text = creatorName
 
             if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
                 Glide.with(itemView.context)
@@ -122,14 +121,8 @@ class OrderAdapter(
             
             bindStatusBadge(order.status)
             
-            val complexityText = if (order.complexityPercentage != null) {
-                val level = order.complexityLevel ?: getComplexityLevel(order.complexityPercentage!!)
-                "Сложность: ${"%.0f".format(order.complexityPercentage)}% ($level)"
-            } else {
-                "Сложность: не рассчитана"
-            }
-            orderComplexityText.text = complexityText
-
+            // Complexity text removed for cleaner UI in adapter
+            
             badgePublic.visibility = if (
                 order.isPublic && (order.assignedToUsername.isNullOrEmpty() || order.assignedToUsername == "null")
             ) View.VISIBLE else View.GONE
@@ -162,23 +155,27 @@ class OrderAdapter(
             orderStatusText.text = statusName.uppercase()
             
             val (bgColor, textColor) = when (statusValue?.lowercase()) {
-                "new", "новый" -> R.color.status_new_bg to R.color.status_new
-                "working", "в работе", "work", "in_progress" -> R.color.status_work_bg to R.color.status_work
-                "completed", "выполнен", "done", "ready", "finished" -> R.color.status_completed_bg to R.color.status_completed
-                "cancelled", "отменен", "cancel" -> R.color.status_cancelled_bg to R.color.status_cancelled
-                "waiting", "ожидание", "pending" -> R.color.status_waiting_bg to R.color.status_waiting
-                else -> R.color.status_default_bg to R.color.status_default
+                "new", "новый" -> R.color.status_new_bg to R.color.status_new_premium
+                "working", "в работе", "work", "in_progress" -> R.color.status_work_bg to R.color.status_in_progress_premium
+                "completed", "выполнен", "done", "ready", "finished" -> R.color.status_completed_bg to R.color.status_done_premium
+                "cancelled", "отменен", "cancel" -> R.color.status_cancelled_bg to R.color.error_red
+                "waiting", "ожидание", "pending" -> R.color.status_waiting_bg to R.color.status_pending_premium
+                else -> R.color.gray_100 to R.color.text_premium_secondary
             }
             
             val context = itemView.context
             orderStatusText.setTextColor(context.getColor(textColor))
             
-            val shape = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                cornerRadius = 6 * context.resources.displayMetrics.density
-                setColor(context.getColor(bgColor))
+            // For the new design, we use a custom background from XML or dynamic
+            // But for simplicity, we can still use GradientDrawable if it's not set in XML
+            if (orderStatusText.background == null || orderStatusText.background is android.graphics.drawable.GradientDrawable) {
+                val shape = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = 12 * context.resources.displayMetrics.density
+                    setColor(context.getColor(bgColor))
+                }
+                orderStatusText.background = shape
             }
-            orderStatusText.background = shape
         }
         
         /**

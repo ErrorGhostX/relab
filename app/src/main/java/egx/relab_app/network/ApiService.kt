@@ -99,17 +99,17 @@ interface ApiService {
     ): Call<Service>
 
     @GET("analytics/monthly_earnings/")
-    fun getMonthlyEarnings(): Call<EarningsResponse>
+    fun getMonthlyEarnings(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<EarningsResponse>
     data class EarningsResponse(
         val message: String
     )
 
 
     @GET("analytics/monthly_completed_orders/")
-    fun getMonthlyCompletedOrders(): Call<OrdersCountResponse>
+    fun getMonthlyCompletedOrders(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<OrdersCountResponse>
     
     @GET("analytics/daily_earnings/")
-    fun getDailyEarnings(): Call<List<DailyEarningsResponse>>
+    fun getDailyEarnings(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<List<DailyEarningsResponse>>
     
     data class DailyEarningsResponse(
         val date: String,
@@ -122,7 +122,7 @@ interface ApiService {
     
     // Новые эндпоинты аналитики
     @GET("analytics/created_orders_count/")
-    fun getCreatedOrdersCount(): Call<CreatedOrdersCountResponse>
+    fun getCreatedOrdersCount(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<CreatedOrdersCountResponse>
     
     data class CreatedOrdersCountResponse(
         val count: Int,
@@ -130,7 +130,7 @@ interface ApiService {
     )
     
     @GET("analytics/employee_efficiency/")
-    fun getEmployeeEfficiency(): Call<EfficiencyResponse>
+    fun getEmployeeEfficiency(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<EfficiencyResponse>
     
     data class EfficiencyResponse(
         val efficiency: Double,
@@ -140,7 +140,7 @@ interface ApiService {
     )
     
     @GET("analytics/average_complexity/")
-    fun getAverageComplexity(): Call<AverageComplexityResponse>
+    fun getAverageComplexity(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<AverageComplexityResponse>
     
     data class AverageComplexityResponse(
         val average_complexity: Double,
@@ -148,7 +148,7 @@ interface ApiService {
     )
     
     @GET("analytics/order_statistics/")
-    fun getOrderStatistics(): Call<OrderStatisticsResponse>
+    fun getOrderStatistics(@Query("user_id") userId: Int? = null, @Query("company_wide") companyWide: Boolean? = null): Call<OrderStatisticsResponse>
     
     data class OrderStatisticsResponse(
         val total_orders: Int,
@@ -324,6 +324,7 @@ interface ApiService {
     )
 
     data class AiParseResponse(
+        val order_name: String? = null,
         val customer_name: String? = null,
         val phone: String? = null,
         val device_type: String? = null,
@@ -338,20 +339,17 @@ interface ApiService {
     @POST("ai/parse_text/")
     suspend fun parseAiText(@Body request: AiParseRequest): AiParseResponse
 
-    data class ChatRequest(
-        val message: String, 
-        val provider: String? = "ollama",
-        val order_id: Int? = null
+    @GET("ai/status/")
+    suspend fun getAiStatus(
+        @Query("provider") provider: String
+    ): AiStatusResponse
+
+    data class AiStatusResponse(
+        val status: String,
+        val provider: String,
+        val message: String? = null
     )
-    
-    @POST("ai/chat/")
-    suspend fun chatWithAi(@Body request: ChatRequest): egx.relab_app.ui.chat.ChatMessage
 
-    @GET("ai/chat_history/")
-    suspend fun getChatHistory(@Query("order_id") orderId: Int? = null): List<egx.relab_app.ui.chat.ChatMessage>
-
-    @GET("ai/ai_status/")
-    suspend fun getAiStatus(): Map<String, String>
 
     // =============================================
     // Сотрудники (Фаза 1)
@@ -429,6 +427,9 @@ interface ApiService {
 
     @POST("chats/get_or_create_order_chat/")
     suspend fun getOrCreateOrderChat(@Body body: OrderChatRequest): ChatRoom
+
+    @POST("chats/get_or_create_ai_chat/")
+    suspend fun getOrCreateAiChat(): ChatRoom
 
     data class SendMessageRequest(val text: String)
     data class DirectChatRequest(val user_id: Int)

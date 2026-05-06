@@ -22,10 +22,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.io.File
 import egx.relab_app.storage.TokenManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.Interceptor
 
 
@@ -35,14 +33,29 @@ object RetrofitClient {
 
     lateinit var tokenManager: TokenManager
     private var retrofitInstance: Retrofit? = null
+    
+    private val _authErrorFlow = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val authErrorFlow = _authErrorFlow.asSharedFlow()
 
 
     private val authInterceptor = Interceptor { chain ->
-        val reqBuilder = chain.request().newBuilder()
+        val request = chain.request()
+        val reqBuilder = request.newBuilder()
+        
         tokenManager.accessToken?.let { token ->
             reqBuilder.addHeader("Authorization", "Bearer $token")
         }
-        chain.proceed(reqBuilder.build())
+        
+        val response = chain.proceed(reqBuilder.build())
+        
+        // Глобальный перехват 401 ошибки
+        if (response.code == 401) {
+            android.util.Log.w("RetrofitClient", "Detected 401 Unauthorized - clearing tokens")
+            tokenManager.accessToken = null
+            _authErrorFlow.tryEmit(Unit)
+        }
+        
+        response
     }
 
 
@@ -70,6 +83,11 @@ object RetrofitClient {
     
     fun recreateRetrofit() {
         retrofitInstance = null
+    }
+
+    fun updateBaseUrl(newUrl: String) {
+        tokenManager.serverUrl = newUrl
+        retrofitInstance = null  // Пересоздаст Retrofit при следующем вызове apiService
     }
 
     fun init(context: Context) {

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.activity.result.contract.ActivityResultContracts
@@ -211,6 +212,7 @@ class OrderFormFragment : Fragment() {
             selectedPhotoUris.clear()
             selectedPhotoUris.addAll(uris)
             binding.textPhotosChosen.text = if (uris.isNotEmpty()) "Выбрано фото: ${uris.size}" else "Фото не выбрано"
+            updatePhotoPreviews()
         }
         binding.buttonChoosePhotos.setOnClickListener { pickImages.launch("image/*") }
 
@@ -307,6 +309,31 @@ class OrderFormFragment : Fragment() {
         }
     }
 
+    private fun updatePhotoPreviews() {
+        binding.layoutPhotosPreview.removeAllViews()
+        if (selectedPhotoUris.isEmpty()) {
+            binding.scrollPhotosPreview.visibility = View.GONE
+            return
+        }
+
+        binding.scrollPhotosPreview.visibility = View.VISIBLE
+        selectedPhotoUris.forEach { uri ->
+            val imageView = android.widget.ImageView(requireContext()).apply {
+                val size = (80 * resources.displayMetrics.density).toInt()
+                val params = LinearLayout.LayoutParams(size, size)
+                params.setMargins(0, 0, (8 * resources.displayMetrics.density).toInt(), 0)
+                layoutParams = params
+                
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                // Для красивого вида скругления (простой способ)
+                clipToOutline = true
+                background = resources.getDrawable(R.drawable.rounded_bg_8dp, null) // Предполагаем что есть
+                setImageURI(uri)
+            }
+            binding.layoutPhotosPreview.addView(imageView)
+        }
+    }
+
     private val addedServicesList = mutableListOf<View>()
 
     private fun addServiceView(description: String = "", price: Double = 0.0, complexity: Int = 1) {
@@ -389,6 +416,9 @@ class OrderFormFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 binding.btnAiParse.isEnabled = false
+                binding.btnAiParse.text = "Думаю..."
+                binding.progressAi.visibility = View.VISIBLE
+                
                 val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
                 val provider = prefs.getString("ai_provider", "ollama") ?: "ollama"
                 
@@ -404,11 +434,15 @@ class OrderFormFragment : Fragment() {
                 val model = response.model
                 val kit = response.kit
                 val orderType = response.order_type
-                val summary = response.summary_description
                 val suggestedServices = response.suggested_services
                 
+                // 0. Название заказа
+                if (!response.order_name.isNullOrBlank()) {
+                    binding.editTextOrderNumber.setText(response.order_name)
+                }
+
                 // Заполняем сгенерированное описание
-                binding.editTextDescription.setText(summary ?: text)
+                binding.editTextDescription.setText(response.summary_description ?: text)
 
                 // 2. Клиент
                 if (!customerName.isNullOrBlank()) {
@@ -461,6 +495,7 @@ class OrderFormFragment : Fragment() {
                 if (isAdded) {
                     binding.btnAiParse.isEnabled = true
                     binding.btnAiParse.text = "Распознать ИИ"
+                    binding.progressAi.visibility = View.GONE
                 }
             }
         }

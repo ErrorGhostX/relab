@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Premium Accent Colors -->
+    <color name="accent_premium">#2979FF</color>
+    <color name="accent_premium_dark">#2962FF</color>
+    <color name="accent_premium_light">#82B1FF</color>
+    
+    <!-- Glassmorphism & Surfaces -->
+    <color name="glass_white">#F1F1F1F1</color>
+    <color name="glass_dark">#E0212121</color>
+    <color name="surface_card_premium">#FFFFFF</color>
+    <color name="surface_background_premium">#F8F9FA</color>
+    
+    <!-- Text Colors -->
+    <color name="text_premium_primary">#121212</color>
+    <color name="text_premium_secondary">#5F6368</color>
+    
+    <!-- Status Colors (Premium) -->
+    <color name="status_new_premium">#2979FF</color>
+    <color name="status_in_progress_premium">#FF9100</color>
+    <color name="status_done_premium">#00C853</color>
+    <color name="status_pending_premium">#6200EA</color>
+</resources>

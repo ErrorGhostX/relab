@@ -29,9 +29,6 @@
             android:id="@+id/action_nav_home_to_nav_customers"
             app:destination="@id/nav_customers" />
         <action
-            android:id="@+id/action_nav_home_to_chatFragment"
-            app:destination="@id/chatFragment" />
-        <action
             android:id="@+id/action_nav_home_to_employeeListFragment"
             app:destination="@id/employeeListFragment" />
         <action
@@ -116,7 +113,16 @@
         android:id="@+id/analyticsFragment"
         android:name="egx.relab_app.ui.orders.AnalyticsFragment"
         android:label="Аналитика"
-        tools:layout="@layout/fragment_analytics" />
+        tools:layout="@layout/fragment_analytics" >
+        <argument
+            android:name="userId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+        <argument
+            android:name="userName"
+            app:argType="string"
+            android:defaultValue='""' />
+    </fragment>
 
     <fragment
         android:id="@+id/settingsFragment"
@@ -179,21 +185,6 @@
 
 
 
-    <fragment
-        android:id="@+id/chatFragment"
-        android:name="egx.relab_app.ui.chat.ChatFragment"
-        android:label="Помощник"
-        tools:layout="@layout/fragment_chat">
-        <argument
-            android:name="initialMessage"
-            app:argType="string"
-            app:nullable="true"
-            android:defaultValue="@null" />
-        <argument
-            android:name="orderId"
-            app:argType="integer"
-            android:defaultValue="-1" />
-    </fragment>
 
     <fragment
         android:id="@+id/employeeListFragment"
@@ -201,27 +192,12 @@
         android:label="Сотрудники"
         tools:layout="@layout/fragment_employee_list" >
         <action
-            android:id="@+id/action_employeeListFragment_to_employeeDetailFragment"
-            app:destination="@id/employeeDetailFragment"
+            android:id="@+id/action_employeeListFragment_to_profileFragment"
+            app:destination="@id/profileFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
-    <fragment
-        android:id="@+id/employeeDetailFragment"
-        android:name="egx.relab_app.ui.employees.EmployeeDetailFragment"
-        android:label="Профиль сотрудника"
-        tools:layout="@layout/fragment_employee_detail">
-        <argument
-            android:name="employeeId"
-            app:argType="integer"
-            android:defaultValue="0" />
-        <action
-            android:id="@+id/action_employeeDetailFragment_to_chatDetailFragment"
-            app:destination="@id/chatDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
-    </fragment>
 
     <fragment
         android:id="@+id/chatListFragment"

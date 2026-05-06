@@ -4,7 +4,10 @@ plugins {
     alias(libs.plugins.navigation.safeargs)
     id("kotlin-kapt")
     id("kotlin-parcelize")
-    alias(libs.plugins.google.services)
+}
+
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 

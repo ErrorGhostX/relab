@@ -7,13 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import egx.relab_app.R
 import egx.relab_app.network.ApiService
-
 import egx.relab_app.databinding.FragmentAnalyticsBinding
-
 import egx.relab_app.network.RetrofitClient
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -28,10 +29,23 @@ import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import egx.relab_app.storage.TokenManager
+import android.widget.ArrayAdapter
+
 class AnalyticsFragment : Fragment() {
 
     private var _binding: FragmentAnalyticsBinding? = null
     private val binding get() = _binding!!
+    private lateinit var analyticsCache: AnalyticsCache
+    private lateinit var tokenManager: TokenManager
+    
+    private var targetUserId: Int? = null
+    private var isCompanyWide: Boolean = false
+    private var staffList: List<ApiService.StaffPerformance> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,60 +53,114 @@ class AnalyticsFragment : Fragment() {
     ): View {
         _binding = FragmentAnalyticsBinding.inflate(inflater, container, false)
         return binding.root
-    }  private lateinit var analyticsCache: AnalyticsCache
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         analyticsCache = AnalyticsCache(requireContext())
+        tokenManager = TokenManager(requireContext())
         
-        // Сначала загружаем данные из кэша для быстрого отображения
-        loadFromCache()
+        val argId = arguments?.getInt("userId", -1) ?: -1
+        targetUserId = if (argId != -1) argId else null
+        
+        setupChart()
+        setupUI()
+        
+        // Сначала загружаем данные из кэша для быстрого отображения (только для своей аналитики)
+        if (targetUserId == null) {
+            loadFromCache()
+        }
         
         // Затем загружаем свежие данные с сервера
         loadAnalytics()
-        setupChart()
     }
     
+    private fun setupUI() {
+        if (targetUserId != null) {
+            val userName = arguments?.getString("userName") ?: "Сотрудник"
+            binding.tvAnalyticsTitle.text = "Аналитика: $userName"
+            binding.tvAnalyticsTitle.visibility = View.VISIBLE
+            binding.toggleGroupAnalytics.visibility = View.GONE
+            binding.employeeSelectorLayout.visibility = View.GONE
+        } else if (tokenManager.rank == "admin") {
+            binding.toggleGroupAnalytics.visibility = View.VISIBLE
+            binding.employeeSelectorLayout.visibility = View.VISIBLE
+            
+            // Загрузка списка сотрудников для выпадающего списка
+            loadStaffList()
+            
+            binding.dropdownEmployee.setOnItemClickListener { _, _, position, _ ->
+                if (position == 0) {
+                    targetUserId = null
+                } else {
+                    targetUserId = staffList[position - 1].user_id
+                }
+                loadAnalytics()
+            }
+            
+            binding.toggleGroupAnalytics.addOnButtonCheckedListener { group, checkedId, isChecked ->
+                if (isChecked) {
+                    when (checkedId) {
+                        R.id.btnMyAnalytics -> {
+                            isCompanyWide = false
+                            binding.employeeSelectorLayout.visibility = View.VISIBLE
+                            loadAnalytics()
+                        }
+                        R.id.btnCompanyAnalytics -> {
+                            isCompanyWide = true
+                            binding.employeeSelectorLayout.visibility = View.GONE
+                            loadAnalytics()
+                        }
+                    }
+                }
+            }
+        } else {
+            binding.employeeSelectorLayout.visibility = View.GONE
+        }
+    }
+    
+    private fun loadStaffList() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val data = RetrofitClient.apiService.getStaffPerformance()
+                withContext(Dispatchers.Main) {
+                    if (isAdded && _binding != null) {
+                        staffList = data
+                        val names = mutableListOf("Моя аналитика")
+                        names.addAll(data.map { it.full_name ?: it.username ?: "Сотрудник" })
+                        
+                        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
+                        binding.dropdownEmployee.setAdapter(adapter)
+                        binding.dropdownEmployee.setText("Моя аналитика", false)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isAdded) {
+                        Toast.makeText(requireContext(), "Ошибка загрузки списка: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Загрузить данные из кэша
      */
     private fun loadFromCache() {
         if (!isAdded || _binding == null) return
         
-        // Загружаем месячный заработок
-        analyticsCache.getMonthlyEarnings()?.let {
-            binding.tvTotalEarnings.text = it
-        }
-        
-        // Загружаем выполненные заказы
-        analyticsCache.getCompletedOrders()?.let {
-            binding.tvCompletedOrders.text = it
-        }
-        
-        // Загружаем созданные заказы
-        analyticsCache.getCreatedOrders()?.let {
-            binding.tvOrdersCreated.text = it.toString()
-        }
-        
-        // Загружаем эффективность
-        analyticsCache.getEmployeeEfficiency()?.let {
-            binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%"
-        }
+        analyticsCache.getMonthlyEarnings()?.let { binding.tvTotalEarnings.text = it }
+        analyticsCache.getCompletedOrders()?.let { binding.tvCompletedOrders.text = it }
+        analyticsCache.getCreatedOrders()?.let { binding.tvOrdersCreated.text = it.toString() }
+        analyticsCache.getEmployeeEfficiency()?.let { binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%" }
+        analyticsCache.getAverageComplexity()?.let { binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts" }
 
-        // Загружаем среднюю сложность
-        analyticsCache.getAverageComplexity()?.let {
-            binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts"
-        }
-
-        // Загружаем ежедневный заработок
         analyticsCache.getDailyEarnings()?.let { dailyEarnings ->
-            val chartData = dailyEarnings.map { (day, earnings) ->
-                ApiService.DailyEarningsResponse("", day, earnings)
-            }
+            val chartData = dailyEarnings.map { (day, earnings) -> ApiService.DailyEarningsResponse("", day, earnings) }
             updateChart(chartData)
         }
 
-        // Загружаем статистику статусов
         analyticsCache.getOrderStatistics()?.let { jsonString ->
             try {
                 val json = JSONObject(jsonString)
@@ -116,7 +184,6 @@ class AnalyticsFragment : Fragment() {
         chart.setPinchZoom(true)
         chart.setBackgroundColor(Color.WHITE)
         
-        // Настройка осей
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.textColor = Color.BLACK
@@ -134,7 +201,6 @@ class AnalyticsFragment : Fragment() {
         
         chart.legend.isEnabled = false
 
-        // Настройка PieChart
         val pieChart = binding.chartOrderDistribution
         pieChart.setUsePercentValues(true)
         pieChart.description.isEnabled = false
@@ -145,47 +211,53 @@ class AnalyticsFragment : Fragment() {
         pieChart.holeRadius = 58f
         pieChart.transparentCircleRadius = 61f
         pieChart.setDrawCenterText(true)
-        pieChart.centerText = "Статусы"
-        pieChart.isRotationEnabled = false
+        pieChart.centerText = "Заказы"
+        pieChart.setCenterTextSize(16f)
+        pieChart.isRotationEnabled = true
         pieChart.isHighlightPerTapEnabled = true
-        pieChart.legend.isEnabled = false
+        pieChart.setEntryLabelColor(Color.BLACK)
+        pieChart.setEntryLabelTextSize(10f)
+        
+        val legend = pieChart.legend
+        legend.verticalAlignment = Legend.LegendVerticalAlignment.TOP
+        legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
+        legend.orientation = Legend.LegendOrientation.VERTICAL
+        legend.setDrawInside(false)
+        legend.isEnabled = true
     }
     
     private fun loadChartData() {
-        RetrofitClient.apiService.getDailyEarnings().enqueue(object : Callback<List<ApiService.DailyEarningsResponse>> {
-            override fun onResponse(
-                call: Call<List<ApiService.DailyEarningsResponse>>,
-                response: Response<List<ApiService.DailyEarningsResponse>>
-            ) {
+        val uid = if (isCompanyWide) null else targetUserId
+        val cw = if (isCompanyWide) true else null
+        
+        RetrofitClient.apiService.getDailyEarnings(uid, cw).enqueue(object : Callback<List<ApiService.DailyEarningsResponse>> {
+            override fun onResponse(call: Call<List<ApiService.DailyEarningsResponse>>, response: Response<List<ApiService.DailyEarningsResponse>>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val data = response.body() ?: emptyList()
                     updateChart(data)
-                    // Сохраняем в кэш
-                    val dailyEarnings = data.map { it.day to it.earnings }
-                    analyticsCache.saveDailyEarnings(dailyEarnings)
-                } else {
-                    // Если ошибка, используем кэш
-                    analyticsCache.getDailyEarnings()?.let { cachedData ->
-                        val chartData = cachedData.map { (day, earnings) ->
-                            ApiService.DailyEarningsResponse("", day, earnings)
-                        }
-                        updateChart(chartData)
-                    } ?: run {
-                        updateChart(emptyList())
+                    if (uid == null && !isCompanyWide) {
+                        val dailyEarnings = data.map { it.day to it.earnings }
+                        analyticsCache.saveDailyEarnings(dailyEarnings)
                     }
+                } else if (uid == null && !isCompanyWide) {
+                    analyticsCache.getDailyEarnings()?.let { cachedData ->
+                        val chartData = cachedData.map { (day, earnings) -> ApiService.DailyEarningsResponse("", day, earnings) }
+                        updateChart(chartData)
+                    } ?: run { updateChart(emptyList()) }
+                } else {
+                    updateChart(emptyList())
                 }
             }
 
             override fun onFailure(call: Call<List<ApiService.DailyEarningsResponse>>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                // Если ошибка сети, используем кэш
-                analyticsCache.getDailyEarnings()?.let { cachedData ->
-                    val chartData = cachedData.map { (day, earnings) ->
-                        ApiService.DailyEarningsResponse("", day, earnings)
-                    }
-                    updateChart(chartData)
-                } ?: run {
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getDailyEarnings()?.let { cachedData ->
+                        val chartData = cachedData.map { (day, earnings) -> ApiService.DailyEarningsResponse("", day, earnings) }
+                        updateChart(chartData)
+                    } ?: run { updateChart(emptyList()) }
+                } else {
                     updateChart(emptyList())
                 }
             }
@@ -203,7 +275,6 @@ class AnalyticsFragment : Fragment() {
         }
         
         if (entries.isEmpty()) {
-            // Если данных нет, создаем пустой график
             chart.data = null
             chart.invalidate()
             return
@@ -220,7 +291,7 @@ class AnalyticsFragment : Fragment() {
             setDrawFilled(true)
             fillColor = Color.parseColor("#BBDEFB")
             fillAlpha = 100
-            mode = LineDataSet.Mode.CUBIC_BEZIER
+            mode = LineDataSet.Mode.LINEAR
         }
         
         val lineData = LineData(dataSet)
@@ -240,51 +311,53 @@ class AnalyticsFragment : Fragment() {
 
         if (entries.isEmpty()) {
             pieChart.data = null
+            pieChart.centerText = "Нет заказов"
             pieChart.invalidate()
             return
         }
 
-        val dataSet = PieDataSet(entries, "Статусы заказов")
+        pieChart.centerText = "Статусы"
+        val dataSet = PieDataSet(entries, "")
         dataSet.sliceSpace = 3f
         dataSet.selectionShift = 5f
 
-        // Цвета: Синий, Оранжевый, Зеленый, Серый
         val colors = ArrayList<Int>()
-        colors.add(Color.parseColor("#42A5F5")) // Новые
-        colors.add(Color.parseColor("#FFA726")) // В работе
-        colors.add(Color.parseColor("#66BB6A")) // Готовы
-        colors.add(Color.parseColor("#BDBDBD")) // Ожидают
+        if (newCount > 0) colors.add(Color.parseColor("#42A5F5"))
+        if (inProgressCount > 0) colors.add(Color.parseColor("#FFA726"))
+        if (doneCount > 0) colors.add(Color.parseColor("#66BB6A"))
+        if (pendingCount > 0) colors.add(Color.parseColor("#BDBDBD"))
         dataSet.colors = colors
 
         val data = PieData(dataSet)
         data.setValueFormatter(PercentFormatter(pieChart))
-        data.setValueTextSize(11f)
-        data.setValueTextColor(Color.WHITE)
+        data.setValueTextSize(12f)
+        data.setValueTextColor(Color.BLACK)
+        
         pieChart.data = data
+        pieChart.highlightValues(null)
         pieChart.invalidate()
     }
 
     private fun loadAnalytics() {
-        // Проверяем что фрагмент еще прикреплен к Activity
         if (!isAdded) return
         
         loadChartData()
         
-        RetrofitClient.apiService.getMonthlyEarnings().enqueue(object : Callback<ApiService.EarningsResponse> {
+        val uid = if (isCompanyWide) null else targetUserId
+        val cw = if (isCompanyWide) true else null
+        
+        RetrofitClient.apiService.getMonthlyEarnings(uid, cw).enqueue(object : Callback<ApiService.EarningsResponse> {
             override fun onResponse(call: Call<ApiService.EarningsResponse>, response: Response<ApiService.EarningsResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val message = response.body()?.message ?: "Нет данных"
-                    // Извлекаем сумму из сообщения, если возможно
-                    val earningsText = message.replace("Вы заработали: ", "").replace(" ₽", " ₽")
+                    val earningsText = message.replace("Вы заработали: ", "").replace("Доход компании: ", "").replace(" ₽", " ₽")
                     binding.tvTotalEarnings.text = earningsText
-                    // Сохраняем в кэш
-                    analyticsCache.saveMonthlyEarnings(earningsText)
+                    if (uid == null && !isCompanyWide) analyticsCache.saveMonthlyEarnings(earningsText)
                 } else {
-                    // Если ошибка, используем кэш
-                    analyticsCache.getMonthlyEarnings()?.let {
-                        binding.tvTotalEarnings.text = it
-                    } ?: run {
+                    if (uid == null && !isCompanyWide) {
+                        analyticsCache.getMonthlyEarnings()?.let { binding.tvTotalEarnings.text = it } ?: run { binding.tvTotalEarnings.text = "0 ₽" }
+                    } else {
                         binding.tvTotalEarnings.text = "0 ₽"
                     }
                 }
@@ -292,30 +365,26 @@ class AnalyticsFragment : Fragment() {
 
             override fun onFailure(call: Call<ApiService.EarningsResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                // Если ошибка сети, используем кэш
-                analyticsCache.getMonthlyEarnings()?.let {
-                    binding.tvTotalEarnings.text = it
-                } ?: run {
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getMonthlyEarnings()?.let { binding.tvTotalEarnings.text = it } ?: run { binding.tvTotalEarnings.text = "0 ₽" }
+                } else {
                     binding.tvTotalEarnings.text = "0 ₽"
                 }
             }
         })
 
-        RetrofitClient.apiService.getMonthlyCompletedOrders().enqueue(object : Callback<ApiService.OrdersCountResponse> {
+        RetrofitClient.apiService.getMonthlyCompletedOrders(uid, cw).enqueue(object : Callback<ApiService.OrdersCountResponse> {
             override fun onResponse(call: Call<ApiService.OrdersCountResponse>, response: Response<ApiService.OrdersCountResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val message = response.body()?.message ?: "Нет данных"
-                    // Извлекаем количество из сообщения, если возможно
-                    val countText = message.replace("Вы выполнили заказов: ", "")
+                    val countText = message.replace("Вы выполнили заказов: ", "").replace("Выполнено компанией: ", "")
                     binding.tvCompletedOrders.text = countText
-                    // Сохраняем в кэш
-                    analyticsCache.saveCompletedOrders(countText)
+                    if (uid == null && !isCompanyWide) analyticsCache.saveCompletedOrders(countText)
                 } else {
-                    // Если ошибка, используем кэш
-                    analyticsCache.getCompletedOrders()?.let {
-                        binding.tvCompletedOrders.text = it
-                    } ?: run {
+                    if (uid == null && !isCompanyWide) {
+                        analyticsCache.getCompletedOrders()?.let { binding.tvCompletedOrders.text = it } ?: run { binding.tvCompletedOrders.text = "0" }
+                    } else {
                         binding.tvCompletedOrders.text = "0"
                     }
                 }
@@ -323,32 +392,25 @@ class AnalyticsFragment : Fragment() {
 
             override fun onFailure(call: Call<ApiService.OrdersCountResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                // Если ошибка сети, используем кэш
-                analyticsCache.getCompletedOrders()?.let {
-                    binding.tvCompletedOrders.text = it
-                } ?: run {
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getCompletedOrders()?.let { binding.tvCompletedOrders.text = it } ?: run { binding.tvCompletedOrders.text = "0" }
+                } else {
                     binding.tvCompletedOrders.text = "0"
                 }
             }
         })
         
-        // Загружаем количество созданных заказов
-        RetrofitClient.apiService.getCreatedOrdersCount().enqueue(object : Callback<ApiService.CreatedOrdersCountResponse> {
-            override fun onResponse(
-                call: Call<ApiService.CreatedOrdersCountResponse>,
-                response: Response<ApiService.CreatedOrdersCountResponse>
-            ) {
+        RetrofitClient.apiService.getCreatedOrdersCount(uid, cw).enqueue(object : Callback<ApiService.CreatedOrdersCountResponse> {
+            override fun onResponse(call: Call<ApiService.CreatedOrdersCountResponse>, response: Response<ApiService.CreatedOrdersCountResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val count = response.body()?.count ?: 0
                     binding.tvOrdersCreated.text = count.toString()
-                    // Сохраняем в кэш
-                    analyticsCache.saveCreatedOrders(count)
+                    if (uid == null && !isCompanyWide) analyticsCache.saveCreatedOrders(count)
                 } else {
-                    // Если ошибка, используем кэш
-                    analyticsCache.getCreatedOrders()?.let {
-                        binding.tvOrdersCreated.text = it.toString()
-                    } ?: run {
+                    if (uid == null && !isCompanyWide) {
+                        analyticsCache.getCreatedOrders()?.let { binding.tvOrdersCreated.text = it.toString() } ?: run { binding.tvOrdersCreated.text = "0" }
+                    } else {
                         binding.tvOrdersCreated.text = "0"
                     }
                 }
@@ -356,32 +418,25 @@ class AnalyticsFragment : Fragment() {
 
             override fun onFailure(call: Call<ApiService.CreatedOrdersCountResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                // Если ошибка сети, используем кэш
-                analyticsCache.getCreatedOrders()?.let {
-                    binding.tvOrdersCreated.text = it.toString()
-                } ?: run {
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getCreatedOrders()?.let { binding.tvOrdersCreated.text = it.toString() } ?: run { binding.tvOrdersCreated.text = "0" }
+                } else {
                     binding.tvOrdersCreated.text = "0"
                 }
             }
         })
         
-        // Загружаем эффективность сотрудника
-        RetrofitClient.apiService.getEmployeeEfficiency().enqueue(object : Callback<ApiService.EfficiencyResponse> {
-            override fun onResponse(
-                call: Call<ApiService.EfficiencyResponse>,
-                response: Response<ApiService.EfficiencyResponse>
-            ) {
+        RetrofitClient.apiService.getEmployeeEfficiency(uid, cw).enqueue(object : Callback<ApiService.EfficiencyResponse> {
+            override fun onResponse(call: Call<ApiService.EfficiencyResponse>, response: Response<ApiService.EfficiencyResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val efficiency = response.body()?.efficiency ?: 0.0
                     binding.tvEmployeeEfficiency.text = "${"%.1f".format(efficiency)}%"
-                    // Сохраняем в кэш
-                    analyticsCache.saveEmployeeEfficiency(efficiency)
+                    if (uid == null && !isCompanyWide) analyticsCache.saveEmployeeEfficiency(efficiency)
                 } else {
-                    // Если ошибка, используем кэш
-                    analyticsCache.getEmployeeEfficiency()?.let {
-                        binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%"
-                    } ?: run {
+                    if (uid == null && !isCompanyWide) {
+                        analyticsCache.getEmployeeEfficiency()?.let { binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%" } ?: run { binding.tvEmployeeEfficiency.text = "0%" }
+                    } else {
                         binding.tvEmployeeEfficiency.text = "0%"
                     }
                 }
@@ -389,60 +444,67 @@ class AnalyticsFragment : Fragment() {
 
             override fun onFailure(call: Call<ApiService.EfficiencyResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                // Если ошибка сети, используем кэш
-                analyticsCache.getEmployeeEfficiency()?.let {
-                    binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%"
-                } ?: run {
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getEmployeeEfficiency()?.let { binding.tvEmployeeEfficiency.text = "${"%.1f".format(it)}%" } ?: run { binding.tvEmployeeEfficiency.text = "0%" }
+                } else {
                     binding.tvEmployeeEfficiency.text = "0%"
                 }
             }
         })
 
-        // Загружаем среднюю сложность
-        RetrofitClient.apiService.getAverageComplexity().enqueue(object : Callback<ApiService.AverageComplexityResponse> {
+        RetrofitClient.apiService.getAverageComplexity(uid, cw).enqueue(object : Callback<ApiService.AverageComplexityResponse> {
             override fun onResponse(call: Call<ApiService.AverageComplexityResponse>, response: Response<ApiService.AverageComplexityResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val complexity = response.body()?.average_complexity ?: 0.0
                     binding.tvAverageComplexity.text = "${"%.1f".format(complexity)} pts"
-                    analyticsCache.saveAverageComplexity(complexity)
+                    if (uid == null && !isCompanyWide) analyticsCache.saveAverageComplexity(complexity)
                 } else {
-                    analyticsCache.getAverageComplexity()?.let {
-                        binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts"
-                    } ?: run { binding.tvAverageComplexity.text = "0 pts" }
+                    if (uid == null && !isCompanyWide) {
+                        analyticsCache.getAverageComplexity()?.let { binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts" } ?: run { binding.tvAverageComplexity.text = "0 pts" }
+                    } else {
+                        binding.tvAverageComplexity.text = "0 pts"
+                    }
                 }
             }
 
             override fun onFailure(call: Call<ApiService.AverageComplexityResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
-                analyticsCache.getAverageComplexity()?.let {
-                    binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts"
-                } ?: run { binding.tvAverageComplexity.text = "0 pts" }
+                if (uid == null && !isCompanyWide) {
+                    analyticsCache.getAverageComplexity()?.let { binding.tvAverageComplexity.text = "${"%.1f".format(it)} pts" } ?: run { binding.tvAverageComplexity.text = "0 pts" }
+                } else {
+                    binding.tvAverageComplexity.text = "0 pts"
+                }
             }
         })
 
-        // Загружаем статистику по статусам для круговой диаграммы
-        RetrofitClient.apiService.getOrderStatistics().enqueue(object : Callback<ApiService.OrderStatisticsResponse> {
+        RetrofitClient.apiService.getOrderStatistics(uid, cw).enqueue(object : Callback<ApiService.OrderStatisticsResponse> {
             override fun onResponse(call: Call<ApiService.OrderStatisticsResponse>, response: Response<ApiService.OrderStatisticsResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val stats = response.body()?.status_statistics
                     if (stats != null) {
                         updatePieChart(stats.new, stats.in_progress, stats.done, stats.pending)
-                        
-                        val jsonObj = JSONObject()
-                        jsonObj.put("new", stats.new)
-                        jsonObj.put("in_progress", stats.in_progress)
-                        jsonObj.put("done", stats.done)
-                        jsonObj.put("pending", stats.pending)
-                        analyticsCache.saveOrderStatistics(jsonObj.toString())
+                        if (uid == null && !isCompanyWide) {
+                            val jsonObj = JSONObject()
+                            jsonObj.put("new", stats.new)
+                            jsonObj.put("in_progress", stats.in_progress)
+                            jsonObj.put("done", stats.done)
+                            jsonObj.put("pending", stats.pending)
+                            analyticsCache.saveOrderStatistics(jsonObj.toString())
+                        }
+                    } else {
+                        updatePieChart(0, 0, 0, 0)
                     }
+                } else {
+                    updatePieChart(0, 0, 0, 0)
                 }
             }
 
-            override fun onFailure(call: Call<ApiService.OrderStatisticsResponse>, t: Throwable) {
-                // Ничего не делаем, график просто не обновится, если нет сети, 
-                // а кэш уже был загружен в onViewCreated
+            override fun onFailure(call: Call<ApiService.OrderStatisticsResponse>, t: Throwable) { 
+                if (isAdded && _binding != null) {
+                    updatePieChart(0, 0, 0, 0)
+                }
             }
         })
     }
