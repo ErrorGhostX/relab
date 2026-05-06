@@ -6,15 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend_relab_app/asgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/asgi.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend_relab_app/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/profile_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/profile_views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/serializers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +61,7 @@
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;backendDjango&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;A:/Studying/RINH_3_KURS/Apps/Relab/backend_relab_app&quot;,
+    &quot;last_opened_file_path&quot;: &quot;A:/DEV/Lioket/Relab/RelabApp/backend_relab_app&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -182,7 +175,12 @@
       <workItem from="1777499953392" duration="1193000" />
       <workItem from="1777575115490" duration="2055000" />
       <workItem from="1777597272713" duration="2289000" />
-      <workItem from="1777649385752" duration="8960000" />
+      <workItem from="1777649385752" duration="9864000" />
+      <workItem from="1777721083662" duration="10677000" />
+      <workItem from="1777772807314" duration="4555000" />
+      <workItem from="1778008262204" duration="801000" />
+      <workItem from="1778025622318" duration="1737000" />
+      <workItem from="1778088578955" duration="300000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />

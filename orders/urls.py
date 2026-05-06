@@ -1,7 +1,7 @@
 # urls.py
 from rest_framework.routers import DefaultRouter
 from .views import (
-    OrderViewSet, AnalyticsViewSet, CustomerViewSet, AiViewSet,
+    OrderViewSet, AnalyticsViewSet, CustomerViewSet, AIViewSet,
     EmployeeViewSet, ChatRoomViewSet, StaffAnalyticsViewSet, FCMDeviceViewSet
 )
 
@@ -10,7 +10,7 @@ router = DefaultRouter()
 router.register('orders', OrderViewSet, basename='order')
 router.register('analytics', AnalyticsViewSet, basename='analytics')
 router.register('customers', CustomerViewSet, basename='customer')
-router.register('ai', AiViewSet, basename='ai')
+router.register('ai', AIViewSet, basename='ai')
 router.register('employees', EmployeeViewSet, basename='employee')
 router.register('chats', ChatRoomViewSet, basename='chat')
 router.register('admin-analytics', StaffAnalyticsViewSet, basename='admin-analytics')

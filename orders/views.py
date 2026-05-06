@@ -61,6 +61,26 @@ from django.contrib.auth.models import User
 
 from .models import Order
 
+class AIViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        provider = request.query_params.get('provider', 'ollama')
+        
+        if provider == 'lmstudio':
+            url = "http://localhost:1234/v1/models"
+        else:
+            url = "http://localhost:11434/api/tags"
+
+        try:
+            import requests
+            resp = requests.get(url, timeout=3)
+            if resp.status_code == 200:
+                return Response({'status': 'online', 'provider': provider})
+            return Response({'status': 'error', 'message': f'Server returned {resp.status_code}'})
+        except Exception as e:
+            return Response({'status': 'offline', 'message': str(e)}, status=status.HTTP_200_OK)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -744,55 +764,78 @@ from collections import defaultdict
 class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    def _get_target_user(self, request):
+        user = request.user
+        company_wide = request.query_params.get('company_wide') == 'true'
+        if company_wide and hasattr(request.user, 'profile') and request.user.profile.rank == 'admin':
+            return None
+            
+        user_id = request.query_params.get('user_id')
+        if user_id:
+            if hasattr(request.user, 'profile') and request.user.profile.rank == 'admin':
+                try:
+                    from django.contrib.auth.models import User
+                    user = User.objects.get(id=user_id)
+                except User.DoesNotExist:
+                    pass
+        return user
+
     @action(detail=False, methods=['get'])
     def monthly_earnings(self, request):
-        user = request.user
+        user = self._get_target_user(request)
         today = now().date()
         first_day = today.replace(day=1)
 
-
-        total = Service.objects.filter(
-            order__created_by=user,
+        services = Service.objects.filter(
             order__status='done',
             order__date__gte=first_day,
             order__date__lte=today
-        ).aggregate(total_price=Sum('price'))['total_price'] or 0
+        )
+        if user:
+            services = services.filter(order__created_by=user)
+            
+        total = services.aggregate(total_price=Sum('price'))['total_price'] or 0
 
         return Response({
-            "message": f"Вы заработали: {total} ₽"
+            "message": f"Вы заработали: {total} ₽" if user else f"Доход компании: {total} ₽"
         })
 
     @action(detail=False, methods=['get'])
     def monthly_completed_orders(self, request):
-        user = request.user
+        user = self._get_target_user(request)
         today = now().date()
         first_day = today.replace(day=1)
 
-        count = Order.objects.filter(
-            created_by=user,
+        orders = Order.objects.filter(
             status='done',
             date__gte=first_day,
             date__lte=today
-        ).count()
+        )
+        if user:
+            orders = orders.filter(created_by=user)
+            
+        count = orders.count()
 
         return Response({
-            "message": f"Вы выполнили заказов: {count}"
+            "message": f"Вы выполнили заказов: {count}" if user else f"Выполнено компанией: {count}"
         })
 
     @action(detail=False, methods=['get'])
     def daily_earnings(self, request):
         """Возвращает заработок по дням месяца"""
-        user = request.user
+        user = self._get_target_user(request)
         today = now().date()
         first_day = today.replace(day=1)
         
         # Получаем все услуги из завершенных заказов за месяц
         services = Service.objects.filter(
-            order__created_by=user,
             order__status='done',
             order__date__gte=first_day,
             order__date__lte=today
         ).select_related('order')
+        
+        if user:
+            services = services.filter(order__created_by=user)
         
         # Группируем по дням
         daily_earnings = defaultdict(float)
@@ -801,15 +844,24 @@ class AnalyticsViewSet(viewsets.ViewSet):
             if day:
                 daily_earnings[day.strftime('%Y-%m-%d')] += float(service.price)
         
-        # Формируем список всех дней месяца
+        # Формируем список всех дней месяца (кумулятивно)
         result = []
         current_day = first_day
+        cumulative_total = 0.0
+        
+        # Получаем последний день месяца
+        import calendar
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        month_end = today.replace(day=last_day)
+
         while current_day <= today:
             day_str = current_day.strftime('%Y-%m-%d')
+            cumulative_total += daily_earnings.get(day_str, 0.0)
+            
             result.append({
                 'date': day_str,
                 'day': current_day.day,
-                'earnings': daily_earnings.get(day_str, 0.0)
+                'earnings': cumulative_total
             })
             current_day += timedelta(days=1)
         
@@ -818,19 +870,22 @@ class AnalyticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def created_orders_count(self, request):
         """Возвращает количество созданных заказов за месяц"""
-        user = request.user
+        user = self._get_target_user(request)
         today = now()
         first_day = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        count = Order.objects.filter(
-            created_by=user,
+        orders = Order.objects.filter(
             created_at__gte=first_day,
             created_at__lte=today
-        ).count()
+        )
+        if user:
+            orders = orders.filter(created_by=user)
+            
+        count = orders.count()
         
         return Response({
             "count": count,
-            "message": f"Создано заказов: {count}"
+            "message": f"Создано заказов: {count}" if user else f"Заказов компании: {count}"
         })
 
 class AiViewSet(viewsets.ViewSet):
@@ -849,8 +904,11 @@ class AiViewSet(viewsets.ViewSet):
 
         system_prompt = (
             "Ты — профессиональный ассистент сервисного центра. Твоя задача — извлечь данные из заявки и вернуть СТРОГИЙ JSON. "
-            "Ключи: 'customer_name' (ФИО), 'phone' (номер), 'device_type' (тип), 'manufacturer' (бренд), 'model' (модель), "
-            "'kit' (подробная комплектация), 'order_type' (тип ремонта), 'summary_description' (суть проблемы), "
+            "Ключи: "
+            "'order_name' (краткое название заказа, например 'Ремонт iPhone 13' или 'Чистка ноутбука'), "
+            "'customer_name' (ФИО), 'phone' (номер), 'device_type' (тип устройства), 'manufacturer' (бренд), 'model' (модель), "
+            "'kit' (подробная комплектация: зарядка, кабель и т.д.), 'order_type' (тип: 'repair' или 'diagnosis'), "
+            "'summary_description' (суть проблемы, кратко), "
             "'suggested_services' (список услуг). "
             "ВАЖНО: 'suggested_services' должен быть списком объектов: [{\"description\": \"название\", \"price\": 1000}]. "
             "Если цена за услугу указана в тексте, обязательно извлеки её как число. Если нет — ставь 0."
@@ -1145,10 +1203,10 @@ class AiViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def employee_efficiency(self, request):
         """
-        Возвращает эффективность сотрудника за месяц.
+        Возвращает эффективность сотрудника (или компании) за месяц.
         Эффективность = (завершенные заказы / созданные заказы) * 100
         """
-        user = request.user
+        user = self._get_target_user(request)
         today = now().date()
         first_day = today.replace(day=1)
         
@@ -1156,19 +1214,23 @@ class AiViewSet(viewsets.ViewSet):
         first_day_datetime = make_aware(datetime.combine(first_day, time.min))
         today_datetime = make_aware(datetime.combine(today, time.max))
         
-        created_count = Order.objects.filter(
-            created_by=user,
+        created_orders = Order.objects.filter(
             created_at__gte=first_day_datetime,
             created_at__lte=today_datetime
-        ).count()
+        )
+        if user:
+            created_orders = created_orders.filter(created_by=user)
+        created_count = created_orders.count()
         
         # Количество завершенных заказов
-        completed_count = Order.objects.filter(
-            created_by=user,
+        completed_orders = Order.objects.filter(
             status='done',
             date__gte=first_day,
             date__lte=today
-        ).count()
+        )
+        if user:
+            completed_orders = completed_orders.filter(created_by=user)
+        completed_count = completed_orders.count()
         
         # Вычисляем эффективность
         efficiency = 0.0
@@ -1185,17 +1247,18 @@ class AiViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def average_complexity(self, request):
         """Возвращает среднюю сложность заказов за месяц"""
-        user = request.user
+        user = self._get_target_user(request)
         today = now().date()
         first_day = today.replace(day=1)
         
         # Получаем все завершенные заказы за месяц
         orders = Order.objects.filter(
-            created_by=user,
             status='done',
             date__gte=first_day,
             date__lte=today
         ).prefetch_related('services')
+        if user:
+            orders = orders.filter(created_by=user)
         
         complexities = []
         for order in orders:
@@ -1212,19 +1275,20 @@ class AiViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def order_statistics(self, request):
-        """Возвращает общую статистику по заказам за месяц"""
-        user = request.user
+        """Возвращает общую статистику по заказам за последние 30 дней"""
+        user = self._get_target_user(request)
         today = now().date()
-        first_day = today.replace(day=1)
+        start_date = today - timedelta(days=30)
         
-        first_day_datetime = make_aware(datetime.combine(first_day, time.min))
+        start_datetime = make_aware(datetime.combine(start_date, time.min))
         today_datetime = make_aware(datetime.combine(today, time.max))
         
         orders = Order.objects.filter(
-            created_by=user,
-            created_at__gte=first_day_datetime,
+            created_at__gte=start_datetime,
             created_at__lte=today_datetime
         )
+        if user:
+            orders = orders.filter(created_by=user)
         
         # Статистика по статусам
         status_stats = {
@@ -1291,7 +1355,7 @@ class StaffAnalyticsViewSet(viewsets.ViewSet):
         if start_date:
             try:
                 date_filter &= Q(
-                    created_orders__date__gte=datetime.date.fromisoformat(start_date)
+                    orders__date__gte=datetime.date.fromisoformat(start_date)
                 ) | Q(
                     assigned_orders__date__gte=datetime.date.fromisoformat(start_date)
                 )
@@ -1300,7 +1364,7 @@ class StaffAnalyticsViewSet(viewsets.ViewSet):
         if end_date:
             try:
                 date_filter &= Q(
-                    created_orders__date__lte=datetime.date.fromisoformat(end_date)
+                    orders__date__lte=datetime.date.fromisoformat(end_date)
                 ) | Q(
                     assigned_orders__date__lte=datetime.date.fromisoformat(end_date)
                 )
@@ -1339,8 +1403,8 @@ class StaffAnalyticsViewSet(viewsets.ViewSet):
             ),
             # Количество завершённых заказов (как создатель ИЛИ исполнитель)
             completed_orders_count=Count(
-                'created_orders',
-                filter=Q(created_orders__status='done'),
+                'orders',
+                filter=Q(orders__status='done'),
                 distinct=True
             ) + Count(
                 'assigned_orders',
@@ -1349,7 +1413,7 @@ class StaffAnalyticsViewSet(viewsets.ViewSet):
             ),
             # Количество созданных заказов
             created_orders_count=Count(
-                'created_orders',
+                'orders',
                 distinct=True
             ),
         ).order_by('-total_revenue')
@@ -1594,6 +1658,42 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             )
 
         return Response({"status": "ok"})
+
+    @action(detail=False, methods=['post'])
+    def get_or_create_ai_chat(self, request):
+        """
+        POST /api/chats/get_or_create_ai_chat/
+        Создаёт или возвращает ЛС-чат с ИИ-помощником.
+        """
+        user = request.user
+        # 1. Ищем или создаем пользователя-бота
+        bot_user, _ = User.objects.get_or_create(
+            username='AI_Assistant',
+            defaults={'first_name': 'ИИ', 'last_name': 'Помощник'}
+        )
+        
+        from .models import ChatRoom, ChatParticipant
+        # 2. Ищем существующий Direct чат с этим ботом
+        room = ChatRoom.objects.filter(
+            is_direct=True,
+            participants__user=user
+        ).filter(
+            participants__user=bot_user
+        ).distinct().first()
+        
+        if not room:
+            # Создаем новую комнату
+            room = ChatRoom.objects.create(
+                name="ИИ-Помощник",
+                is_direct=True
+            )
+            ChatParticipant.objects.create(room=room, user=user)
+            ChatParticipant.objects.create(room=room, user=bot_user)
+            
+        # Аннотируем unread_count для сериализатора
+        room.unread_count = 0 
+        serializer = self.get_serializer(room)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
     def get_or_create_direct(self, request):
