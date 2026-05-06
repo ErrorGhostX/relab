@@ -98,15 +98,33 @@ class Order(models.Model):
     # Дата (лучше DateField)
     date = models.DateField(null=True, blank=True)
 
-    # Тип заказа — КОД (repair/diagnosis)
+    # Адрес для выездного заказа
+    address = models.TextField(blank=True, default='', verbose_name='Адрес')
+
+    # Тип исполнения (выездной/мастерская/удаленный)
+    EXECUTION_CHOICES = (
+        ('field', 'Выездной'),
+        ('workshop', 'Мастерская'),
+        ('remote', 'Удаленный'),
+    )
+    execution_type = models.CharField(
+        max_length=20,
+        choices=EXECUTION_CHOICES,
+        default='field',
+        verbose_name='Тип исполнения'
+    )
+
+    # Вид работ — КОД (repair/diagnosis/component_repair)
     TYPE_CHOICES = (
         ('repair', 'Починка'),
         ('diagnosis', 'Диагностика'),
+        ('component_repair', 'Компонентный ремонт'),
     )
     order_type = models.CharField(
         max_length=50,
         choices=TYPE_CHOICES,
-        default='repair'
+        default='repair',
+        verbose_name='Вид работ'
     )
 
     # Статус заказа
