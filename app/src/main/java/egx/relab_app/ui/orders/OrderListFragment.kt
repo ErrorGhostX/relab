@@ -48,7 +48,7 @@ class OrderListFragment : Fragment() {
     // Получаем Repository из Application
     private val repository by lazy { requireContext().app.orderRepository }
     private val syncManager by lazy { 
-        SyncManager(repository, requireContext(), requireContext().app.customerDao)
+        SyncManager(repository, requireContext(), requireContext().app.customerDao, requireContext().app.consumableDao)
     }
 
     private val statusMap = mapOf(
@@ -87,12 +87,15 @@ class OrderListFragment : Fragment() {
             }
         }
 
-        setupTabs()
         setupFab()
         setupSyncButton()
         checkConnectionAndUpdateIndicator()
         setupMenu()
         setupToggleViewMode()
+        
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
     }
 
     private fun setupMenu() {
@@ -275,17 +278,7 @@ class OrderListFragment : Fragment() {
         }
     }
 
-    private fun setupTabs() {
-        binding.tabLayout.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
-                selectedTab = tab?.position ?: 0
-                // Перезапускаем наблюдение с новым фильтром
-                refreshOrdersList()
-            }
-            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
-            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
-        })
-    }
+
 
     private fun refreshOrdersList() {
         if (selectedStatus == "Все") {

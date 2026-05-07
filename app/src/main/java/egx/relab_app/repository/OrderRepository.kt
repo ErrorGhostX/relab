@@ -3,13 +3,19 @@ package egx.relab_app.repository
 import egx.relab_app.database.AppDatabase
 import egx.relab_app.database.dao.OrderDao
 import egx.relab_app.database.dao.ServiceDao
+import egx.relab_app.database.dao.ConsumableDao
+import egx.relab_app.database.entity.ConsumableEntity
 import egx.relab_app.database.entity.OrderEntity
 import egx.relab_app.database.entity.ServiceEntity
+import egx.relab_app.database.entity.OrderConsumableEntity
 import egx.relab_app.models.Order
 import egx.relab_app.models.Service
+import egx.relab_app.models.Consumable
+import egx.relab_app.models.OrderConsumable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import egx.relab_app.database.entity.SyncStatus
 
 /**
  * Repository для работы с заказами
@@ -38,7 +44,8 @@ import kotlinx.coroutines.flow.map
  */
 class OrderRepository(
     private val orderDao: OrderDao,
-    private val serviceDao: ServiceDao
+    private val serviceDao: ServiceDao,
+    private val consumableDao: ConsumableDao
 ) {
     
     /**
@@ -80,16 +87,22 @@ class OrderRepository(
      * Получить заказ по локальному ID
      */
     suspend fun getOrderByLocalId(localId: Long): Order? {
-        val entity = orderDao.getOrderByLocalId(localId)
-        return entity?.toOrder()
+        val entity = orderDao.getOrderByLocalId(localId) ?: return null
+        val order = entity.toOrder()
+        // Прикрепляем расходники из отдельной таблицы
+        val orderConsumables = consumableDao.getConsumablesForOrder(localId).first()
+        return order.copy(orderConsumables = orderConsumables.map { it.toOrderConsumable() })
     }
     
     /**
      * Получить заказ по серверному ID
      */
     suspend fun getOrderByServerId(serverId: Int): Order? {
-        val entity = orderDao.getOrderByServerId(serverId)
-        return entity?.toOrder()
+        val entity = orderDao.getOrderByServerId(serverId) ?: return null
+        val order = entity.toOrder()
+        // Прикрепляем расходники из отдельной таблицы
+        val orderConsumables = consumableDao.getConsumablesForOrder(entity.localId).first()
+        return order.copy(orderConsumables = orderConsumables.map { it.toOrderConsumable() })
     }
     
     /**
@@ -115,6 +128,24 @@ class OrderRepository(
             // Конвертируем Entity в модели Service
             // ВАЖНО: entities - это данные из локальной БД
             entities.map { it.toService() }
+        }
+    }
+
+    /**
+     * Получить расходники для заказа из локальной БД
+     */
+    fun getConsumablesForOrder(orderLocalId: Long): Flow<List<OrderConsumable>> {
+        return consumableDao.getConsumablesForOrder(orderLocalId).map { entities ->
+            entities.map { it.toOrderConsumable() }
+        }
+    }
+
+    /**
+     * Получить все расходники (склад)
+     */
+    fun getAllConsumables(): Flow<List<Consumable>> {
+        return consumableDao.getAllConsumables().map { entities ->
+            entities.map { it.toConsumable() }
         }
     }
     
@@ -164,9 +195,9 @@ class OrderRepository(
         
         // ВАЖНО: Помечаем заказ как требующий синхронизации
         val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
-        if (orderEntity != null && orderEntity.syncStatus == egx.relab_app.database.entity.OrderEntity.SyncStatus.SYNCED) {
+        if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
             // Если заказ был синхронизирован, помечаем как PENDING
-            orderDao.updateSyncStatus(orderLocalId, egx.relab_app.database.entity.OrderEntity.SyncStatus.PENDING)
+            orderDao.updateSyncStatus(orderLocalId, SyncStatus.PENDING)
         }
         
         android.util.Log.d("OrderRepository", "Услуга добавлена локально. localId: $serviceLocalId, orderLocalId: $orderLocalId, performer: $performedByUsername")
@@ -244,9 +275,9 @@ class OrderRepository(
             
             //  Помечаем заказ как требующий синхронизации
             val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
-            if (orderEntity != null && orderEntity.syncStatus == egx.relab_app.database.entity.OrderEntity.SyncStatus.SYNCED) {
+            if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
                 // Если заказ был синхронизирован, помечаем как PENDING
-                orderDao.updateSyncStatus(orderLocalId, egx.relab_app.database.entity.OrderEntity.SyncStatus.PENDING)
+                orderDao.updateSyncStatus(orderLocalId, SyncStatus.PENDING)
             }
         }
     }
@@ -280,6 +311,81 @@ class OrderRepository(
         }
         
         return localId
+    }
+
+    /**
+     * Добавить расходник к заказу
+     */
+    suspend fun addConsumableToOrder(
+        orderLocalId: Long,
+        orderServerId: Int?,
+        consumable: Consumable,
+        quantity: Int,
+        createdByUsername: String? = null
+    ) {
+        android.util.Log.d("OrderRepository", "Добавление расходника: ${consumable.name}, localId=${consumable.localId}, кол-во=$quantity")
+        val entity = OrderConsumableEntity(
+            orderLocalId = orderLocalId,
+            orderServerId = orderServerId,
+            consumableId = consumable.id,
+            consumableLocalId = consumable.localId,
+            name = consumable.name ?: "",
+            sku = consumable.sku,
+            quantity = quantity,
+            priceAtTime = consumable.price,
+            createdByUsername = createdByUsername
+        )
+        val id = consumableDao.insertOrderConsumables(listOf(entity))
+        android.util.Log.d("OrderRepository", "Расходник вставлен в заказ, присвоен ID=$id")
+
+        // Уменьшаем количество на складе
+        if (consumable.localId > 0) {
+            android.util.Log.d("OrderRepository", "Уменьшаем остаток на складе для localId=${consumable.localId} на $quantity")
+            consumableDao.updateConsumableQuantity(consumable.localId, -quantity)
+        } else {
+            android.util.Log.w("OrderRepository", "ВНИМАНИЕ: consumable.localId <= 0, списание невозможно!")
+        }
+
+        // Помечаем заказ как PENDING
+        val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
+        if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
+            orderDao.updateSyncStatus(orderLocalId, SyncStatus.PENDING)
+        }
+    }
+
+    /**
+     * Удалить расходник из заказа
+     */
+    suspend fun deleteConsumableFromOrder(consumableLocalId: Long, orderLocalId: Long) {
+        android.util.Log.d("OrderRepository", "Удаление расходника из заказа: orderLocalId=$orderLocalId, recordLocalId=$consumableLocalId")
+        
+        // Находим запись перед удалением, чтобы узнать количество и ID расходника на складе
+        val orderConsumables = consumableDao.getConsumablesForOrder(orderLocalId).first()
+        android.util.Log.d("OrderRepository", "Найдено расходников в заказе: ${orderConsumables.size}")
+        
+        val toDelete = orderConsumables.find { it.localId == consumableLocalId }
+        
+        if (toDelete != null) {
+            android.util.Log.d("OrderRepository", "Найдена запись для удаления: ${toDelete.name}, кол-во=${toDelete.quantity}, warehouseLocalId=${toDelete.consumableLocalId}")
+            // Возвращаем количество на склад
+            if (toDelete.consumableLocalId != null && toDelete.consumableLocalId!! > 0) {
+                android.util.Log.d("OrderRepository", "Возвращаем ${toDelete.quantity} шт. на склад для localId=${toDelete.consumableLocalId}")
+                consumableDao.updateConsumableQuantity(toDelete.consumableLocalId!!, toDelete.quantity)
+            } else {
+                android.util.Log.w("OrderRepository", " warehouseLocalId пуст или <= 0, возврат на склад невозможен!")
+            }
+        } else {
+            android.util.Log.e("OrderRepository", "Запись с localId=$consumableLocalId НЕ НАЙДЕНА в заказе!")
+        }
+
+        // Удаляем запись из локальной БД
+        consumableDao.deleteOrderConsumableById(consumableLocalId)
+        
+        // Помечаем заказ для синхронизации
+        val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
+        if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
+            orderDao.updateSyncStatus(orderLocalId, SyncStatus.PENDING)
+        }
     }
     
     /**
@@ -323,7 +429,7 @@ class OrderRepository(
             assignedToFullName = order.assignedToFullName,
             assignedToAvatar = order.assignedToAvatar,
             assignedAt = order.assignedAt,
-            syncStatus = OrderEntity.SyncStatus.PENDING,
+            syncStatus = SyncStatus.PENDING,
             lastModified = System.currentTimeMillis()
         )
 
@@ -399,7 +505,7 @@ class OrderRepository(
                     val photoToSave = null  // fromOrder сам конвертирует photos в JSON
                     
                     // Создаем Entity из заказа с сервера с правильным serverId
-                    val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+                    val entity = OrderEntity.fromOrder(order, SyncStatus.SYNCED)
                     android.util.Log.d("OrderRepository", "Обновление: order.isPublic=${order.isPublic}, entity.isPublic=${entity.isPublic}")
                     
                     // Копируем все поля, включая serverId, но сохраняем локальный ID и фото
@@ -407,7 +513,7 @@ class OrderRepository(
                         localId = existing.localId,  // Сохраняем локальный ID
                         serverId = order.id,  // ВАЖНО: Обновляем serverId с сервера
                         photo = photoToSave ?: entity.photo,  // ВАЖНО: Используем фото с сервера или локальные
-                        syncStatus = OrderEntity.SyncStatus.SYNCED,  // Обновляем статус
+                        syncStatus = SyncStatus.SYNCED,  // Обновляем статус
                         lastSynced = System.currentTimeMillis()  // Обновляем время синхронизации
                     )
                     
@@ -426,7 +532,7 @@ class OrderRepository(
                         if (verify.serverId != order.id) {
                             android.util.Log.e("OrderRepository", "ОШИБКА: serverId не обновлен! Ожидалось: ${order.id}, получено: ${verify.serverId}")
                             // Пытаемся обновить через специальный метод DAO
-                            orderDao.updateServerId(localId, order.id!!, OrderEntity.SyncStatus.SYNCED)
+                            orderDao.updateServerId(localId, order.id!!, SyncStatus.SYNCED)
                         }
                     }
                 } else {
@@ -451,8 +557,8 @@ class OrderRepository(
         if (existing != null) {
             // Заказ уже существует локально
             //  Не перезаписываем, если заказ был изменен локально (PENDING или ERROR)
-            if (existing.syncStatus == OrderEntity.SyncStatus.PENDING || 
-                existing.syncStatus == OrderEntity.SyncStatus.ERROR) {
+            if (existing.syncStatus == SyncStatus.PENDING || 
+                existing.syncStatus == SyncStatus.ERROR) {
                 android.util.Log.d("OrderRepository", "Пропуск обновления заказа ${order.id} - локальные изменения в приоритете")
                 return
             }
@@ -461,25 +567,31 @@ class OrderRepository(
             //  Всегда используем фото с сервера при синхронизации
             android.util.Log.d("OrderRepository", "Используем фото с сервера для заказа ${order.id}: ${order.photos.size} фото")
             
-            val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+            val entity = OrderEntity.fromOrder(order, SyncStatus.SYNCED)
             val updated = entity.copy(
                 localId = existing.localId
                 // ВАЖНО: Используем фото с сервера (уже конвертировано в JSON в fromOrder)
             )
             orderDao.updateOrder(updated)
             
-            // Сохраняем услуги заказа
+            // Сохраняем услуги и расходники заказа
             if (order.services.isNotEmpty()) {
                 saveServicesForOrder(existing.localId, order.id, order.services)
             }
+            if (order.orderConsumables.isNotEmpty()) {
+                saveConsumablesForOrder(existing.localId, order.id, order.orderConsumables)
+            }
         } else {
             // Новый заказ с сервера - сохраняем
-            val entity = OrderEntity.fromOrder(order, OrderEntity.SyncStatus.SYNCED)
+            val entity = OrderEntity.fromOrder(order, SyncStatus.SYNCED)
             val newLocalId = orderDao.insertOrder(entity)
             
-            // Сохраняем услуги заказа
+            // Сохраняем услуги и расходники заказа
             if (order.services.isNotEmpty()) {
                 saveServicesForOrder(newLocalId, order.id, order.services)
+            }
+            if (order.orderConsumables.isNotEmpty()) {
+                saveConsumablesForOrder(newLocalId, order.id, order.orderConsumables)
             }
         }
     }
@@ -501,13 +613,51 @@ class OrderRepository(
         }
         serviceDao.insertServices(serviceEntities)
     }
+
+    /**
+     * Сохранить расходники для заказа
+     */
+    private suspend fun saveConsumablesForOrder(
+        orderLocalId: Long,
+        orderServerId: Int?,
+        consumables: List<OrderConsumable>
+    ) {
+        android.util.Log.d("OrderRepository", "Синхронизация расходников для заказа localId=$orderLocalId: ${consumables.size} шт.")
+        // Удаляем старые расходники
+        consumableDao.deleteConsumablesForOrder(orderLocalId)
+        
+        // Вставляем новые расходники
+        val entities = consumables.map { consumable ->
+            // 1. Пытаемся найти по serverId
+            var warehouseItem = if (consumable.consumableId != null) {
+                consumableDao.getConsumableByServerId(consumable.consumableId!!)
+            } else null
+            
+            // 2. Если не нашли по serverId, пытаемся найти по SKU (артикулу)
+            if (warehouseItem == null && !consumable.sku.isNullOrEmpty()) {
+                android.util.Log.d("OrderRepository", "Товар не найден по serverId=${consumable.consumableId}, ищем по SKU=${consumable.sku}")
+                warehouseItem = consumableDao.getConsumableBySku(consumable.sku!!)
+            }
+
+            if (warehouseItem != null) {
+                android.util.Log.d("OrderRepository", "Связь со складом установлена: ${consumable.name} -> warehouseLocalId=${warehouseItem.localId}")
+            } else {
+                android.util.Log.w("OrderRepository", "НЕ УДАЛОСЬ найти товар на складе для: ${consumable.name} (ID=${consumable.consumableId}, SKU=${consumable.sku})")
+            }
+            
+            OrderConsumableEntity.fromOrderConsumable(consumable, orderLocalId, orderServerId).copy(
+                consumableLocalId = warehouseItem?.localId
+            )
+        }
+        consumableDao.insertOrderConsumables(entities)
+    }
     
     /**
      * Обновить статус синхронизации заказа
      */
     suspend fun updateSyncStatus(
         localId: Long,
-        status: OrderEntity.SyncStatus,
+        status: SyncStatus,
         serverId: Int? = null
     ) {
         if (serverId != null) {
@@ -553,5 +703,20 @@ class OrderRepository(
         orderDao.clearAllOrders()
         serviceDao.clearAllServices()
     }
+
+    /**
+     * Сохранить расходник на складе
+     */
+    suspend fun saveConsumable(consumable: Consumable) {
+        consumableDao.insertConsumable(ConsumableEntity.fromConsumable(consumable))
+    }
+
+    /**
+     * Удалить расходник со склада
+     */
+    suspend fun deleteWarehouseConsumable(consumable: Consumable) {
+        consumableDao.deleteConsumable(ConsumableEntity.fromConsumable(consumable))
+    }
+
 }
 

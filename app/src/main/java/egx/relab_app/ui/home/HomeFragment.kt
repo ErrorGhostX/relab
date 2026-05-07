@@ -115,6 +115,10 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_nav_home_to_chatListFragment)
         }
 
+        binding.cardWarehouse.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_home_to_consumableListFragment)
+        }
+
     }
     
     private fun updateUserData() {

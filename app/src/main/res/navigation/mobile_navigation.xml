@@ -34,6 +34,9 @@
         <action
             android:id="@+id/action_nav_home_to_chatListFragment"
             app:destination="@id/chatListFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_consumableListFragment"
+            app:destination="@id/consumableListFragment" />
 
     </fragment>
 
@@ -234,5 +237,11 @@
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
+
+    <fragment
+        android:id="@+id/consumableListFragment"
+        android:name="egx.relab_app.ui.orders.ConsumableListFragment"
+        android:label="Склад"
+        tools:layout="@layout/fragment_consumable_list" />
 
 </navigation>

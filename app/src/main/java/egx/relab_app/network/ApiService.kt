@@ -57,6 +57,7 @@ interface ApiService {
         @Part("is_public")      isPublic: RequestBody,
         @Part("customer_ref")   customerRef: RequestBody?,
         @Part("services")       services: RequestBody?,
+        @Part("consumables")    consumables: RequestBody?,
         @Part                   photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -81,6 +82,7 @@ interface ApiService {
         @Part("is_public") isPublic: RequestBody,
         @Part("customer_ref") customerRef: RequestBody?,
         @Part("services") services: RequestBody?,
+        @Part("consumables") consumables: RequestBody?,
         @Part photos: List<MultipartBody.Part>
     ): Call<Order>
 
@@ -510,4 +512,39 @@ interface ApiService {
 
     @POST("devices/")
     suspend fun registerDevice(@Body request: RegisterDeviceRequest): retrofit2.Response<Unit>
+
+    // =============================================
+    // Расходники и склад
+    // =============================================
+
+    @GET("consumables/")
+    suspend fun getConsumables(@Query("search") query: String? = null): List<egx.relab_app.models.Consumable>
+
+    data class AddConsumableRequest(
+        val consumable: Int,
+        val quantity: Int,
+        val price_at_time: Double
+    )
+
+    @POST("orders/{id}/add_consumable/")
+    suspend fun addOrderConsumable(
+        @Path("id") orderId: Int,
+        @Body request: AddConsumableRequest
+    ): egx.relab_app.models.OrderConsumable
+
+    @DELETE("orders/{orderId}/consumables/{consumableId}/")
+    suspend fun deleteOrderConsumable(
+        @Path("orderId") orderId: Int,
+        @Path("consumableId") consumableId: Int
+    ): retrofit2.Response<Unit>
+
+    // Управление складом (расходниками)
+    @POST("consumables/")
+    suspend fun createConsumable(@Body consumable: egx.relab_app.models.Consumable): egx.relab_app.models.Consumable
+
+    @PATCH("consumables/{id}/")
+    suspend fun updateConsumable(@Path("id") id: Int, @Body consumable: egx.relab_app.models.Consumable): egx.relab_app.models.Consumable
+
+    @DELETE("consumables/{id}/")
+    suspend fun deleteConsumable(@Path("id") id: Int): retrofit2.Response<Unit>
 }

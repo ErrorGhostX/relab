@@ -85,6 +85,9 @@ data class Order(
     @SerializedName("services")
     val services: List<Service> = emptyList(),
 
+    @SerializedName("order_consumables")
+    val orderConsumables: List<OrderConsumable> = emptyList(),
+
     @SerializedName("photos")
     val photos: List<OrderPhoto> = emptyList(),
 

@@ -57,7 +57,7 @@ class OrderFormFragment : Fragment() {
     
     // Получаем Repository и SyncManager из Application
     private val repository by lazy { requireContext().app.orderRepository }
-    private val syncManager by lazy { SyncManager(repository, requireContext(), requireContext().app.customerDao) }
+    private val syncManager by lazy { SyncManager(repository, requireContext(), requireContext().app.customerDao, requireContext().app.consumableDao) }
     private val tokenManager by lazy { TokenManager(requireContext()) }
     
     // Локальный ID заказа (для режима редактирования)

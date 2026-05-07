@@ -2,6 +2,7 @@ package egx.relab_app.database.dao
 
 import androidx.room.*
 import egx.relab_app.database.entity.OrderEntity
+import egx.relab_app.database.entity.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -91,13 +92,13 @@ interface OrderDao {
      * Обновить статус синхронизации заказа
      */
     @Query("UPDATE orders SET syncStatus = :status, lastSynced = :syncedTime WHERE localId = :localId")
-    suspend fun updateSyncStatus(localId: Long, status: OrderEntity.SyncStatus, syncedTime: Long = System.currentTimeMillis())
+    suspend fun updateSyncStatus(localId: Long, status: SyncStatus, syncedTime: Long = System.currentTimeMillis())
     
     /**
      * Обновить серверный ID после успешной синхронизации
      */
     @Query("UPDATE orders SET serverId = :serverId, syncStatus = :status, lastSynced = :syncedTime WHERE localId = :localId")
-    suspend fun updateServerId(localId: Long, serverId: Int, status: OrderEntity.SyncStatus, syncedTime: Long = System.currentTimeMillis())
+    suspend fun updateServerId(localId: Long, serverId: Int, status: SyncStatus, syncedTime: Long = System.currentTimeMillis())
     
     /**
      * Получить количество несинхронизированных заказов

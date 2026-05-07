@@ -6,6 +6,7 @@ import android.util.Log
 import egx.relab_app.database.dao.CustomerDao
 import egx.relab_app.database.entity.CustomerEntity
 import egx.relab_app.database.entity.OrderEntity
+import egx.relab_app.database.entity.SyncStatus
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
 import egx.relab_app.repository.OrderRepository
@@ -48,7 +49,8 @@ import kotlin.coroutines.resumeWithException
 class SyncManager(
     private val repository: OrderRepository,
     private val context: Context,
-    private val customerDao: CustomerDao? = null
+    private val customerDao: CustomerDao? = null,
+    private val consumableDao: egx.relab_app.database.dao.ConsumableDao? = null
 ) {
     
     companion object {
@@ -105,10 +107,15 @@ class SyncManager(
                 // Синхронизация клиентской базы
                 try {
                     syncCustomers()
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    Log.d(TAG, "Синхронизация клиентов отменена")
                 } catch (e: Exception) {
                     Log.w(TAG, "Ошибка синхронизации клиентов: ${e.message}")
+                }
+
+                // Синхронизация склада расходников
+                try {
+                    pullConsumables()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Ошибка синхронизации склада: ${e.message}")
                 }
 
                 // Возвращаем результат: успех только если оба успешны
@@ -144,8 +151,9 @@ class SyncManager(
      */
     suspend fun pushChanges(): SyncResult = withContext(Dispatchers.IO) {
         try {
-            // Сначала синхронизируем новых клиентов (если есть)
+            // Сначала синхронизируем новых клиентов и расходники (если есть)
             pushPendingCustomers()
+            pushPendingConsumables()
             
             // Получаем заказы, ожидающие синхронизации (новые и измененные)
             val pendingOrders = repository.getPendingOrders()
@@ -187,7 +195,7 @@ class SyncManager(
                     // Помечаем заказ как имеющий ошибку
                     repository.updateSyncStatus(
                         orderEntity.localId,
-                        OrderEntity.SyncStatus.ERROR
+                        SyncStatus.ERROR
                     )
                     errorCount++
                 }
@@ -278,8 +286,8 @@ class SyncManager(
                     val existing = repository.getOrderEntityByServerId(order.id!!)
                     if (existing != null) {
                         // Заказ уже существует локально
-                        if (existing.syncStatus == OrderEntity.SyncStatus.PENDING || 
-                            existing.syncStatus == OrderEntity.SyncStatus.ERROR) {
+                        if (existing.syncStatus == SyncStatus.PENDING || 
+                            existing.syncStatus == SyncStatus.ERROR) {
                             // Локальный заказ был изменен - НЕ перезаписываем (локальные данные в приоритете)
                             Log.d(TAG, "Пропуск заказа ${order.id} - локальные изменения в приоритете")
                             skippedCount++
@@ -521,7 +529,7 @@ class SyncManager(
                 // Если сервер не вернул обновленный заказ, просто помечаем как синхронизированный
                 repository.updateSyncStatus(
                     orderEntity.localId,
-                    OrderEntity.SyncStatus.SYNCED
+                    SyncStatus.SYNCED
                 )
             }
         }
@@ -678,6 +686,78 @@ class SyncManager(
         }
         
         return null
+    }
+
+    /**
+     * Отправка локально созданных/измененных расходников на сервер
+     */
+    private suspend fun pushPendingConsumables() {
+        if (consumableDao == null) return
+        
+        try {
+            val pending = consumableDao.getPendingConsumables()
+            if (pending.isEmpty()) return
+            
+            Log.d(TAG, "Найдено ${pending.size} расходников для синхронизации")
+            
+            for (entity in pending) {
+                try {
+                    val model = entity.toConsumable()
+                    val result = if (entity.serverId == null) {
+                        RetrofitClient.apiService.createConsumable(model)
+                    } else {
+                        RetrofitClient.apiService.updateConsumable(entity.serverId!!, model)
+                    }
+                    
+                    consumableDao.updateConsumableSyncStatus(
+                        entity.localId,
+                        result.id,
+                        SyncStatus.SYNCED
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Ошибка синхронизации расходника ${entity.name}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка в pushPendingConsumables", e)
+        }
+    }
+
+    /**
+     * Получение актуального списка расходников с сервера
+     */
+    private suspend fun pullConsumables() {
+        if (consumableDao == null) return
+        
+        try {
+            val serverList = RetrofitClient.apiService.getConsumables()
+            Log.d(TAG, "Получено ${serverList.size} расходников с сервера для склада")
+            
+            for (model in serverList) {
+                if (model.id != null) {
+                    val existing = consumableDao.getConsumableByServerId(model.id!!)
+                    if (existing != null) {
+                        // Если есть локальные изменения, которые еще не ушли на сервер - не затираем остаток
+                        if (existing.syncStatus == SyncStatus.PENDING) {
+                            Log.d(TAG, "Пропуск обновления товара ${model.name} - есть локальные изменения")
+                            continue
+                        }
+                        
+                        // Обновляем существующий, сохраняя localId
+                        val updated = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(model, SyncStatus.SYNCED).copy(
+                            localId = existing.localId
+                        )
+                        consumableDao.insertConsumable(updated)
+                    } else {
+                        // Новый товар
+                        val entity = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(model, SyncStatus.SYNCED)
+                        consumableDao.insertConsumable(entity)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка в pullConsumables", e)
+        }
     }
 }
 

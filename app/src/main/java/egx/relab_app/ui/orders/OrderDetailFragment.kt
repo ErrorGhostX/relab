@@ -61,6 +61,7 @@ class OrderDetailFragment : Fragment() {
     // Получаем Repository и ServiceDao из Application
     private val repository by lazy { requireContext().app.orderRepository }
     private val serviceDao by lazy { requireContext().app.database.serviceDao() }
+    private val consumableDao by lazy { requireContext().app.database.consumableDao() }
 
     // Маппинг статусов и типов заказов
     private val statusMap = mapOf(
@@ -223,6 +224,7 @@ class OrderDetailFragment : Fragment() {
 
         binding.buttonDelete.setOnClickListener { showDeleteConfirmationDialog() }
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
+        binding.buttonAddConsumable.setOnClickListener { showAddConsumableDialog() }
         binding.buttonPrint.setOnClickListener { generateAndShareReport() }
         
         binding.buttonAiHelp.setOnClickListener {
@@ -462,6 +464,7 @@ class OrderDetailFragment : Fragment() {
 
         bindCollaborationUI(order)
         displayServices(order)
+        displayConsumables(order)
 
         updatePhotosList()
     }
@@ -604,6 +607,206 @@ class OrderDetailFragment : Fragment() {
             setTextAppearance(R.style.DetailTextStyleBlack)
             setPadding(0, 10, 0, 4)
         })
+    }
+
+    private fun displayConsumables(order: Order) {
+        val container = binding.consumablesContainer
+        container.removeAllViews()
+
+        if (order.orderConsumables.isEmpty()) {
+            container.addView(TextView(requireContext()).apply {
+                text = "Расходников нет"
+                setTextAppearance(R.style.DetailTextStyleBlack)
+                setPadding(0, 8, 0, 8)
+            })
+            return
+        }
+
+        order.orderConsumables.forEach { oc ->
+            val row = layoutInflater.inflate(R.layout.item_order_consumable, container, false)
+            
+            row.findViewById<TextView>(R.id.tvConsumableName).text = oc.name
+            row.findViewById<TextView>(R.id.tvConsumableInfo).text = "${oc.quantity} шт. x ${"%.2f".format(oc.priceAtTime)} ₽"
+            row.findViewById<TextView>(R.id.tvConsumableTotal).text = "${"%.2f".format(oc.quantity * oc.priceAtTime)} ₽"
+            
+            val deleteBtn = row.findViewById<ImageButton>(R.id.btnDeleteConsumable)
+            deleteBtn.visibility = if (canManageOrder) View.VISIBLE else View.GONE
+            
+            deleteBtn.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Удалить расходник")
+                    .setMessage("Удалить \"${oc.name}\" из заказа?")
+                    .setPositiveButton("Удалить") { _, _ ->
+                        deleteOrderConsumable(oc.localId)
+                    }
+                    .setNegativeButton("Отмена", null)
+                    .show()
+            }
+            
+            container.addView(row)
+        }
+
+        val total = order.orderConsumables.sumOf { it.quantity * it.priceAtTime }
+        container.addView(TextView(requireContext()).apply {
+            text = "Итого расходники: ${"%.2f".format(total)} ₽"
+            setTextAppearance(R.style.DetailTextStyleBlack)
+            setPadding(0, 10, 0, 4)
+        })
+    }
+
+    private fun showAddConsumableDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_consumable, null)
+        val etSearch = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etSearchConsumable)
+        val rvConsumables = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recyclerViewConsumables)
+        val etQuantity = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etQuantity)
+        val tvPriceLabel = dialogView.findViewById<TextView>(R.id.tvPriceLabel)
+        val tvStockInfo = dialogView.findViewById<TextView>(R.id.tvStockInfo)
+
+        var selectedConsumable: egx.relab_app.models.Consumable? = null
+
+        rvConsumables.layoutManager = LinearLayoutManager(requireContext())
+        val searchAdapter = ConsumableSearchAdapter { consumable ->
+            selectedConsumable = consumable
+            tvPriceLabel.text = "Цена: ${"%.2f".format(consumable.price)} ₽"
+            tvStockInfo.text = "На складе: ${consumable.quantity}"
+        }
+        rvConsumables.adapter = searchAdapter
+
+        // Загружаем остатки из БД через Repository (domain models)
+        lifecycleScope.launch {
+            repository.getAllConsumables().collect { list ->
+                searchAdapter.submitList(list)
+            }
+        }
+
+        etSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchAdapter.filter(s.toString())
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .setPositiveButton("Добавить", null) // Set null here to override later
+            .setNegativeButton("Отмена", null)
+            .create()
+
+        dialog.show()
+
+        // Override the button click to prevent automatic dismissal
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val consumable = selectedConsumable
+            if (consumable != null) {
+                val quantity = etQuantity.text.toString().toIntOrNull() ?: 1
+                if (quantity > 0) {
+                    addConsumableToOrder(consumable, quantity)
+                    dialog.dismiss()
+                } else {
+                    showToast("Укажите количество")
+                }
+            } else {
+                showToast("Выберите расходник")
+            }
+        }
+    }
+
+    private fun addConsumableToOrder(consumable: egx.relab_app.models.Consumable, quantity: Int) {
+        lifecycleScope.launch {
+            try {
+                val orderEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else {
+                    val all = repository.getAllOrderEntities()
+                    all.firstOrNull { it.orderName == currentOrder.orderName && !it.isDeleted }
+                }
+
+                if (orderEntity != null) {
+                    repository.addConsumableToOrder(
+                        orderLocalId = orderEntity.localId,
+                        orderServerId = currentOrder.id,
+                        consumable = consumable,
+                        quantity = quantity,
+                        createdByUsername = null // Can get from preferences if needed
+                    )
+                    loadFromLocalDatabase()
+                    showToast("Расходник добавлен")
+                }
+            } catch (e: Exception) {
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+
+    private fun deleteOrderConsumable(localId: Long) {
+        lifecycleScope.launch {
+            try {
+                val orderEntity = if (currentOrder.id != null) {
+                    repository.getOrderEntityByServerId(currentOrder.id!!)
+                } else {
+                    repository.getAllOrderEntities().firstOrNull { it.orderName == currentOrder.orderName && !it.isDeleted }
+                }
+
+                if (orderEntity != null) {
+                    repository.deleteConsumableFromOrder(
+                        consumableLocalId = localId,
+                        orderLocalId = orderEntity.localId
+                    )
+                    loadFromLocalDatabase()
+                    showToast("Расходник удален")
+                }
+            } catch (e: Exception) {
+                showToast("Ошибка: ${e.message}")
+            }
+        }
+    }
+
+    private class ConsumableSearchAdapter(
+        private val onItemClick: (egx.relab_app.models.Consumable) -> Unit
+    ) : RecyclerView.Adapter<ConsumableSearchAdapter.ViewHolder>() {
+        
+        private var allConsumables = listOf<egx.relab_app.models.Consumable>()
+        private var filteredConsumables = listOf<egx.relab_app.models.Consumable>()
+
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val tvName: TextView = view.findViewById(R.id.tvConsumableName)
+            val tvSku: TextView = view.findViewById(R.id.tvConsumableSku)
+            val tvStock: TextView = view.findViewById(R.id.tvConsumableStock)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_consumable_search, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val c = filteredConsumables[position]
+            holder.tvName.text = c.name
+            holder.tvSku.text = "SKU: ${c.sku ?: "-"}"
+            holder.tvStock.text = "Остаток: ${c.quantity}"
+            holder.itemView.setOnClickListener { onItemClick(c) }
+        }
+
+        override fun getItemCount() = filteredConsumables.size
+
+        fun submitList(list: List<egx.relab_app.models.Consumable>) {
+            allConsumables = list
+            filteredConsumables = list
+            notifyDataSetChanged()
+        }
+
+        fun filter(query: String) {
+            filteredConsumables = if (query.isEmpty()) {
+                allConsumables
+            } else {
+                allConsumables.filter { 
+                    it.name?.contains(query, ignoreCase = true) == true || 
+                    (it.sku?.contains(query, ignoreCase = true) == true) 
+                }
+            }
+            notifyDataSetChanged()
+        }
     }
     
     /**
@@ -1040,7 +1243,7 @@ class OrderDetailFragment : Fragment() {
                         it.orderName == currentOrder.orderName && !it.isDeleted
                     }
                     if (orderEntity != null) {
-                        localOrder = orderEntity.toOrder()
+                        localOrder = repository.getOrderByLocalId(orderEntity.localId)
                     }
                 }
             }
@@ -1076,10 +1279,19 @@ class OrderDetailFragment : Fragment() {
                         }
 
                         val orderWithServices = order.copy(services = servicesList)
+                        
+                        // Загружаем расходники
+                        val consumablesList = try {
+                            repository.getConsumablesForOrder(orderEntity.localId).first()
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                        
+                        val orderWithAll = orderWithServices.copy(orderConsumables = consumablesList)
 
                         if (isAdded) {
-                            currentOrder = orderWithServices
-                            bindOrderToUI(orderWithServices)
+                            currentOrder = orderWithAll
+                            bindOrderToUI(orderWithAll)
                             updatePhotosList()
                         }
                     } else {
@@ -1384,7 +1596,7 @@ class OrderDetailFragment : Fragment() {
 
                     // Синхронизация удаления происходит в ФОНОВОМ режиме через SyncManager
                     // Не блокируем UI и не ждем ответа
-                    val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext(), requireContext().app.customerDao)
+                    val syncManager = egx.relab_app.sync.SyncManager(repository, requireContext(), requireContext().app.customerDao, requireContext().app.consumableDao)
                     lifecycleScope.launch {
                         syncManager.pushChanges() // Запускаем в фоне
                     }
@@ -1911,14 +2123,12 @@ class OrderDetailFragment : Fragment() {
                 val updatedOrder = withContext(Dispatchers.IO) {
                     RetrofitClient.apiService.getOrderById(orderId.toString())
                 }
-                currentOrder = updatedOrder
-                
-                // Сохраняем в локальную БД
+                // Сохраняем в локальную БД (репозиторий сам решит, обновлять или нет)
                 repository.saveOrderFromServer(updatedOrder)
                 
-                if (isAdded && _binding != null) {
-                    bindOrderToUI(updatedOrder)
-                }
+                // ВАЖНО: Вместо прямой привязки updatedOrder, загружаем актуальное состояние из БД
+                // Это объединит данные сервера с нашими локальными расходниками/услугами
+                loadFromLocalDatabase()
             } catch (e: Exception) {
                 Log.e("OrderDetail", "Ошибка обновления заказа с сервера", e)
             }

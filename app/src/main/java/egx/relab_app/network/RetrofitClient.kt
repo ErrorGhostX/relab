@@ -140,6 +140,7 @@ object RetrofitClient {
             parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
             parts["customer_ref"],
             parts["services"],
+            parts["consumables"],
             photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
@@ -210,6 +211,7 @@ object RetrofitClient {
             parts["status"]!!, parts["order_type"]!!, parts["is_public"]!!,
             parts["customer_ref"],
             parts["services"],
+            parts["consumables"],
             photoParts
         ).enqueue(object: Callback<Order> {
             override fun onResponse(call: Call<Order>, resp: Response<Order>) {
@@ -235,6 +237,7 @@ object RetrofitClient {
         android.util.Log.d("RetrofitClient", "Форматирование даты: '${o.date}' -> '$formattedDate'")
         
         val servicesJson = com.google.gson.Gson().toJson(o.services)
+        val consumablesJson = com.google.gson.Gson().toJson(o.orderConsumables)
         
         return mapOf(
             "order_name" to o.orderName.orEmpty().toRequestBody(mt),
@@ -253,9 +256,10 @@ object RetrofitClient {
             "order_type"   to o.orderType.orEmpty().toRequestBody(mt),
             "is_public"    to (if (o.isPublic) "1" else "0").toRequestBody(mt),
             "customer_ref" to (o.customerRef?.toString() ?: "").toRequestBody(mt),
-            "services"     to servicesJson.toRequestBody(mt) // Передаем как текст для Multipart, бэкенд распарсит JSON
+            "services"     to servicesJson.toRequestBody(mt), // Передаем как текст для Multipart, бэкенд распарсит JSON
+            "consumables"  to consumablesJson.toRequestBody(mt)
         ).also { 
-            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic}, services count=${o.services.size}")
+            android.util.Log.d("RetrofitClient", "makeParts: isPublic=${o.isPublic}, services count=${o.services.size}, consumables count=${o.orderConsumables.size}")
         }
     }
     

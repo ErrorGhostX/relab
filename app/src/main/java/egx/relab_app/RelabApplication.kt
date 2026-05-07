@@ -19,12 +19,14 @@ class RelabApplication : Application() {
     val orderRepository by lazy {
         OrderRepository(
             orderDao = database.orderDao(),
-            serviceDao = database.serviceDao()
+            serviceDao = database.serviceDao(),
+            consumableDao = database.consumableDao()
         )
     }
     
-    // DAO для клиентов — для использования в SyncManager и фрагментах
+    // DAO для клиентов и расходников — для использования в SyncManager и фрагментах
     val customerDao by lazy { database.customerDao() }
+    val consumableDao by lazy { database.consumableDao() }
     
     override fun onCreate() {
         super.onCreate()

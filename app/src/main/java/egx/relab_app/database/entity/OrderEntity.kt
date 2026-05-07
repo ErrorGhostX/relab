@@ -9,6 +9,7 @@ import com.google.gson.reflect.TypeToken
 import egx.relab_app.models.Order
 import egx.relab_app.models.OrderCollaborator
 import egx.relab_app.models.Service
+import egx.relab_app.models.OrderConsumable
 
 /**
  * Entity для хранения заказов в локальной базе данных Room
@@ -62,12 +63,10 @@ data class OrderEntity(
     val assignedAt: String? = null,
     val collaboratorsJson: String? = null,  // JSON список коллабораторов
     val servicesJson: String? = null,       // JSON список услуг (для новых заказов)
+    val orderConsumablesJson: String? = null, // JSON список расходников (для новых заказов)
     val executionType: String? = null,
     val address: String? = null
 ) {
-    enum class SyncStatus {
-        SYNCED, PENDING, ERROR
-    }
     
     fun toOrder(): Order {
         val displayId = if (serverId != null && serverId < 0) null else serverId
@@ -103,8 +102,19 @@ data class OrderEntity(
             assignedToFullName = assignedToFullName,
             assignedToAvatar = assignedToAvatar,
             assignedAt = assignedAt,
-            collaborators = parseCollaborators(collaboratorsJson)
+            collaborators = parseCollaborators(collaboratorsJson),
+            orderConsumables = parseConsumables(orderConsumablesJson)
         )
+    }
+
+    private fun parseConsumables(json: String?): List<OrderConsumable> {
+        if (json.isNullOrEmpty()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<OrderConsumable>>() {}.type
+            Gson().fromJson(json, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     private fun parseCollaborators(json: String?): List<OrderCollaborator> {
@@ -163,7 +173,8 @@ data class OrderEntity(
                 assignedToAvatar = order.assignedToAvatar,
                 assignedAt = order.assignedAt,
                 collaboratorsJson = Gson().toJson(order.collaborators),
-                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null
+                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null,
+                orderConsumablesJson = if (order.orderConsumables.isNotEmpty()) Gson().toJson(order.orderConsumables) else null
             )
         }
         
@@ -204,7 +215,8 @@ data class OrderEntity(
                 assignedToAvatar = order.assignedToAvatar,
                 assignedAt = order.assignedAt,
                 collaboratorsJson = Gson().toJson(order.collaborators),
-                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null
+                servicesJson = if (order.services.isNotEmpty()) Gson().toJson(order.services) else null,
+                orderConsumablesJson = if (order.orderConsumables.isNotEmpty()) Gson().toJson(order.orderConsumables) else null
             )
         }
     }

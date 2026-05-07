@@ -8,14 +8,18 @@ import androidx.room.TypeConverters
 import egx.relab_app.database.dao.CustomerDao
 import egx.relab_app.database.dao.OrderDao
 import egx.relab_app.database.dao.ServiceDao
-import egx.relab_app.database.entity.CustomerEntity
+import egx.relab_app.database.dao.EmployeeDao
+import egx.relab_app.database.dao.ChatDao
+import egx.relab_app.database.dao.ConsumableDao
 import egx.relab_app.database.entity.OrderEntity
 import egx.relab_app.database.entity.ServiceEntity
+import egx.relab_app.database.entity.CustomerEntity
 import egx.relab_app.database.entity.EmployeeEntity
 import egx.relab_app.database.entity.ChatRoomEntity
 import egx.relab_app.database.entity.ChatMessageEntity
-import egx.relab_app.database.dao.EmployeeDao
-import egx.relab_app.database.dao.ChatDao
+import egx.relab_app.database.entity.ConsumableEntity
+import egx.relab_app.database.entity.OrderConsumableEntity
+import egx.relab_app.database.entity.SyncStatus
 
 /**
  * Главный класс базы данных Room
@@ -34,9 +38,11 @@ import egx.relab_app.database.dao.ChatDao
         CustomerEntity::class,
         EmployeeEntity::class,
         ChatRoomEntity::class,
-        ChatMessageEntity::class
+        ChatMessageEntity::class,
+        ConsumableEntity::class,
+        OrderConsumableEntity::class
     ],
-    version = 9,  // v9: Добавлены executionType и address в OrderEntity
+    version = 12,  // v12: Добавлен consumableLocalId в OrderConsumableEntity
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 @TypeConverters(Converters::class)
@@ -66,6 +72,11 @@ abstract class AppDatabase : RoomDatabase() {
      * Получить DAO для работы с чатами
      */
     abstract fun chatDao(): ChatDao
+
+    /**
+     * Получить DAO для работы с расходниками
+     */
+    abstract fun consumableDao(): ConsumableDao
     
     companion object {
         // Volatile гарантирует, что изменения видны всем потокам
