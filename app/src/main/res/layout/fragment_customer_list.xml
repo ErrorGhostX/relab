@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,66 +9,126 @@
     android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
         app:elevation="0dp">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="База клиентов"
-            app:titleTextColor="@color/black" />
-            
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/inputLayoutSearch"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="8dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxStrokeColor="@color/gray_400"
-            app:hintTextColor="@color/gray_600"
-            app:startIconDrawable="@android:drawable/ic_menu_search">
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editTextSearch"
+            <!-- Заголовок и кнопка Назад -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Поиск клиента..."
-                android:textColor="@color/black" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginBottom="16dp">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroupFilter"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="8dp"
-            app:singleSelection="true"
-            app:selectionRequired="true">
+                <ImageButton
+                    android:id="@+id/btnBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/circle_back_button"
+                    android:src="?attr/homeAsUpIndicator"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    app:tint="@color/gray_900" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/btnBack"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:text="База клиентов"
+                    android:textColor="@color/black"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="-0.02" />
+            </RelativeLayout>
+
+            <!-- Поиск -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Все клиенты"
-                android:checked="true" />
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#F8F9FA"
+                app:strokeWidth="1dp"
+                app:strokeColor="#EEF2F6">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipMy"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="12dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_search"
+                        app:tint="#94A3B8" />
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextSearch"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="Поиск по имени или телефону..."
+                        android:paddingHorizontal="12dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/black"
+                        android:textColorHint="#94A3B8"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Фильтры -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupFilter"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Мои клиенты" />
-        </com.google.android.material.chip.ChipGroup>
+                android:layout_marginTop="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:chipSpacingHorizontal="8dp">
 
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Все клиенты"
+                    android:checked="true"
+                    app:chipBackgroundColor="@color/chip_background_selector"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipStrokeColor="#EEF2F6"
+                    app:chipStrokeWidth="1dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipMy"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Мои клиенты"
+                    app:chipBackgroundColor="@color/chip_background_selector"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipStrokeColor="#EEF2F6"
+                    app:chipStrokeWidth="1dp" />
+            </com.google.android.material.chip.ChipGroup>
+
+        </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -75,7 +136,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="88dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="100dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/item_customer" />
@@ -86,19 +148,24 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="Клиенты не найдены"
-        android:textColor="@color/gray_600"
+        android:textColor="#94A3B8"
         android:textSize="16sp"
+        android:fontFamily="sans-serif-medium"
         android:visibility="gone" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabAddCustomer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="Добавить клиента"
-        app:backgroundTint="#3F51B5"
-        app:srcCompat="@android:drawable/ic_input_add"
-        app:tint="@color/white" />
+        android:layout_margin="20dp"
+        android:text="Добавить клиента"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:fontFamily="sans-serif-medium"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@color/white"
+        app:backgroundTint="@color/gray_900"
+        app:elevation="12dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

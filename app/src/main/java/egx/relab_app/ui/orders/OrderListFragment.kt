@@ -123,9 +123,15 @@ class OrderListFragment : Fragment() {
                 if (!isAdded) return@launch
                 val activity = activity as? egx.relab_app.MainActivity ?: return@launch
                 
+                if (tokenManager.isGuestMode) {
+                    activity.updateConnectionIndicator(true) // Показываем как "ок", но это локальный режим
+                    binding.syncStatusCard.visibility = View.GONE
+                    return@launch
+                }
+
                 // Проверяем реальное подключение к серверу
                 val isConnected = try {
-                    val response = RetrofitClient.apiService.getCurrentUser()
+                    RetrofitClient.apiService.getCurrentUser()
                     true
                 } catch (e: Exception) {
                     false
@@ -236,7 +242,7 @@ class OrderListFragment : Fragment() {
         binding.statusChipGroup.setOnCheckedChangeListener { group, checkedId ->
             selectedStatus = when (checkedId) {
                 R.id.chipNew -> "Новый"
-                R.id.chipWork -> "В работе"
+                R.id.chipWork -> "В процессе"
                 R.id.chipDone -> "Завершён"
                 else -> "Все"
             }

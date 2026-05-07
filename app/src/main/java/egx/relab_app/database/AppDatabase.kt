@@ -79,35 +79,36 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun consumableDao(): ConsumableDao
     
     companion object {
-        // Volatile гарантирует, что изменения видны всем потокам
         @Volatile
         private var INSTANCE: AppDatabase? = null
         
         /**
          * Получить экземпляр базы данных (Singleton паттерн)
-         * 
-         * @param context - контекст приложения
-         * @return экземпляр AppDatabase
-         * 
-         * База данных создается один раз и переиспользуется.
-         * Это важно для производительности.
          */
         fun getDatabase(context: Context): AppDatabase {
+            val tokenManager = egx.relab_app.storage.TokenManager(context)
+            val dbName = if (tokenManager.isGuestMode) "relab_guest.db" else "relab_database"
+            
             return INSTANCE ?: synchronized(this) {
-                // Если база еще не создана, создаем ее
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,  // Используем applicationContext для избежания утечек памяти
+                    context.applicationContext,
                     AppDatabase::class.java,
-                    "relab_database"  // Имя файла базы данных
+                    dbName
                 )
-                    .fallbackToDestructiveMigration(true)  // При изменении версии удаляем старую БД (для разработки)
-                    // В продакшене нужно использовать миграции:
-                    // .addMigrations(MIGRATION_1_2, MIGRATION_2_3, ...)
+                    .fallbackToDestructiveMigration(true)
                     .build()
                 
                 INSTANCE = instance
                 instance
             }
+        }
+
+        /**
+         * Закрыть и сбросить экземпляр БД (при смене режима Гость/Компания)
+         */
+        fun destroyInstance() {
+            INSTANCE?.close()
+            INSTANCE = null
         }
     }
 }

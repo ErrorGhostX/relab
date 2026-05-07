@@ -31,77 +31,158 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: android.view.View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Загружаем сохранённый URL сервера
-        val prefs = requireContext().getSharedPreferences("relab_prefs", android.content.Context.MODE_PRIVATE)
-        val savedUrl = prefs.getString("server_url", RetrofitClient.tokenManager.serverUrl ?: "http://192.168.1.100:8000/api/") ?: ""
-        binding.editTextServerUrl.setText(savedUrl.replace("/api/", "").replace("/api", ""))
+        setupCompanyPicker()
 
-        binding.btnCheckConnection.setOnClickListener {
-            val rawUrl = binding.editTextServerUrl.text.toString().trim()
-            if (rawUrl.isBlank()) {
-                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val fullUrl = if (rawUrl.endsWith("/api/")) rawUrl
-                          else if (rawUrl.endsWith("/")) "${rawUrl}api/"
-                          else "$rawUrl/api/"
+        binding.btnSettings.setOnClickListener {
+            showAddCompanyDialog()
+        }
 
-            // Сохраняем URL
-            prefs.edit().putString("server_url", fullUrl).apply()
-            RetrofitClient.tokenManager.serverUrl = fullUrl
-            RetrofitClient.updateBaseUrl(fullUrl)
-
-            // Проверяем подключение
-            binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.GRAY
-            )
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    RetrofitClient.apiService.getAiStatus("ollama")
-                    if (!isAdded) return@launch
-                    binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                        android.graphics.Color.parseColor("#4CAF50")
-                    )
-                    Toast.makeText(requireContext(), "✅ Сервер доступен", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    // Даже 401 означает, что сервер отвечает
-                    if (!isAdded) return@launch
-                    if (e is retrofit2.HttpException && e.code() == 401) {
-                        binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                            android.graphics.Color.parseColor("#4CAF50")
-                        )
-                        Toast.makeText(requireContext(), "✅ Сервер доступен", Toast.LENGTH_SHORT).show()
-                    } else {
-                        binding.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                            android.graphics.Color.parseColor("#F44336")
-                        )
-                        Toast.makeText(requireContext(), "❌ Сервер недоступен", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
+        binding.buttonGuest.setOnClickListener {
+            enterGuestMode()
         }
 
         binding.buttonLogin.setOnClickListener {
             val user = binding.editTextUsername.text.toString().trim()
             val pass = binding.editTextPassword.text.toString().trim()
 
-            // Сохраняем URL перед логином
-            val rawUrl = binding.editTextServerUrl.text.toString().trim()
-            if (rawUrl.isNotBlank()) {
-                val fullUrl = if (rawUrl.endsWith("/api/")) rawUrl
-                              else if (rawUrl.endsWith("/")) "${rawUrl}api/"
-                              else "$rawUrl/api/"
-                prefs.edit().putString("server_url", fullUrl).apply()
-                RetrofitClient.tokenManager.serverUrl = fullUrl
-                RetrofitClient.updateBaseUrl(fullUrl)
-            }
-
             if (user.isBlank() || pass.isBlank()) {
                 Toast.makeText(requireContext(), "Введите логин и пароль", Toast.LENGTH_SHORT).show()
-            } else {
-                doLogin(user, pass)
+                return@setOnClickListener
+            }
+
+            // Убеждаемся, что выбран какой-то бэкенд
+            if (RetrofitClient.tokenManager.getCompanies().isEmpty() && RetrofitClient.tokenManager.serverUrl.isNullOrBlank()) {
+                Toast.makeText(requireContext(), "Сначала добавьте компанию в настройках", Toast.LENGTH_LONG).show()
+                showAddCompanyDialog()
+                return@setOnClickListener
+            }
+
+            doLogin(user, pass)
+        }
+    }
+
+    private fun setupCompanyPicker() {
+        val tokenManager = RetrofitClient.tokenManager
+        val companies = tokenManager.getCompanies()
+        
+        if (companies.isEmpty()) {
+            binding.spinnerCompany.setText("Добавьте компанию →")
+            return
+        }
+
+        val displayNames = companies.map { it.nickname ?: it.name }
+        val adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, displayNames)
+        binding.spinnerCompany.setAdapter(adapter)
+
+        // Восстанавливаем последнюю выбранную
+        val currentId = tokenManager.currentCompanyId
+        val selectedIndex = companies.indexOfFirst { it.id == currentId }
+        if (selectedIndex >= 0) {
+            binding.spinnerCompany.setText(displayNames[selectedIndex], false)
+        } else {
+            binding.spinnerCompany.setText(displayNames[0], false)
+            tokenManager.currentCompanyId = companies[0].id
+            RetrofitClient.recreateRetrofit()
+        }
+
+        binding.spinnerCompany.setOnItemClickListener { _, _, position, _ ->
+            val company = companies[position]
+            tokenManager.currentCompanyId = company.id
+            RetrofitClient.recreateRetrofit()
+            tokenManager.isGuestMode = false
+            egx.relab_app.database.AppDatabase.destroyInstance()
+            android.util.Log.d("LoginFragment", "Selected company: ${company.name} at ${company.baseUrl}")
+        }
+    }
+
+    private fun showAddCompanyDialog() {
+        val dialogView = android.view.LayoutInflater.from(requireContext()).inflate(egx.relab_app.R.layout.dialog_add_company, null)
+        val editIp = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editIp)
+        val editNickname = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editNickname)
+        val btnAdd = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAdd)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        btnAdd.setOnClickListener {
+            val ip = editIp.text.toString().trim()
+            val nick = editNickname.text.toString().trim()
+
+            if (ip.isBlank()) return@setOnClickListener
+
+            // Формируем правильный URL
+            val baseUrl = if (ip.startsWith("http")) ip else "http://$ip"
+            val finalUrl = if (baseUrl.endsWith("/api/")) baseUrl else if (baseUrl.endsWith("/")) "${baseUrl}api/" else "$baseUrl/api/"
+
+            progressBar.visibility = android.view.View.VISIBLE
+            btnAdd.isEnabled = false
+
+            lifecycleScope.launch {
+                try {
+                    // Создаем временный клиент для проверки нового адреса
+                    val tempRetrofit = retrofit2.Retrofit.Builder()
+                        .baseUrl(finalUrl)
+                        .client(okhttp3.OkHttpClient.Builder()
+                            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                            .build())
+                        .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                        .build()
+
+                    val tempApi = tempRetrofit.create(egx.relab_app.network.ApiService::class.java)
+                    val info = tempApi.getCompanyInfo()
+                    
+                    val newConfig = egx.relab_app.models.CompanyConfig(
+                        id = java.util.UUID.randomUUID().toString(),
+                        name = info.name,
+                        nickname = if (nick.isBlank()) null else nick,
+                        baseUrl = finalUrl,
+                        logoUrl = info.logo_url
+                    )
+                    
+                    RetrofitClient.tokenManager.addCompany(newConfig)
+                    RetrofitClient.tokenManager.currentCompanyId = newConfig.id
+                    RetrofitClient.tokenManager.isGuestMode = false
+                    RetrofitClient.recreateRetrofit()
+                    
+                    setupCompanyPicker()
+                    dialog.dismiss()
+                    Toast.makeText(requireContext(), "Компания '${info.name}' добавлена", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("LoginFragment", "Error fetching company info", e)
+                    Toast.makeText(requireContext(), "Не удалось найти компанию по этому адресу", Toast.LENGTH_LONG).show()
+                } finally {
+                    progressBar.visibility = android.view.View.GONE
+                    btnAdd.isEnabled = true
+                }
             }
         }
+
+        dialog.show()
+    }
+
+    private fun enterGuestMode() {
+        val tokenManager = RetrofitClient.tokenManager
+        tokenManager.isGuestMode = true
+        tokenManager.accessToken = "guest_token" // Фейковый токен
+        tokenManager.rank = "guest"
+        tokenManager.username = "Гость"
+        tokenManager.fullName = "Локальный гость"
+        
+        egx.relab_app.database.AppDatabase.destroyInstance()
+        
+        Toast.makeText(requireContext(), "Вход в гостевой режим", Toast.LENGTH_SHORT).show()
+        
+        // Переходим в приложение
+        findNavController().navigate(
+            R.id.nav_home,
+            null,
+            navOptions {
+                popUpTo(R.id.loginFragment) { inclusive = true }
+            }
+        )
     }
 
     private fun doLogin(user: String, pass: String) {

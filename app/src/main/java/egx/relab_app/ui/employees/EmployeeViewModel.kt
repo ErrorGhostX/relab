@@ -85,6 +85,27 @@ class EmployeeViewModel : ViewModel() {
     }
 
     /**
+     * Создать нового сотрудника (только для админов)
+     */
+    fun createEmployee(request: ApiService.RegisterEmployeeRequest, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                RetrofitClient.apiService.registerEmployee(request)
+                Log.d(TAG, "Successfully created employee: ${request.username}")
+                loadEmployees() // Перезагружаем список
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating employee", e)
+                _error.value = "Ошибка при создании: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
      * Фильтрация по имени/username
      */
     fun filterEmployees(query: String) {

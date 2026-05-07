@@ -44,8 +44,8 @@ class CustomerDetailFragment : Fragment() {
         val cardBlacklistWarning = view.findViewById<View>(R.id.cardBlacklistWarning)
         val tvBlacklistReason = view.findViewById<TextView>(R.id.tvBlacklistReason)
 
-        val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener { findNavController().popBackStack() }
+        val btnBack = view.findViewById<View>(R.id.btnBack)
+        btnBack.setOnClickListener { findNavController().popBackStack() }
 
         tvFullName.text = customer.fullName
         tvPhone.text = "Телефон: ${customer.phone?.takeIf { it.isNotBlank() } ?: "—"}"

@@ -354,6 +354,28 @@ interface ApiService {
         val message: String? = null
     )
 
+    // =============================================
+    // Регистрация и Компании
+    // =============================================
+    data class RegisterEmployeeRequest(
+        val username: String,
+        val password: String,
+        val full_name: String,
+        val rank: String
+    )
+
+    @POST("auth/users/")
+    suspend fun registerEmployee(@Body request: RegisterEmployeeRequest): UserResponse
+
+    data class CompanyInfoResponse(
+        val name: String,
+        val logo_url: String? = null,
+        val description: String? = null
+    )
+
+    @GET("company-info/")
+    suspend fun getCompanyInfo(): CompanyInfoResponse
+
 
     // =============================================
     // Сотрудники (Фаза 1)

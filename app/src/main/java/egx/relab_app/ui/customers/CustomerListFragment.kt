@@ -67,6 +67,10 @@ class CustomerListFragment : Fragment() {
             findNavController().navigate(R.id.action_customerListFragment_to_customerFormFragment)
         }
 
+        view.findViewById<View>(R.id.btnBack).setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         // Фильтр
         chipGroupFilter.setOnCheckedStateChangeListener { _, checkedIds ->
             showAll = checkedIds.contains(R.id.chipAll)

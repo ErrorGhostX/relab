@@ -4,23 +4,42 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Склад расходников"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/circle_back_button"
+                android:src="?attr/homeAsUpIndicator"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                app:tint="@color/gray_900" />
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Склад расходников"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/searchLayout"
@@ -34,7 +53,7 @@
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusBottomEnd="12dp"
             app:startIconDrawable="@android:drawable/ic_menu_search"
-            app:layout_constraintTop_toBottomOf="@id/tvTitle">
+            app:layout_constraintTop_toBottomOf="@id/headerLayout">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSearch"

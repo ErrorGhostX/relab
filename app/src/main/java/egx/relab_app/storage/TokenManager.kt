@@ -73,4 +73,50 @@ class TokenManager(context: Context) {
     var isDisplayCutoutEnabled: Boolean
         get() = prefs.getBoolean("IS_DISPLAY_CUTOUT_ENABLED", false)
         set(value) = prefs.edit().putBoolean("IS_DISPLAY_CUTOUT_ENABLED", value).apply()
+
+    // --- Мульти-компании ---
+
+    var companiesJson: String?
+        get() = prefs.getString("COMPANIES_JSON", null)
+        set(value) = prefs.edit().putString("COMPANIES_JSON", value).apply()
+
+    var currentCompanyId: String?
+        get() = prefs.getString("CURRENT_COMPANY_ID", null)
+        set(value) = prefs.edit().putString("CURRENT_COMPANY_ID", value).apply()
+
+    var isGuestMode: Boolean
+        get() = prefs.getBoolean("IS_GUEST_MODE", false)
+        set(value) = prefs.edit().putBoolean("IS_GUEST_MODE", value).apply()
+
+    fun getCompanies(): List<egx.relab_app.models.CompanyConfig> {
+        val json = companiesJson ?: return emptyList()
+        return try {
+            val type = object : com.google.gson.reflect.TypeToken<List<egx.relab_app.models.CompanyConfig>>() {}.type
+            com.google.gson.Gson().fromJson(json, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun saveCompanies(list: List<egx.relab_app.models.CompanyConfig>) {
+        val json = com.google.gson.Gson().toJson(list)
+        companiesJson = json
+    }
+
+    fun addCompany(config: egx.relab_app.models.CompanyConfig) {
+        val list = getCompanies().toMutableList()
+        // Если такая ссылка уже есть, заменяем
+        list.removeAll { it.baseUrl == config.baseUrl }
+        list.add(config)
+        saveCompanies(list)
+    }
+
+    fun removeCompany(id: String) {
+        val list = getCompanies().toMutableList()
+        list.removeAll { it.id == id }
+        saveCompanies(list)
+        if (currentCompanyId == id) {
+            currentCompanyId = list.firstOrNull()?.id
+        }
+    }
 }

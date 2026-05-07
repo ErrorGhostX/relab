@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import egx.relab_app.databinding.FragmentSettingsBinding
 import egx.relab_app.storage.TokenManager
+import androidx.navigation.fragment.findNavController
 import java.io.File
 import android.widget.ArrayAdapter
 import android.widget.AdapterView
@@ -19,6 +20,8 @@ import android.graphics.Color
 import androidx.lifecycle.lifecycleScope
 import egx.relab_app.network.RetrofitClient
 import kotlinx.coroutines.launch
+import egx.relab_app.R
+import egx.relab_app.models.CompanyConfig
 
 class SettingsFragment : Fragment() {
 
@@ -40,32 +43,36 @@ class SettingsFragment : Fragment() {
         
         tokenManager = TokenManager(requireContext())
         
+        // Header
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
+        // Кастомизация
+        binding.toggleGroupStyle.addOnButtonCheckedListener { group, checkedId, isChecked ->
+            if (isChecked) {
+                when (checkedId) {
+                    R.id.btnStyleRound -> {
+                        // Будущая логика для круглых элементов
+                        Toast.makeText(requireContext(), "Выбран круглый стиль", Toast.LENGTH_SHORT).show()
+                    }
+                    R.id.btnStyleSquare -> {
+                        // Будущая логика для квадратных элементов
+                        Toast.makeText(requireContext(), "Выбран квадратный стиль", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        binding.switchCompanyTheme.setOnCheckedChangeListener { _, isChecked ->
+            // Будущая логика для темы компании
+            Toast.makeText(requireContext(), if (isChecked) "Цвета компании включены" else "Цвета компании выключены", Toast.LENGTH_SHORT).show()
+        }
+        
         // Отображаем информацию об устройстве
         displayDeviceInfo()
         
-        // Загружаем текущий URL сервера
-        val currentUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
-        binding.editTextServerUrl.setText(currentUrl)
-        
-        // Обработчик кнопки сохранения
-        binding.buttonSaveServerUrl.setOnClickListener {
-            val newUrl = binding.editTextServerUrl.text.toString().trim()
-            if (newUrl.isNotEmpty()) {
-                // Убеждаемся, что URL заканчивается на /
-                val url = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
-                tokenManager.serverUrl = url
-                
-                // ВАЖНО: Сбрасываем Retrofit, чтобы он подхватил новый URL
-                RetrofitClient.recreateRetrofit()
-                
-                // Проверяем подключение
-                testConnection()
-                
-                Toast.makeText(requireContext(), "Настройки сохранены", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Введите адрес сервера", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // (Ручной ввод сервера удален, используется конфигурация компании)
         
         // Загружаем настройки синхронизации
         binding.switchAutoSync.isChecked = tokenManager.autoSyncEnabled
@@ -137,6 +144,131 @@ class SettingsFragment : Fragment() {
         }
         
         setupAiSettings()
+        setupCompanySettings()
+    }
+
+    private fun setupCompanySettings() {
+        refreshCompanyPicker()
+
+        binding.btnAddCompanySettings.setOnClickListener {
+            showAddCompanyDialog()
+        }
+
+        binding.btnRemoveCompanySettings.setOnClickListener {
+            val companies = RetrofitClient.tokenManager.getCompanies()
+            val currentId = RetrofitClient.tokenManager.currentCompanyId
+            val currentCompany = companies.find { it.id == currentId }
+            if (currentCompany == null) {
+                Toast.makeText(requireContext(), "Нет выбранной компании для удаления", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle("Удалить компанию")
+                .setMessage("Удалить '${currentCompany.nickname ?: currentCompany.name}' из списка?")
+                .setPositiveButton("Удалить") { _, _ ->
+                    RetrofitClient.tokenManager.removeCompany(currentCompany.id)
+                    val remaining = RetrofitClient.tokenManager.getCompanies()
+                    if (remaining.isNotEmpty()) {
+                        RetrofitClient.tokenManager.currentCompanyId = remaining[0].id
+                        RetrofitClient.recreateRetrofit()
+                    }
+                    refreshCompanyPicker()
+                    Toast.makeText(requireContext(), "Компания удалена", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Отмена", null)
+                .show()
+        }
+    }
+
+    private fun refreshCompanyPicker() {
+        val companies = RetrofitClient.tokenManager.getCompanies()
+        if (companies.isEmpty()) {
+            binding.spinnerCompanySettings.setText("Нет компаний")
+            return
+        }
+        val displayNames = companies.map { it.nickname ?: it.name }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, displayNames)
+        binding.spinnerCompanySettings.setAdapter(adapter)
+
+        val currentId = RetrofitClient.tokenManager.currentCompanyId
+        val selectedIndex = companies.indexOfFirst { it.id == currentId }
+        if (selectedIndex >= 0) {
+            binding.spinnerCompanySettings.setText(displayNames[selectedIndex], false)
+        } else if (displayNames.isNotEmpty()) {
+            binding.spinnerCompanySettings.setText(displayNames[0], false)
+        }
+
+        binding.spinnerCompanySettings.setOnItemClickListener { _, _, position, _ ->
+            val company = companies[position]
+            RetrofitClient.tokenManager.currentCompanyId = company.id
+            RetrofitClient.recreateRetrofit()
+            egx.relab_app.database.AppDatabase.destroyInstance()
+            Toast.makeText(requireContext(), "Компания: ${company.nickname ?: company.name}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showAddCompanyDialog() {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_company, null)
+        val editIp = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editIp)
+        val editNickname = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editNickname)
+        val btnAdd = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAdd)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        btnAdd.setOnClickListener {
+            val ip = editIp.text.toString().trim()
+            val nick = editNickname.text.toString().trim()
+            if (ip.isBlank()) return@setOnClickListener
+
+            val baseUrl = if (ip.startsWith("http")) ip else "http://$ip"
+            val finalUrl = if (baseUrl.endsWith("/api/")) baseUrl else if (baseUrl.endsWith("/")) "${baseUrl}api/" else "$baseUrl/api/"
+
+            progressBar.visibility = View.VISIBLE
+            btnAdd.isEnabled = false
+
+            lifecycleScope.launch {
+                try {
+                    // Создаем временный клиент для проверки нового адреса
+                    val tempRetrofit = retrofit2.Retrofit.Builder()
+                        .baseUrl(finalUrl)
+                        .client(okhttp3.OkHttpClient.Builder()
+                            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                            .build())
+                        .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                        .build()
+                        
+                    val tempApiService = tempRetrofit.create(egx.relab_app.network.ApiService::class.java)
+                    
+                    val info = tempApiService.getCompanyInfo()
+                    val newConfig = CompanyConfig(
+                        id = java.util.UUID.randomUUID().toString(),
+                        name = info.name,
+                        nickname = if (nick.isBlank()) null else nick,
+                        baseUrl = finalUrl,
+                        logoUrl = info.logo_url
+                    )
+                    RetrofitClient.tokenManager.addCompany(newConfig)
+                    RetrofitClient.tokenManager.currentCompanyId = newConfig.id
+                    RetrofitClient.tokenManager.isGuestMode = false
+                    RetrofitClient.recreateRetrofit()
+                    refreshCompanyPicker()
+                    dialog.dismiss()
+                    Toast.makeText(requireContext(), "Компания '${info.name}' добавлена", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("Settings", "Error adding company", e)
+                    Toast.makeText(requireContext(), "Не удалось найти компанию по этому адресу", Toast.LENGTH_LONG).show()
+                } finally {
+                    progressBar.visibility = View.GONE
+                    btnAdd.isEnabled = true
+                }
+            }
+        }
+
+        dialog.show()
     }
     
     private fun setupAiSettings() {

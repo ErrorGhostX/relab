@@ -71,9 +71,20 @@ object RetrofitClient {
 
     private fun getRetrofit(): Retrofit {
         if (retrofitInstance == null) {
-            val baseUrl = tokenManager.serverUrl ?: DEFAULT_BASE_URL
+            // Приоритет: 1. Выбранная компания, 2. Ручной URL из настроек, 3. Дефолтный URL
+            val companies = tokenManager.getCompanies()
+            val currentId = tokenManager.currentCompanyId
+            val selectedCompany = companies.find { it.id == currentId }
+            
+            val baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
+            
+            // Гарантируем наличие / в конце
+            val finalUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+            
+            android.util.Log.d("RetrofitClient", "Initializing Retrofit with BaseURL: $finalUrl")
+            
             retrofitInstance = Retrofit.Builder()
-                .baseUrl(baseUrl)
+                .baseUrl(finalUrl)
                 .client(getClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()

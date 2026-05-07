@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import egx.relab_app.databinding.FragmentToolsBinding
 
 class ToolsFragment : Fragment() {
@@ -29,6 +30,11 @@ class ToolsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         //Драйвера
         binding.buttonDownloadDrivers.setOnClickListener {
             startDriversDownload()

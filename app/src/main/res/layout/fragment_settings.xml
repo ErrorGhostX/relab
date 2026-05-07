@@ -12,7 +12,115 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Настройки сервера -->
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/circle_back_button"
+                android:src="?attr/homeAsUpIndicator"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                app:tint="@color/gray_900" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Настройки"
+                android:textColor="@color/gray_900"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Кастомизация (Оформление) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCustomization"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Оформление"
+                    android:textColor="@color/gray_900"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Стиль элементов"
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"
+                    app:checkedButton="@+id/btnStyleRound">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStyleRound"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Круглые" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStyleSquare"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Квадратные" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Цветовая схема компании"
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchCompanyTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Использовать цвета компании"
+                    android:textColor="@color/gray_900"
+                    app:thumbTint="@color/teal_700"
+                    app:trackTint="@color/teal_200" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+
+        <!-- Компания -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -31,47 +139,82 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Сервер синхронизации"
+                    android:text="Компания"
                     android:textColor="@color/gray_900"
                     android:textStyle="bold"
                     android:textSize="18sp"
                     android:layout_marginBottom="16dp" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Активная компания"
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/companyInputLayoutSettings"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Адрес сервера (URL)"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:hint="Компания"
+                    android:layout_marginBottom="16dp"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:hintTextColor="@color/teal_700"
-                    app:boxStrokeColor="@color/teal_700">
+                    app:boxStrokeColor="@color/gray_300"
+                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                    app:startIconTint="@color/gray_600">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTextServerUrl"
+                    <AutoCompleteTextView
+                        android:id="@+id/spinnerCompanySettings"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textUri"
-                        android:textColor="@color/gray_900" />
+                        android:inputType="none"
+                        android:textSize="14sp"
+                        android:textColor="@color/gray_900"
+                        android:textColorHint="@color/gray_600" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonSaveServerUrl"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Сохранить"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
-                    app:backgroundTint="@color/teal_700"
-                    android:textColor="@color/white"
-                    app:cornerRadius="12dp" />
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddCompanySettings"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Добавить"
+                        app:strokeColor="@color/gray_400"
+                        android:textColor="@color/gray_900"
+                        app:cornerRadius="12dp"
+                        android:layout_marginEnd="8dp"
+                        app:icon="@android:drawable/ic_input_add"
+                        app:iconTint="@color/gray_900" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRemoveCompanySettings"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Удалить"
+                        app:strokeColor="#FFCDD2"
+                        android:textColor="#D32F2F"
+                        app:cornerRadius="12dp"
+                        app:icon="@android:drawable/ic_menu_delete"
+                        app:iconTint="#D32F2F" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Настройки синхронизации -->
+
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

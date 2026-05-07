@@ -33,6 +33,10 @@ class ProfileFragment : Fragment() {
     private lateinit var tokenManager: TokenManager
     private var selectedAvatarUri: Uri? = null
     private lateinit var messagingViewModel: egx.relab_app.ui.messaging.MessagingViewModel
+    
+    private var initialFullName: String = ""
+    private var initialPhone: String = ""
+    private var isAvatarChanged: Boolean = false
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -40,7 +44,9 @@ class ProfileFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 selectedAvatarUri = uri
+                isAvatarChanged = true
                 loadImageFromUri(uri)
+                checkChanges()
             }
         }
     }
@@ -75,6 +81,38 @@ class ProfileFragment : Fragment() {
 
         binding.btnLogout.setOnClickListener {
             logout()
+        }
+
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
+        setupTextWatchers()
+    }
+    
+    private fun setupTextWatchers() {
+        val textWatcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) { checkChanges() }
+        }
+        binding.editTextFullName.addTextChangedListener(textWatcher)
+        binding.editTextPhone.addTextChangedListener(textWatcher)
+    }
+
+    private fun checkChanges() {
+        if (!isAdded || _binding == null) return
+        val currentFullName = binding.editTextFullName.text.toString().trim()
+        val currentPhone = binding.editTextPhone.text.toString().trim()
+        
+        val hasChanges = currentFullName != initialFullName || currentPhone != initialPhone || isAvatarChanged
+        
+        if (hasChanges) {
+            binding.buttonSaveProfile.isEnabled = true
+            binding.buttonSaveProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
+        } else {
+            binding.buttonSaveProfile.isEnabled = false
+            binding.buttonSaveProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#BDBDBD"))
         }
     }
     
@@ -161,9 +199,14 @@ class ProfileFragment : Fragment() {
             // Показываем ФИО если есть, иначе username
             val displayName = tokenManager.fullName ?: tokenManager.username
             binding.tvUserName.text = displayName ?: "Загрузка..."
-            binding.tvEmail.text = "Почта: ${tokenManager.email ?: "Не указана"}"
+            binding.editTextEmail.setText(tokenManager.email ?: "Не указана")
             binding.editTextFullName.setText(tokenManager.fullName ?: "")
             binding.editTextPhone.setText(tokenManager.phone ?: "")
+            
+            initialFullName = tokenManager.fullName ?: ""
+            initialPhone = tokenManager.phone ?: ""
+            isAvatarChanged = false
+            checkChanges()
             
             // Показываем ранг
             val rankDisplay = tokenManager.rankDisplay ?: "Сотрудник"
@@ -195,10 +238,16 @@ class ProfileFragment : Fragment() {
             // Показываем ФИО если есть, иначе username
             val displayName = user.full_name ?: user.username
             binding.tvUserName.text = displayName ?: "Пользователь"
-            val emailDisplay = user.email ?: "Почты нет"
-            binding.tvEmail.text = "Почта: $emailDisplay"
+            binding.editTextEmail.setText(user.email ?: "Почты нет")
             binding.editTextFullName.setText(user.full_name ?: "")
             binding.editTextPhone.setText(user.phone ?: "")
+            
+            if (!isReadOnly) {
+                initialFullName = user.full_name ?: ""
+                initialPhone = user.phone ?: ""
+                isAvatarChanged = false
+                checkChanges()
+            }
             
             // Показываем ранг
             val rankDisplay = user.rank_display ?: "Не указан"
@@ -366,6 +415,11 @@ class ProfileFragment : Fragment() {
                     val activity = activity as? egx.relab_app.MainActivity
                     activity?.refreshNavBar()
                     
+                    initialFullName = tokenManager.fullName ?: ""
+                    initialPhone = tokenManager.phone ?: ""
+                    isAvatarChanged = false
+                    checkChanges()
+                    
                     if (isAdded) {
                         Toast.makeText(requireContext(), "Профиль обновлен", Toast.LENGTH_SHORT).show()
                     }
@@ -439,6 +493,9 @@ class ProfileFragment : Fragment() {
             // Обновляем навигацию в MainActivity
             val activity = activity as? egx.relab_app.MainActivity
             activity?.refreshNavBar()
+            
+            isAvatarChanged = false
+            checkChanges()
             
             if (isAdded) {
                 Toast.makeText(requireContext(), "Профиль и аватар обновлены", Toast.LENGTH_SHORT).show()

@@ -96,8 +96,26 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val isHome = destination.id == R.id.nav_home
             val isLogin = destination.id == R.id.loginFragment
+            val isOrderList = destination.id == R.id.orderListFragment
+            val isAnalytics = destination.id == R.id.analyticsFragment
+            val isSettings = destination.id == R.id.settingsFragment
+            val isCustomers = destination.id == R.id.nav_customers
+            val isProfile = destination.id == R.id.profileFragment
+            val isTools = destination.id == R.id.toolsFragment
+            
+            // Новые фрагменты с кастомными хедерами
+            val isOrderForm = destination.id == R.id.orderFormFragment
+            val isOrderDetail = destination.id == R.id.orderDetailFragment
+            val isCustomerDetail = destination.id == R.id.customerDetailFragment
+            val isCustomerForm = destination.id == R.id.customerFormFragment
+            val isChatList = destination.id == R.id.chatListFragment
+            val isChatDetail = destination.id == R.id.chatDetailFragment
+            val isEmployeeList = destination.id == R.id.employeeListFragment
+            val isConsumableList = destination.id == R.id.consumableListFragment
 
-            if (isHome || isLogin) {
+            if (isHome || isLogin || isOrderList || isAnalytics || isSettings || isCustomers || 
+                isProfile || isTools || isOrderForm || isOrderDetail || isCustomerDetail || 
+                isCustomerForm || isChatList || isChatDetail || isEmployeeList || isConsumableList) {
                 hideToolbarAnimated(toolbar)
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             } else {
@@ -471,7 +489,7 @@ class MainActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.drawerLayout) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val displayCutout = insets.displayCutout
-            binding.appBarMain.toolbar.setPadding(0, systemBars.top, 0, 0)
+            //binding.appBarMain.toolbar.setPadding(0, systemBars.top, 0, 0)
             
             insets
         }

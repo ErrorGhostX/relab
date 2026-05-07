@@ -89,6 +89,10 @@ class ChatDetailFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         tvConnectionStatus = view.findViewById(R.id.tvConnectionStatus)
 
+        view.findViewById<View>(R.id.btnBack).setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         val prefs = requireContext().getSharedPreferences(
             "relab_prefs",
             android.content.Context.MODE_PRIVATE

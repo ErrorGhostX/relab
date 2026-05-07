@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
+import androidx.navigation.fragment.findNavController
 import egx.relab_app.R
 import egx.relab_app.app
 import egx.relab_app.databinding.FragmentConsumableListBinding
@@ -40,6 +41,10 @@ class ConsumableListFragment : Fragment() {
         setupRecyclerView()
         setupSearch()
         observeConsumables()
+
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
 
         binding.fabAddConsumable.setOnClickListener {
             showEditConsumableDialog(null)

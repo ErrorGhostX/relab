@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- a:\DEV\Lioket\Relab\RelabApp\app\src\main\res\layout\item_order_consumable.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="8dp"
+    android:background="@drawable/bg_glass_card"
+    android:layout_marginBottom="8dp"
+    android:paddingHorizontal="12dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvConsumableName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Название"
+            android:textStyle="bold"
+            android:textColor="@color/gray_900"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvConsumableInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1 шт. x 100 ₽"
+            android:textColor="@color/gray_600"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvConsumableTotal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="100 ₽"
+        android:textStyle="bold"
+        android:textColor="@color/gray_900"
+        android:layout_marginEnd="8dp" />
+
+    <ImageButton
+        android:id="@+id/btnDeleteConsumable"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/trash_can_svgrepo_com"
+        app:tint="@color/error_red"
+        android:padding="6dp"
+        android:scaleType="centerInside" />
+</LinearLayout>

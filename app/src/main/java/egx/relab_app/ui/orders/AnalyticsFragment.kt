@@ -73,6 +73,10 @@ class AnalyticsFragment : Fragment() {
         
         // Затем загружаем свежие данные с сервера
         loadAnalytics()
+
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
     }
     
     private fun setupUI() {

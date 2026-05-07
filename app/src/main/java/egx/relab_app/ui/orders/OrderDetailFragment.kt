@@ -97,6 +97,10 @@ class OrderDetailFragment : Fragment() {
         val btnLeft = binding.btnLeft
         val btnRight = binding.btnRight
 
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         // Создаем адаптер для фото
 
 

@@ -42,6 +42,10 @@ class ChatListFragment : Fragment() {
         emptyView = view.findViewById(R.id.emptyView)
         progressBar = view.findViewById(R.id.progressBar)
 
+        view.findViewById<View>(R.id.btnBack).setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         swipeRefreshLayout.setOnRefreshListener {
             viewModel.loadChatRooms()
         }

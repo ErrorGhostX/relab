@@ -249,6 +249,10 @@ class OrderFormFragment : Fragment() {
         // Настройка голосового ввода
         setupVoiceInput()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         // Настройка ручного ввода (Локальный и ИИ)
         binding.btnLocalParse.setOnClickListener {
             val text = binding.editTextAiInput.text?.toString() ?: ""
@@ -1069,6 +1073,7 @@ class OrderFormFragment : Fragment() {
     }
 
     private fun populateEditFields() {
+        binding.tvTitle.text = "Редактировать заказ"
         val o = args.order!!
         binding.editTextOrderNumber.setText(o.orderName)
         

@@ -64,6 +64,12 @@ class SyncManager(
      * ВАЖНО: Обрабатывает все исключения, включая SocketTimeoutException и JobCancellationException
      */
     suspend fun fullSync(): SyncResult {
+        val tokenManager = egx.relab_app.storage.TokenManager(context)
+        if (tokenManager.isGuestMode) {
+            Log.d(TAG, "Синхронизация пропущена: Режим Гостя активен")
+            return SyncResult(success = true, syncedCount = 0, error = "Режим Гостя (Локально)")
+        }
+        
         return withContext(Dispatchers.IO) {
             try {
                 Log.d(TAG, "Начало полной синхронизации")

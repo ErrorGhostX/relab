@@ -5,196 +5,234 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    android:fitsSystemWindows="true"
-    android:paddingTop="60dp"
-    android:paddingHorizontal="16dp"
-    android:paddingBottom="16dp">
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <!-- ================= ОСНОВНАЯ ИНФОРМАЦИЯ ================= -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Header -->
+        <!-- Header -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="13dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/gray_300"
-            app:strokeColor="@color/gray_900"
-            app:strokeWidth="2dp">
+            android:layout_marginBottom="24dp"
+            android:layout_marginTop="8dp">
 
+            <!-- Кнопка "Назад" слева -->
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/circle_back_button"
+                android:src="?attr/homeAsUpIndicator"
+                android:padding="12dp"
+                android:scaleType="centerInside"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                app:tint="@color/gray_900" />
+
+            <!-- Название по центру -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Профиль"
+                android:textColor="@color/black"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+                
+            <!-- Кнопки справа -->
             <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
+
+                <!-- Кнопка "Сохранить" -->
+                <ImageButton
+                    android:id="@+id/buttonSaveProfile"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/check_correct_svgrepo_com"
+                    android:background="@drawable/circle_back_button"
+                    android:backgroundTint="@color/gray_400"
+                    android:padding="14dp"
+                    android:scaleType="centerInside"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="12dp"
+                    android:enabled="false"
+                    android:visibility="visible" />
+
+                <!-- Кнопка "Выйти" -->
+                <ImageButton
+                    android:id="@+id/btnLogout"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_logout_door"
+                    android:background="@drawable/circle_back_button"
+                    android:backgroundTint="#FFEBEE"
+                    android:padding="12dp"
+                    android:scaleType="centerInside"
+                    app:tint="#D32F2F"
+                    android:visibility="visible" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Centered Profile Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/profileImage"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                android:background="@drawable/circle_avatar"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/tvUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Фамилия Имя"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/gray_900"
+                android:layout_marginTop="16dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tvUserId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ID: —"
+                android:textSize="14sp"
+                android:textColor="@color/gray_500"
+                android:layout_marginTop="4dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/tvRank"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Сотрудник"
+                android:textColor="@color/white"
+                app:chipBackgroundColor="@color/gray_900"
+                app:chipCornerRadius="16dp"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- Stats Chips Row -->
+        <LinearLayout
+            android:id="@+id/layoutStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone">
+            
+            <TextView
+                android:id="@+id/tvStats"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_bg_gray"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="12dp"
+                android:textColor="@color/gray_900"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Завершено: 42  |  Доход: 150000 ₽" />
+        </LinearLayout>
+
+        <!-- Inputs Section -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutFullName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="ФИО"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="24dp"
+            app:boxCornerRadiusTopEnd="24dp"
+            app:boxCornerRadiusBottomStart="24dp"
+            app:boxCornerRadiusBottomEnd="24dp"
+            app:boxStrokeColor="@color/gray_400"
+            app:hintTextColor="@color/gray_600">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTextFullName" 
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" 
+                android:minHeight="56dp"
+                android:inputType="textPersonName" 
+                android:textColor="@color/gray_900"
+                android:paddingStart="20dp" 
+                android:paddingEnd="20dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Номер телефона"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="24dp"
+            app:boxCornerRadiusTopEnd="24dp"
+            app:boxCornerRadiusBottomStart="24dp"
+            app:boxCornerRadiusBottomEnd="24dp"
+            app:boxStrokeColor="@color/gray_400"
+            app:hintTextColor="@color/gray_600">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTextPhone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-
-
-                <!-- Фото + ID -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="3dp"
-                    app:cardBackgroundColor="@color/gray_900"
-                    app:strokeColor="@color/gray_500"
-                    app:strokeWidth="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-
-                        android:padding="20dp">
-
-                        <ImageView
-                            android:id="@+id/profileImage"
-                            android:layout_width="104dp"
-                            android:layout_height="103dp"
-                            android:background="@drawable/relab"
-                            android:clickable="true"
-                            android:clipToOutline="true"
-                            android:contentDescription="Фото профиля"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackgroundBorderless"
-                            android:scaleType="centerCrop" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_marginStart="16dp">
-
-                            <TextView
-                                android:id="@+id/tvUserName"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Фамилия Имя Отчество"
-                                android:textSize="20sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/white"
-                                android:layout_marginBottom="6dp" />
-
-                            <TextView
-                                android:id="@+id/tvUserId"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="ID: НОМЕР"
-                                android:textSize="14sp"
-                                android:textColor="@color/gray_600" />
-                        </LinearLayout>
-
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Заголовок -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Основная информация"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- ФИО -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/inputLayoutFullName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="ФИО"
-                    android:layout_marginBottom="16dp"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    app:boxCornerRadiusTopStart="8dp"
-                    app:boxCornerRadiusTopEnd="8dp"
-                    app:boxCornerRadiusBottomStart="8dp"
-                    app:boxCornerRadiusBottomEnd="8dp"
-                    app:boxStrokeColor="@color/gray_400"
-                    app:hintTextColor="@color/gray_300">
-                    <!-- Поле ФИО -->
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTextFullName" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:minHeight="56dp"
-                        android:inputType="textPersonName" android:textColor="@color/gray_900"
-                        android:paddingStart="12dp" android:paddingEnd="12dp" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Телефон -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/inputLayoutPhone"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Номер телефона"
-                    android:layout_marginBottom="16dp"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    app:boxCornerRadiusTopStart="8dp"
-                    app:boxCornerRadiusTopEnd="8dp"
-                    app:boxCornerRadiusBottomStart="8dp"
-                    app:boxCornerRadiusBottomEnd="8dp"
-                    app:boxStrokeColor="@color/gray_400"
-                    app:hintTextColor="@color/gray_300">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTextPhone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="56dp"
-                        android:inputType="phone"
-                        android:textColor="@color/gray_900"
-                        android:paddingHorizontal="12dp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Разделитель -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/gray_400"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- Email -->
-                <TextView
-                    android:id="@+id/tvEmail"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Почта: email@example.com"
-                    android:textSize="16sp"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="8dp" />
-                
-                <!-- Rank -->
-                <TextView
-                    android:id="@+id/tvRank"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ранг: —"
-                    android:textSize="16sp"
-                    android:textColor="@color/gray_900" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- ДОП. ИНФОРМАЦИЯ удалена (перенесена выше) -->
-
-        <TextView
-            android:id="@+id/tvStats"
+                android:minHeight="56dp"
+                android:inputType="phone"
+                android:textColor="@color/gray_900"
+                android:paddingHorizontal="20dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        
+        <!-- Email Box (Read-only) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayoutEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="#F5F5F5"
-            android:padding="12dp"
-            android:gravity="center"
-            android:textColor="@color/black"
-            android:textSize="14sp"
-            android:visibility="gone"
-            tools:text="Завершено: 42 | Доход: 150000 ₽" />
+            android:hint="Email"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="24dp"
+            app:boxCornerRadiusTopEnd="24dp"
+            app:boxCornerRadiusBottomStart="24dp"
+            app:boxCornerRadiusBottomEnd="24dp"
+            app:boxStrokeColor="@color/gray_200"
+            app:hintTextColor="@color/gray_500">
 
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTextEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:inputType="none"
+                android:focusable="false"
+                android:longClickable="false"
+                android:textColor="@color/gray_600"
+                android:paddingHorizontal="20dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Recent Orders (if applicable) -->
         <TextView
             android:id="@+id/tvRecentOrdersTitle"
             android:layout_width="wrap_content"
@@ -215,53 +253,40 @@
             android:visibility="gone"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-        <!-- КНОПКИ ДЛЯ ЧУЖОГО ПРОФИЛЯ -->
+        <!-- OTHER PROFILE BUTTONS -->
         <LinearLayout
             android:id="@+id/layoutOtherProfileButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:layout_marginTop="8dp">
             
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSendMessage"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
                 android:text="Написать сообщение"
                 app:icon="@drawable/ic_chat"
                 app:iconGravity="textStart"
-                android:layout_marginBottom="11dp" />
+                app:cornerRadius="30dp"
+                app:backgroundTint="@color/gray_900"
+                android:layout_marginBottom="12dp" />
                 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAnalytics"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
                 android:text="Аналитика"
                 app:icon="@drawable/analytics_svgrepo_com"
                 app:iconGravity="textStart"
-                app:backgroundTint="@color/gray_900"
-                android:layout_marginBottom="11dp" />
+                app:iconTint="@color/gray_900"
+                android:textColor="@color/gray_900"
+                app:strokeColor="@color/gray_300"
+                app:cornerRadius="30dp"
+                android:layout_marginBottom="12dp" />
         </LinearLayout>
-
-        <!-- КНОПКИ -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSaveProfile"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="Сохранить изменения"
-            android:textColor="@color/white"
-            app:backgroundTint="@android:color/holo_green_dark"
-            android:layout_marginBottom="11dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="Выйти из аккаунта"
-            android:textColor="@color/error_red"
-            app:backgroundTint="@color/gray_900" />
 
     </LinearLayout>
 </ScrollView>
