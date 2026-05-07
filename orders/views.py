@@ -10,9 +10,12 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend_relab_app import settings
 from . import models
-from .models import Order, Service, OrderPhoto, OrderCollaborator, Customer
+from .models import Order, Service, OrderPhoto, OrderCollaborator, Customer, Consumable, OrderConsumable
 from django.contrib.auth.models import User
-from .serializers import OrderSerializer, ServiceSerializer, OrderPhotoSerializer, UserSerializer, CustomerSerializer
+from .serializers import (
+    OrderSerializer, ServiceSerializer, OrderPhotoSerializer, 
+    UserSerializer, CustomerSerializer, ConsumableSerializer, OrderConsumableSerializer
+)
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 import requests
@@ -312,6 +315,53 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
         
         service.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def add_consumable(self, request, pk=None):
+        """
+        POST /api/orders/{pk}/add_consumable/
+        Тело: { "consumable": ID, "quantity": 1, "price_at_time": 100.0 }
+        Списывает товар со склада.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        serializer = OrderConsumableSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            consumable = serializer.validated_data['consumable']
+            quantity = serializer.validated_data['quantity']
+            
+            if consumable.quantity < quantity:
+                return Response({"error": "Недостаточно товара на складе"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            consumable.quantity -= quantity
+            consumable.save()
+            
+            serializer.save(order=order, created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'], url_path='consumables/(?P<consumable_id>[^/.]+)')
+    def delete_consumable(self, request, pk=None, consumable_id=None):
+        """
+        DELETE /api/orders/{pk}/consumables/{consumable_id}/
+        Удаляет расходник из заказа и возвращает его на склад.
+        """
+        order = get_object_or_404(Order, pk=pk)
+        order_consumable = get_object_or_404(OrderConsumable, pk=consumable_id, order=order)
+        
+        # Проверка прав (аналогично услугам)
+        if order_consumable.created_by != request.user and order.created_by != request.user:
+            return Response(
+                {"error": "Вы можете удалять только добавленные вами расходники"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Возвращаем товар на склад
+        consumable = order_consumable.consumable
+        consumable.quantity += order_consumable.quantity
+        consumable.save()
+        
+        order_consumable.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # =============================================
@@ -751,6 +801,71 @@ class CustomerViewSet(viewsets.ModelViewSet):
             'is_blacklisted': customer.is_blacklisted,
             'orders': order_serializer.data
         })
+
+
+class ConsumableViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для работы со складом расходников.
+    """
+    queryset = Consumable.objects.all()
+    serializer_class = ConsumableSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = Consumable.objects.all()
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(sku__icontains=search)
+            )
+        return qs.order_by('name')
+
+
+class OrderConsumableViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для расходников в заказах.
+    Поддерживает изменение количества с корректировкой склада.
+    """
+    queryset = OrderConsumable.objects.all()
+    serializer_class = OrderConsumableSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        consumable = serializer.validated_data['consumable']
+        quantity = serializer.validated_data['quantity']
+        
+        if consumable.quantity < quantity:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"error": "Недостаточно товара на складе"})
+            
+        consumable.quantity -= quantity
+        consumable.save()
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_quantity = instance.quantity
+        new_quantity = serializer.validated_data.get('quantity', old_quantity)
+        consumable = instance.consumable
+        
+        diff = new_quantity - old_quantity
+        if diff > 0: # Расход увеличился
+            if consumable.quantity < diff:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({"error": "Недостаточно товара на складе"})
+            consumable.quantity -= diff
+        elif diff < 0: # Расход уменьшился
+            consumable.quantity += abs(diff)
+            
+        consumable.save()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        consumable = instance.consumable
+        consumable.quantity += instance.quantity
+        consumable.save()
+        instance.delete()
 
 
 from django.db.models import Sum, Count

@@ -254,6 +254,65 @@ class Service(models.Model):
         return f"{self.order.order_name}: {self.description} — {self.price:.2f} ({performer}, {self.get_service_status_display()})"
 
 
+class Consumable(models.Model):
+    """
+    Расходник на складе.
+    """
+    name = models.CharField(max_length=255, verbose_name='Название')
+    description = models.TextField(blank=True, default='', verbose_name='Описание')
+    sku = models.CharField(max_length=100, blank=True, default='', verbose_name='Артикул / SKU')
+    quantity = models.IntegerField(default=0, verbose_name='Количество на складе')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена продажи')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Расходник'
+        verbose_name_plural = 'Расходники (склад)'
+
+    def __str__(self):
+        return f"{self.name} ({self.quantity} шт.) — {self.price:.2f}"
+
+
+class OrderConsumable(models.Model):
+    """
+    Расходник, добавленный в конкретный заказ.
+    """
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='order_consumables',
+        verbose_name='Заказ'
+    )
+    consumable = models.ForeignKey(
+        Consumable,
+        on_delete=models.PROTECT,
+        related_name='used_in_orders',
+        verbose_name='Расходник'
+    )
+    quantity = models.IntegerField(default=1, verbose_name='Количество')
+    price_at_time = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена на момент заказа')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='added_consumables',
+        verbose_name='Кто добавил'
+    )
+
+    class Meta:
+        verbose_name = 'Расходник в заказе'
+        verbose_name_plural = 'Расходники в заказах'
+
+    def __str__(self):
+        return f"{self.consumable.name} x {self.quantity} в заказе {self.order.order_name}"
+
+
 class OrderPhoto(models.Model):
     """
     Фотография заказа. Один заказ может иметь несколько фотографий.

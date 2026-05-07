@@ -2,7 +2,7 @@ from djoser.conf import User
 from rest_framework import serializers
 from .models import (
     Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer,
-    ChatRoom, ChatParticipant, RoomMessage
+    ChatRoom, ChatParticipant, RoomMessage, Consumable, OrderConsumable
 )
 
 
@@ -96,6 +96,37 @@ class ServiceSerializer(serializers.ModelSerializer):
         return None
 
 
+class ConsumableSerializer(serializers.ModelSerializer):
+    """Сериализатор для расходников на складе"""
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+
+    class Meta:
+        model = Consumable
+        fields = ['id', 'name', 'description', 'sku', 'quantity', 'price', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class OrderConsumableSerializer(serializers.ModelSerializer):
+    """Сериализатор для расходников в конкретном заказе"""
+    name = serializers.CharField(source='consumable.name', read_only=True)
+    sku = serializers.CharField(source='consumable.sku', read_only=True)
+    price_at_time = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    
+    # Данные о создателе
+    created_by_username = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = OrderConsumable
+        fields = ['id', 'consumable', 'name', 'sku', 'quantity', 'price_at_time', 
+                  'created_at', 'created_by', 'created_by_username']
+        read_only_fields = ['id', 'created_at', 'created_by']
+
+    def get_created_by_username(self, obj):
+        if obj.created_by:
+            return obj.created_by.username
+        return None
+
+
 class OrderPhotoSerializer(serializers.ModelSerializer):
     """Сериализатор для фотографий заказа"""
     photo_url = serializers.SerializerMethodField()
@@ -147,6 +178,7 @@ class OrderCollaboratorSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
 
     services = ServiceSerializer(many=True, required=False)
+    order_consumables = OrderConsumableSerializer(many=True, read_only=True)
     photos = OrderPhotoSerializer(many=True, read_only=True)
     collaborators = OrderCollaboratorSerializer(many=True, read_only=True)
     # Для обратной совместимости оставляем поле photo (первое фото или старое значение)
