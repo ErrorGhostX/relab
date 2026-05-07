@@ -114,3 +114,17 @@ def upload_avatar(request):
     serializer = UserSerializer(user, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+@api_view(['GET'])
+@permission_classes([])
+def get_company_info(request):
+    """
+    GET /api/company-info/ - Получить информацию о компании
+    Не требует аутентификации, чтобы приложение могло проверить адрес сервера до входа
+    """
+    data = {
+        "name": "Relab Server",
+        "logo_url": None,
+        "description": "Локальная CRM система Relab"
+    }
+    return Response(data)
