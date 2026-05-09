@@ -20,7 +20,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 8
-        versionName = "14.1.1-alpha"
+        versionName = "2.0.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -86,10 +86,19 @@ dependencies {
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.markwon.core)
     implementation("net.java.dev.jna:jna:5.10.0@aar")
+    implementation("com.google.zxing:core:3.5.3")
     
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+
+    // CameraX & ML Kit
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.google.mlkit.barcode.scanning)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

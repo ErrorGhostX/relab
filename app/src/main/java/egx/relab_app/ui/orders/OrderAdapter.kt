@@ -83,6 +83,7 @@ class OrderAdapter(
 
         // Общие для обеих версток элементы
         private val orderImage: android.widget.ImageView = itemView.findViewById(R.id.orderImage)
+        private val orderNameText: android.widget.TextView? = itemView.findViewById(R.id.orderNameText)
         private val orderIdText: android.widget.TextView = itemView.findViewById(R.id.orderIdText)
         private val deviceNameText: android.widget.TextView = itemView.findViewById(R.id.deviceNameText)
         private val orderStatusText: android.widget.TextView = itemView.findViewById(R.id.orderStatusText)
@@ -92,21 +93,28 @@ class OrderAdapter(
         private val orderDateText: android.widget.TextView? = itemView.findViewById(R.id.orderDateText)
 
         fun bind(order: Order) {
-            orderIdText.text = if (order.id != null && order.id!! > 0) {
-                "ID: ${order.id}"
-            } else {
-                "ID: Локальный"
-            }
-
-            orderDateText?.text = order.date ?: ""
+            val idStr = if (order.id != null && order.id!! > 0) "#${order.id}" else "#Локально"
+            val dateStr = order.date ?: ""
+            orderIdText.text = if (dateStr.isNotEmpty()) "$idStr | $dateStr" else idStr
             
-            deviceNameText.text = "Устройство: ${order.deviceName}"
-
-            val creatorName = order.createdByFullName
-                ?: order.createdByUsername
-                ?: "Неизвестно"
-
+            val creatorName = order.createdByFullName ?: order.createdByUsername ?: "Relab"
             orderCreatedText?.text = creatorName
+            
+            orderDateText?.text = dateStr
+            
+            // Название заказа как главный заголовок, если есть
+            if (orderNameText != null) {
+                if (!order.orderName.isNullOrBlank()) {
+                    orderNameText.text = order.orderName
+                    deviceNameText.text = order.deviceName ?: "Устройство"
+                } else {
+                    orderNameText.text = order.deviceName ?: "Заказ"
+                    deviceNameText.text = "Без названия"
+                }
+            } else {
+                // Для старых версток или если в списке только одно поле
+                deviceNameText.text = order.orderName ?: order.deviceName ?: "Заказ"
+            }
 
             if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
                 Glide.with(itemView.context)
@@ -121,7 +129,26 @@ class OrderAdapter(
             
             bindStatusBadge(order.status)
             
-            // Complexity text removed for cleaner UI in adapter
+            // Complexity
+            val complexityBadge: View = itemView.findViewById(R.id.complexityBadge)
+            val tvComplexityValue: android.widget.TextView = itemView.findViewById(R.id.tvComplexityValue)
+            val ivComplexityIcon: android.widget.ImageView = itemView.findViewById(R.id.ivComplexityIcon)
+            
+            val complexity = order.complexityPercentage ?: 0.0
+            if (complexity > 0) {
+                complexityBadge.visibility = View.VISIBLE
+                tvComplexityValue.text = "${complexity.toInt()}%"
+                
+                // Color logic for icon
+                val compColor = when {
+                    complexity < 30 -> "#10B981"
+                    complexity < 70 -> "#F59E0B"
+                    else -> "#EF4444"
+                }
+                ivComplexityIcon.setColorFilter(android.graphics.Color.parseColor(compColor))
+            } else {
+                complexityBadge.visibility = View.GONE
+            }
             
             badgePublic.visibility = if (
                 order.isPublic && (order.assignedToUsername.isNullOrEmpty() || order.assignedToUsername == "null")

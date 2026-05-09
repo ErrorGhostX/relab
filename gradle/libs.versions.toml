@@ -29,6 +29,9 @@ swiperefreshlayout = "1.1.0"
 markwon = "4.6.2"
 googleServices = "4.4.1"
 firebaseBom = "32.8.0"
+camerax = "1.4.1"
+mlkitBarcodeScanning = "17.3.0"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -63,6 +66,16 @@ androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "s
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+
+# CameraX
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+
+# ML Kit Barcode Scanning
+google-mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

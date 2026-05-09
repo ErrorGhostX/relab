@@ -12,26 +12,28 @@ import egx.relab_app.repository.OrderRepository
  */
 class RelabApplication : Application() {
     
-    // Lazy инициализация - база данных создастся только при первом обращении
-    val database by lazy { AppDatabase.getDatabase(this) }
+    // Динамический доступ к БД — всегда возвращает актуальный экземпляр
+    // (после destroyInstance() при смене компании создастся новый)
+    val database: AppDatabase
+        get() = AppDatabase.getDatabase(this)
     
-    // Repository создается один раз и переиспользуется
-    val orderRepository by lazy {
-        OrderRepository(
+    // Repository и DAO пересоздаются автоматически при смене БД
+    val orderRepository: OrderRepository
+        get() = OrderRepository(
             orderDao = database.orderDao(),
             serviceDao = database.serviceDao(),
             consumableDao = database.consumableDao()
         )
-    }
     
-    // DAO для клиентов и расходников — для использования в SyncManager и фрагментах
-    val customerDao by lazy { database.customerDao() }
-    val consumableDao by lazy { database.consumableDao() }
+    val customerDao get() = database.customerDao()
+    val consumableDao get() = database.consumableDao()
     
     override fun onCreate() {
         super.onCreate()
-        // Здесь можно выполнить другие инициализации при необходимости
+        // Инициализируем сетевой клиент (передаем контекст для TokenManager)
+        egx.relab_app.network.RetrofitClient.init(this)
     }
+
 }
 
 /**

@@ -1,57 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- a:\DEV\Lioket\Relab\RelabApp\app\src\main\res\layout\dialog_add_consumable.xml -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="@color/surface_background_premium">
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="24dp"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="24dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/white">
+        android:layout_height="wrap_content">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Добавить расходник"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:textColor="@color/gray_900"
-            android:layout_marginBottom="16dp" />
+            android:textSize="22sp"
+            android:textColor="@color/text_premium_primary"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.02"
+            android:layout_marginBottom="20dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Поиск на складе"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:startIconDrawable="@android:drawable/ic_menu_search"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#F8F9FA"
+            app:strokeWidth="1dp"
+            app:strokeColor="#EEF2F6">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    app:tint="#94A3B8" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSearchConsumable"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/black" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_height="48dp"
+                    android:background="@null"
+                    android:hint="Поиск на складе..."
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/text_premium_primary"
+                    android:textColorHint="#94A3B8"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewConsumables"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_height="220dp"
+            android:layout_marginBottom="20dp" />
+
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
@@ -59,11 +81,12 @@
                 android:layout_weight="1"
                 android:hint="Количество"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                android:layout_marginEnd="8dp">
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:hintTextColor="@color/text_premium_secondary"
+                android:layout_marginEnd="16dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etQuantity"
@@ -71,26 +94,35 @@
                     android:layout_height="wrap_content"
                     android:inputType="number"
                     android:text="1"
-                    android:textColor="@color/black" />
+                    android:textColor="@color/text_premium_primary"
+                    android:textStyle="bold" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView
-                android:id="@+id/tvPriceLabel"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Цена: 0 ₽"
-                android:textStyle="bold"
-                android:textColor="@color/gray_900" />
+                android:orientation="vertical"
+                android:gravity="end">
+                <TextView
+                    android:id="@+id/tvPriceLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Цена: 0 ₽"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_premium" />
+                
+                <TextView
+                    android:id="@+id/tvStockInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="На складе: 0"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_premium_secondary"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvStockInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="На складе: 0"
-            android:textSize="12sp"
-            android:textColor="@color/black"
-            android:layout_marginTop="4dp" />
 
     </LinearLayout>
 </ScrollView>
+

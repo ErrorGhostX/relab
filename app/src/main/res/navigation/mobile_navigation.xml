@@ -63,6 +63,11 @@
             android:id="@+id/action_orderListFragment_to_orderFormFragment"
             app:destination="@id/orderFormFragment" />
 
+        <action
+            android:id="@+id/action_orderListFragment_to_qrScannerFragment"
+            app:destination="@id/qrScannerFragment" />
+
+
 
         <action
             android:id="@+id/action_orderListFragment_to_orderDetailFragment"
@@ -244,4 +249,11 @@
         android:label="Склад"
         tools:layout="@layout/fragment_consumable_list" />
 
+    <fragment
+        android:id="@+id/qrScannerFragment"
+        android:name="egx.relab_app.ui.orders.QrScannerFragment"
+        android:label="Сканер QR"
+        tools:layout="@layout/fragment_qr_scanner" />
+
 </navigation>
+

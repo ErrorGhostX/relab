@@ -192,6 +192,10 @@ class LoginFragment : Fragment() {
                 val resp = RetrofitClient.apiService.login(ApiService.LoginRequest(user, pass))
                 RetrofitClient.tokenManager.accessToken = resp.access
                 RetrofitClient.tokenManager.refreshToken = resp.refresh
+                RetrofitClient.tokenManager.isGuestMode = false
+                
+                // Пересоздаём БД для серверного режима (уходим из гостевой БД)
+                egx.relab_app.database.AppDatabase.destroyInstance()
 
 
                 val currentUser = RetrofitClient.apiService.getCurrentUser()
@@ -245,6 +249,8 @@ class LoginFragment : Fragment() {
         tokenManager.email = user.email
         tokenManager.fullName = user.full_name
         tokenManager.avatarUrl = user.avatar
+        tokenManager.rank = user.rank
+        tokenManager.rankDisplay = user.rank_display
     }
     override fun onResume() {
         super.onResume()

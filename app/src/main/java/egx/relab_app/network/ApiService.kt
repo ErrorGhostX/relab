@@ -315,6 +315,9 @@ interface ApiService {
     @GET("customers/{id}/")
     suspend fun getCustomer(@Path("id") id: Int): Customer
 
+    @DELETE("customers/{id}/")
+    suspend fun deleteCustomer(@Path("id") id: Int): retrofit2.Response<Unit>
+
     // =============================================
     // Эндпоинты для ИИ
     // =============================================
@@ -361,11 +364,25 @@ interface ApiService {
         val username: String,
         val password: String,
         val full_name: String,
-        val rank: String
+        val rank: String,
+        val email: String = "",
+        val phone: String = ""
     )
 
     @POST("auth/users/")
     suspend fun registerEmployee(@Body request: RegisterEmployeeRequest): UserResponse
+
+    data class UpdateEmployeeRequest(
+        val full_name: String? = null,
+        val rank: String? = null,
+        val email: String? = null,
+        val phone: String? = null,
+        val specialization: String? = null,
+        val is_active: Boolean? = null
+    )
+
+    @PATCH("employees/{id}/update_profile/")
+    suspend fun updateEmployee(@Path("id") id: Int, @Body request: UpdateEmployeeRequest): UserResponse
 
     data class CompanyInfoResponse(
         val name: String,

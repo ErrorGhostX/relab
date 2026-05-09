@@ -6,73 +6,149 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.pdf.PdfDocument
 import androidx.appcompat.content.res.AppCompatResources
+import egx.relab_app.R
 import egx.relab_app.models.Order
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import java.io.ByteArrayOutputStream
 
 /**
- * Enhanced PDF generator:
- * - draws all user-facing fields (no technical sync fields)
- * - supports VectorDrawable (`logo_relab` in res/drawable)
- * - leaves signature boxes for manual signing (client & employee)
- * - applies complexity coefficient to final total (total * (1 + complexity%/100))
- * - more even/aligned layout with table-like services area
+ * Генератор PDF-отчётов заказов
+ *
+ * - Иконка Relab сверху слева
+ * - Чистый, структурированный документ
+ * - Секции: клиент, устройство, услуги (таблица), итого
+ * - Поля для подписей клиента и сотрудника
  */
 class GeneratePDF(
     private val context: Context
 ) {
 
-    fun generate(order: Order, isEmployee: Boolean): ByteArray {
+    companion object {
+        private const val PAGE_W = 595
+        private const val PAGE_H = 842
+        private const val MARGIN = 40f
+        private const val LINE_H = 18f
+        
+        // Цвета
+        private val COLOR_PRIMARY = Color.parseColor("#1E293B")
+        private val COLOR_SECONDARY = Color.parseColor("#64748B")
+        private val COLOR_ACCENT = Color.parseColor("#3B82F6")
+        private val COLOR_DIVIDER = Color.parseColor("#E2E8F0")
+        private val COLOR_LIGHT_BG = Color.parseColor("#F8FAFC")
+    }
+
+    // Переиспользуемые Paint-объекты
+    private val paintTitle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 20f; color = COLOR_PRIMARY; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    private val paintSection = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 13f; color = COLOR_ACCENT; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    private val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 10f; color = COLOR_SECONDARY
+    }
+    private val paintValue = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 11f; color = COLOR_PRIMARY
+    }
+    private val paintValueBold = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 11f; color = COLOR_PRIMARY; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    private val paintSmall = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 9f; color = COLOR_SECONDARY
+    }
+    private val paintDivider = Paint().apply {
+        color = COLOR_DIVIDER; strokeWidth = 1f
+    }
+
+    enum class DocType { REPORT, RECEIPT }
+
+    fun generate(order: Order, isEmployee: Boolean, type: DocType = DocType.REPORT): ByteArray {
         val output = ByteArrayOutputStream()
         val document = PdfDocument()
 
-        val pageWidth = 595
-        val pageHeight = 842
-        val margin = 40f
-
         var pageNumber = 1
-        var page = document.startPage(
-            PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
-        )
+        var page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
         var canvas = page.canvas
-        var yPos = margin
+        var y = MARGIN
 
-        fun startNewPage() {
-            // draw footer on current page
-            drawFooter(canvas, pageWidth, pageHeight, margin)
+        fun newPage() {
+            drawFooter(canvas, pageNumber)
             document.finishPage(page)
-
             pageNumber++
-            page = document.startPage(
-                PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
-            )
+            page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
             canvas = page.canvas
-            yPos = margin
+            y = MARGIN
         }
 
-        fun checkPage(space: Float) {
-            if (yPos + space > pageHeight - margin - 70f) { // reserve footer + signatures
-                startNewPage()
+        fun ensureSpace(needed: Float) {
+            if (y + needed > PAGE_H - MARGIN - 60f) newPage()
+        }
+
+        // ============ HEADER ============
+        y = drawHeader(canvas, order, type)
+
+        // ============ КЛИЕНТ ============
+        ensureSpace(100f)
+        y = drawSectionTitle(canvas, "КЛИЕНТ", y)
+        y = drawField(canvas, "ФИО / Название", order.customer ?: "—", y)
+        y = drawField(canvas, "Контакты", order.contactInfo ?: "—", y)
+        if (type == DocType.REPORT) {
+            y = drawField(canvas, "Мессенджер", order.messenger ?: "—", y)
+            if (!order.extraInfo.isNullOrBlank()) {
+                y = drawField(canvas, "Дополнительно", order.extraInfo, y)
             }
         }
+        y += 8f
 
-        yPos = drawHeader(canvas, order, margin)
+        // ============ УСТРОЙСТВО ============
+        ensureSpace(140f)
+        y = drawSectionTitle(canvas, "УСТРОЙСТВО", y)
+        y = drawField(canvas, "Название", order.deviceName ?: "—", y)
+        if (!order.deviceType.isNullOrBlank()) y = drawField(canvas, "Тип", order.deviceType, y)
+        if (!order.manufacturer.isNullOrBlank()) y = drawField(canvas, "Производитель", order.manufacturer, y)
+        if (!order.model.isNullOrBlank()) y = drawField(canvas, "Модель", order.model, y)
+        if (type == DocType.REPORT && !order.kit.isNullOrBlank()) y = drawField(canvas, "Комплектация", order.kit, y)
+        
+        val descLabel = if (type == DocType.RECEIPT) "Неисправность" else "Описание проблемы"
+        y = drawField(canvas, descLabel, order.description ?: "—", y)
+        y += 8f
 
-        checkPage(120f)
-        yPos = drawClientSection(canvas, order, margin, yPos)
+        // ============ ИНФОРМАЦИЯ О ЗАКАЗЕ ============
+        ensureSpace(100f)
+        y = drawSectionTitle(canvas, "ИНФОРМАЦИЯ", y)
+        y = drawField(canvas, "Дата создания", order.date ?: "—", y)
+        if (type == DocType.REPORT && isEmployee) {
+            y = drawField(canvas, "Статус", translateStatus(order.status), y)
+            y = drawField(canvas, "Создал", order.createdByFullName ?: order.createdByUsername ?: "—", y)
+            val complexity = order.complexityPercentage?.let { "%.0f%%".format(it) } ?: "—"
+            y = drawField(canvas, "Сложность", complexity, y)
+        }
+        if (!order.address.isNullOrBlank()) y = drawField(canvas, "Адрес", order.address, y)
+        y += 8f
 
-        checkPage(140f)
-        yPos = drawDeviceSection(canvas, order, margin, yPos)
+        // ============ УСЛУГИ (ТАБЛИЦА) ============
+        ensureSpace(80f)
+        y = drawSectionTitle(canvas, "ОКАЗАННЫЕ УСЛУГИ", y)
+        y = drawServicesTable(canvas, order, y) { ensureSpace(it) }
 
-        checkPage(220f)
-        yPos = drawServicesTable(canvas, order, margin, yPos, pageWidth.toFloat(), ::checkPage)
+        // ============ ИТОГО ============
+        ensureSpace(60f)
+        y = drawTotalSection(canvas, order, y)
 
-        checkPage(80f)
-        yPos = drawTotal(canvas, order, margin, pageWidth.toFloat(), yPos)
+        // ============ QR CODE ============
+        // QR-код теперь рисуется в заголовке (drawHeader), но если нужно дополнительно внизу:
+        /*
+        ensureSpace(110f)
+        drawQrCode(canvas, order, y)
+        */
 
-        checkPage(120f)
-        yPos = drawSignatureSection(canvas, margin, pageWidth.toFloat(), pageHeight.toFloat(), yPos)
 
-        drawFooter(canvas, pageWidth, pageHeight, margin)
+        // ============ ПОДПИСИ ============
+        ensureSpace(130f)
+        y = drawSignatures(canvas, y)
+
+        drawFooter(canvas, pageNumber)
         document.finishPage(page)
         document.writeTo(output)
         document.close()
@@ -80,265 +156,303 @@ class GeneratePDF(
         return output.toByteArray()
     }
 
-    // ===================== DRAW METHODS =====================
+    fun generate(order: Order, isEmployee: Boolean): ByteArray {
+        return generate(order, isEmployee, DocType.REPORT)
+    }
 
-    private fun drawHeader(canvas: Canvas, order: Order, margin: Float): Float {
-        val resId = context.resources.getIdentifier("logo_relab", "drawable", context.packageName)
+    // ======================= DRAW METHODS =======================
 
-        val logoBitmap = try {
-            if (resId != 0) {
-                val drawable: Drawable? = AppCompatResources.getDrawable(context, resId)
-                drawableToBitmap(drawable)
-            } else null
-        } catch (e: Exception) {
-            null
-        }
+    private fun drawHeader(canvas: Canvas, order: Order, type: DocType): Float {
+        var y = MARGIN
 
-        val titlePaint = Paint().apply {
-            textSize = 18f
-            isFakeBoldText = true
-            color = Color.BLACK
-            isAntiAlias = true
-        }
-
-        var bottom = margin + 40f
-
+        // Логотип Relab
+        val logoBitmap = loadLogoBitmap()
         if (logoBitmap != null) {
-            val logoWidth = 110f
-            val logoHeight = if (logoBitmap.width != 0) logoBitmap.height * logoWidth / logoBitmap.width else logoBitmap.height.toFloat()
-
-            val dst = RectF(margin, margin, margin + logoWidth, margin + logoHeight)
-            canvas.drawBitmap(logoBitmap, null, RectFToRect(dst), null)
-
-            canvas.drawText("${order.orderName ?: "Заказ"}", margin + logoWidth + 20f, margin + 28f, titlePaint)
-            bottom = margin + logoHeight + 15f
+            val logoH = 44f
+            val logoW = logoBitmap.width * logoH / logoBitmap.height
+            val dst = Rect(MARGIN.toInt(), y.toInt(), (MARGIN + logoW).toInt(), (y + logoH).toInt())
+            canvas.drawBitmap(logoBitmap, null, dst, null)
+            
+            // Название справа от лого
+            canvas.drawText("Relab", MARGIN + logoW + 12f, y + 20f, paintTitle)
+            val subTitle = if (type == DocType.RECEIPT) "Квитанция приема" else "Отчёт по заказу"
+            canvas.drawText(subTitle, MARGIN + logoW + 12f, y + 36f, paintSmall)
+            y += logoH + 8f
         } else {
-            canvas.drawText("Relab — сервисный центр", margin, margin + 28f, titlePaint)
-            bottom = margin + 50f
+            val title = if (type == DocType.RECEIPT) "Relab — Квитанция" else "Relab — Отчёт"
+            canvas.drawText(title, MARGIN, y + 20f, paintTitle)
+            y += 30f
         }
 
-        // line
-        canvas.drawLine(margin, bottom, 595f - margin, bottom, Paint().apply { color = Color.LTGRAY; strokeWidth = 1f })
-
-        return bottom + 20f
-    }
-
-    private fun drawClientSection(canvas: Canvas, order: Order, margin: Float, y: Float): Float {
-        val label = Paint().apply { textSize = 11f; isFakeBoldText = true; isAntiAlias = true }
-        val value = Paint().apply { textSize = 11f; isAntiAlias = true }
-
-        var yy = y
-
-        canvas.drawText("Клиент:", margin, yy, label)
-        canvas.drawText(order.customer ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Контакты:", margin, yy, label)
-        canvas.drawText(order.contactInfo ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Мэсэнджер:", margin, yy, label)
-        canvas.drawText(order.messenger ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Дополнительно:", margin, yy, label)
-        drawMultilineText(canvas, order.extraInfo ?: "—", margin + 100f, yy - 12f, value, 400f)
-
-        return yy + 36f
-    }
-
-    private fun drawDeviceSection(canvas: Canvas, order: Order, margin: Float, y: Float): Float {
-        val label = Paint().apply { textSize = 11f; isFakeBoldText = true; isAntiAlias = true }
-        val value = Paint().apply { textSize = 11f; isAntiAlias = true }
-
-        var yy = y
-
-        canvas.drawText("Устройство:", margin, yy, label)
-        canvas.drawText(order.deviceName ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Тип:", margin, yy, label)
-        canvas.drawText(order.deviceType ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Производитель:", margin, yy, label)
-        canvas.drawText(order.manufacturer ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Модель / Комплектация:", margin, yy, label)
-        canvas.drawText((order.model ?: "—") + (order.kit?.let { " / $it" } ?: ""), margin + 140f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Описание проблемы:", margin, yy, label)
-        drawMultilineText(canvas, order.description ?: "—", margin + 140f, yy - 12f, value, 380f)
-
-        yy += 36f
-        canvas.drawText("Дата:", margin, yy, label)
-        canvas.drawText(order.date ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Статус:", margin, yy, label)
-        canvas.drawText(order.status ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Создал:", margin, yy, label)
-        canvas.drawText(order.createdByFullName ?: order.createdByUsername ?: "—", margin + 100f, yy, value)
-
-        yy += 18f
-        canvas.drawText("Сложность:", margin, yy, label)
-        val complexity = when {
-            order.complexityLevel != null -> "${order.complexityLevel} (${order.complexityPercentage?.let { "%.0f%%".format(it) } ?: "—"})"
-            order.complexityPercentage != null -> "${"%.0f%%".format(order.complexityPercentage)}"
-            else -> "—"
+        // Номер заказа справа (чуть ниже QR)
+        val orderLabel = order.orderName ?: "Заказ #${order.id ?: "?"}"
+        val orderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 14f; color = COLOR_ACCENT; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        canvas.drawText(complexity, margin + 100f, yy, value)
+        val orderW = orderPaint.measureText(orderLabel)
+        
+        // Рисуем QR код справа вверху
+        val qrSize = 100
+        val qrX = PAGE_W - MARGIN - qrSize
+        val qrY = MARGIN
+        drawQrCodeAt(canvas, order, qrX, qrY, qrSize)
 
-        return yy + 24f
+        // Номер заказа под QR
+        canvas.drawText(orderLabel, PAGE_W - MARGIN - orderW, qrY + qrSize + 16f, orderPaint)
+        
+        // Обновляем Y чтобы заголовок не наезжал
+        val headerEnd = qrY + qrSize + 20f
+        if (y < headerEnd) y = headerEnd
+
+
+        // Линия-разделитель
+        y += 6f
+        canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, paintDivider)
+        y += 16f
+
+        return y
     }
 
-    private fun drawServicesTable(canvas: Canvas, order: Order, margin: Float, yStart: Float, pageWidth: Float, checkPage: (Float) -> Unit): Float {
+    private fun drawSectionTitle(canvas: Canvas, title: String, yStart: Float): Float {
         var y = yStart
-        val paint = Paint().apply { textSize = 11f; isAntiAlias = true }
+        canvas.drawText(title, MARGIN, y, paintSection)
+        y += 4f
+        canvas.drawLine(MARGIN, y, MARGIN + paintSection.measureText(title), y, Paint().apply {
+            color = COLOR_ACCENT; strokeWidth = 1.5f
+        })
+        y += 14f
+        return y
+    }
 
-        // table header
-        canvas.drawText("Услуга", margin + 4f, y, Paint().apply { textSize = 12f; isFakeBoldText = true })
-        val priceColX = pageWidth - margin - 80f
-        canvas.drawText("Цена", priceColX + 4f, y, Paint().apply { textSize = 12f; isFakeBoldText = true })
-        y += 18f
+    private fun drawField(canvas: Canvas, label: String, value: String, yStart: Float): Float {
+        var y = yStart
+        canvas.drawText(label, MARGIN, y, paintLabel)
+        
+        // Если значение длинное — переносим
+        val valueX = MARGIN + 120f
+        val maxW = PAGE_W - MARGIN - valueX
+        y = drawWrappedText(canvas, value, valueX, y, paintValue, maxW)
+        y += LINE_H
+        return y
+    }
 
-        // divider line
-        canvas.drawLine(margin, y, pageWidth - margin, y, Paint().apply { strokeWidth = 1f; color = Color.LTGRAY })
-        y += 8f
+    private fun drawServicesTable(canvas: Canvas, order: Order, yStart: Float, ensureSpace: (Float) -> Unit): Float {
+        var y = yStart
 
+        if (order.services.isEmpty()) {
+            canvas.drawText("Нет услуг", MARGIN + 4f, y, paintValue)
+            return y + LINE_H + 8f
+        }
+
+        val colDesc = MARGIN
+        val colPrice = PAGE_W - MARGIN - 80f
+
+        // Заголовок таблицы
+        val bgRect = RectF(MARGIN, y - 12f, PAGE_W - MARGIN, y + 6f)
+        canvas.drawRoundRect(bgRect, 4f, 4f, Paint().apply { color = COLOR_LIGHT_BG })
+        canvas.drawText("Описание", colDesc + 8f, y, paintValueBold)
+        canvas.drawText("Цена", colPrice + 4f, y, paintValueBold)
+        y += 14f
+
+        // Строки
         var total = 0.0
-        val descWidth = priceColX - (margin + 8f)
-
         for (service in order.services) {
-            checkPage(40f)
-            drawMultilineText(canvas, service.description ?: "—", margin + 4f, y - 12f, paint, descWidth)
-            val price = "%.2f ₽".format(service.price ?: 0.0)
-            canvas.drawText(price, pageWidth - margin - paint.measureText(price), y, paint)
+            ensureSpace(30f)
+            
+            // Описание
+            val desc = service.description ?: "—"
+            val descMaxW = colPrice - colDesc - 16f
+            val descEnd = drawWrappedText(canvas, desc, colDesc + 8f, y, paintValue, descMaxW)
+            
+            // Цена
+            val price = service.price ?: 0.0
+            val priceStr = "%.0f ₽".format(price)
+            val priceW = paintValue.measureText(priceStr)
+            canvas.drawText(priceStr, PAGE_W - MARGIN - priceW - 4f, y, paintValue)
+            
+            total += price
+            y = descEnd + 6f
 
-            y += 22f
-            total += service.price ?: 0.0
-
-            // subtle separator
-            canvas.drawLine(margin + 4f, y - 6f, pageWidth - margin - 4f, y - 6f, Paint().apply { strokeWidth = 0.5f; color = Color.LTGRAY })
+            // Тонкая линия
+            canvas.drawLine(colDesc + 8f, y, PAGE_W - MARGIN - 4f, y, Paint().apply {
+                strokeWidth = 0.5f; color = COLOR_DIVIDER
+            })
+            y += 8f
         }
 
         return y
     }
 
-    private fun drawTotal(canvas: Canvas, order: Order, margin: Float, pageWidth: Float, yStart: Float): Float {
-        val paint = Paint().apply { textSize = 12f; isFakeBoldText = true; isAntiAlias = true }
+    private fun drawTotalSection(canvas: Canvas, order: Order, yStart: Float): Float {
+        var y = yStart
 
         val baseTotal = order.services.sumOf { it.price ?: 0.0 }
         val complexityPct = order.complexityPercentage ?: 0.0
-        val coeff = 1.0 + complexityPct / 100.0 // коэффициент умножения
+        val coeff = 1.0 + complexityPct / 100.0
         val adjustedTotal = baseTotal * coeff
 
-        val baseText = "База: %.2f ₽".format(baseTotal)
-        canvas.drawText(baseText, pageWidth - margin - paint.measureText(baseText), yStart, Paint().apply { textSize = 11f })
+        // Линия перед итого
+        canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, paintDivider)
+        y += 16f
 
-        val coeffText = "Коэфф. (сложность): %.0f%% → x%.2f".format(complexityPct, coeff)
-        canvas.drawText(coeffText, margin, yStart + 16f, Paint().apply { textSize = 10f; color = Color.DKGRAY })
+        if (complexityPct > 0) {
+            val baseStr = "Сумма услуг: %.0f ₽".format(baseTotal)
+            canvas.drawText(baseStr, PAGE_W - MARGIN - paintValue.measureText(baseStr), y, paintValue)
+            y += LINE_H
 
-        val totalText = "Итого (с учётом сложности): %.2f ₽".format(adjustedTotal)
-        canvas.drawText(totalText, pageWidth - margin - paint.measureText(totalText), yStart + 22f, paint)
+            val coeffStr = "Коэффициент сложности: %.0f%% (×%.2f)".format(complexityPct, coeff)
+            canvas.drawText(coeffStr, PAGE_W - MARGIN - paintSmall.measureText(coeffStr), y, paintSmall)
+            y += LINE_H
+        }
 
-        return yStart + 36f
+        val totalPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 14f; color = COLOR_PRIMARY; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+        val totalStr = "ИТОГО: %.0f ₽".format(adjustedTotal)
+        val totalW = totalPaint.measureText(totalStr)
+        canvas.drawText(totalStr, PAGE_W - MARGIN - totalW, y, totalPaint)
+        y += 24f
+
+        return y
     }
 
-    private fun drawSignatureSection(canvas: Canvas, margin: Float, pageWidth: Float, pageHeight: Float, yStart: Float): Float {
-        var y = yStart + 10f
-        val labelPaint = Paint().apply { textSize = 11f; isFakeBoldText = true }
-        val boxPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 1f; color = Color.DKGRAY }
-        val hintPaint = Paint().apply { textSize = 10f; color = Color.DKGRAY }
+    private fun drawSignatures(canvas: Canvas, yStart: Float): Float {
+        var y = yStart + 12f
 
-        val boxWidth = 220f
-        val boxHeight = 70f
+        // Линия-разделитель
+        canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, paintDivider)
+        y += 20f
 
-        // Client signature (left)
-        canvas.drawText("Подпись клиента:", margin, y, labelPaint)
-        val clientBoxTop = y + 8f
-        val clientBoxLeft = margin
-        canvas.drawRect(clientBoxLeft, clientBoxTop, clientBoxLeft + boxWidth, clientBoxTop + boxHeight, boxPaint)
-        canvas.drawText("(распишитесь ручкой)", clientBoxLeft + 6f, clientBoxTop + boxHeight - 8f, hintPaint)
+        val boxW = 200f
+        val boxH = 60f
+        val boxPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 1f; color = COLOR_SECONDARY }
 
-        // Employee signature (right)
-        val empLeft = pageWidth - margin - boxWidth
-        canvas.drawText("Подпись сотрудника:", empLeft, y, labelPaint)
-        val empTop = y + 8f
-        canvas.drawRect(empLeft, empTop, empLeft + boxWidth, empTop + boxHeight, boxPaint)
-        canvas.drawText("(распишитесь ручкой)", empLeft + 6f, empTop + boxHeight - 8f, hintPaint)
+        // Подпись клиента (слева)
+        canvas.drawText("Подпись клиента:", MARGIN, y, paintLabel)
+        y += 8f
+        canvas.drawRoundRect(RectF(MARGIN, y, MARGIN + boxW, y + boxH), 6f, 6f, boxPaint)
+        canvas.drawText("(распишитесь ручкой)", MARGIN + 8f, y + boxH - 8f, paintSmall)
 
-        // Date lines below signature boxes
-        val dateY = clientBoxTop + boxHeight + 18f
-        canvas.drawText("Дата:", clientBoxLeft, dateY, labelPaint)
-        canvas.drawLine(clientBoxLeft + 36f, dateY + 1f, clientBoxLeft + 150f, dateY + 1f, Paint().apply { strokeWidth = 1f; color = Color.DKGRAY })
+        // Подпись сотрудника (справа)
+        val empLeft = PAGE_W - MARGIN - boxW
+        canvas.drawText("Подпись сотрудника:", empLeft, y - 8f, paintLabel)
+        canvas.drawRoundRect(RectF(empLeft, y, empLeft + boxW, y + boxH), 6f, 6f, boxPaint)
+        canvas.drawText("(распишитесь ручкой)", empLeft + 8f, y + boxH - 8f, paintSmall)
 
-        canvas.drawText("Дата:", empLeft, dateY, labelPaint)
-        canvas.drawLine(empLeft + 36f, dateY + 1f, empLeft + 150f, dateY + 1f, Paint().apply { strokeWidth = 1f; color = Color.DKGRAY })
+        y += boxH + 14f
 
-        return dateY + 24f
+        // Дата
+        canvas.drawText("Дата: __________________", MARGIN, y, paintLabel)
+        canvas.drawText("Дата: __________________", empLeft, y, paintLabel)
+
+        return y + 20f
     }
 
-    private fun drawFooter(canvas: Canvas, pageWidth: Int, pageHeight: Int, margin: Float) {
-        val paint = Paint().apply { textSize = 10f; color = Color.DKGRAY; isAntiAlias = true }
+    private fun drawQrCodeAt(canvas: Canvas, order: Order, x: Float, y: Float, size: Int) {
+        val qrContent = "relab://order/${order.id ?: 0}"
+        val qrBitmap = generateQrCodeBitmap(qrContent, size)
+        
+        if (qrBitmap != null) {
+            canvas.drawBitmap(qrBitmap, x, y, null)
+            // Подпись под QR
+            val idText = "ID: ${order.id ?: "?"}"
+            val idW = paintSmall.measureText(idText)
+            canvas.drawText(idText, x + (size - idW) / 2f, y + size + 10f, paintSmall)
+        }
+    }
 
-        // try to draw small logo at footer left
-        val resId = context.resources.getIdentifier("logo_relab", "drawable", context.packageName)
-        val logoBitmap = try {
-            if (resId != 0) {
-                val drawable: Drawable? = AppCompatResources.getDrawable(context, resId)
-                drawableToBitmap(drawable)
-            } else null
+    private fun drawQrCode(canvas: Canvas, order: Order, yStart: Float): Float {
+        val size = 100
+        val x = PAGE_W - MARGIN - size
+        drawQrCodeAt(canvas, order, x, yStart, size)
+        return yStart + size + 20f
+    }
+
+    private fun generateQrCodeBitmap(content: String, size: Int): Bitmap? {
+        return try {
+            val writer = QRCodeWriter()
+            val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size)
+            val width = bitMatrix.width
+            val height = bitMatrix.height
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            for (x in 0 until width) {
+                for (y in 0 until height) {
+                    bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
+                }
+            }
+            bitmap
         } catch (e: Exception) {
             null
         }
-
-        if (logoBitmap != null) {
-            val h = 20f
-            val w = if (logoBitmap.width != 0) logoBitmap.width * h / logoBitmap.height else 40f
-            val dst = RectF(margin.toFloat(), pageHeight - 45f, margin.toFloat() + w, pageHeight - 25f)
-            canvas.drawBitmap(logoBitmap, null, RectFToRect(dst), null)
-            canvas.drawText("Relab — сервисный центр", margin.toFloat() + w + 6f, (pageHeight - 30).toFloat(), paint)
-        } else {
-            canvas.drawText("Relab — сервисный центр", margin.toFloat(), (pageHeight - 30).toFloat(), paint)
-        }
     }
 
-    // ======== HELPERS ========
+    private fun drawFooter(canvas: Canvas, pageNum: Int) {
+        val y = PAGE_H - 30f
+        canvas.drawLine(MARGIN, y - 8f, PAGE_W - MARGIN, y - 8f, paintDivider)
+        
+        val logoBitmap = loadLogoBitmap()
+        if (logoBitmap != null) {
+            val h = 16f
+            val w = logoBitmap.width * h / logoBitmap.height
+            val dst = Rect(MARGIN.toInt(), (y - 4f).toInt(), (MARGIN + w).toInt(), (y + h - 4f).toInt())
+            canvas.drawBitmap(logoBitmap, null, dst, null)
+            canvas.drawText("Relab — Сервисный центр", MARGIN + w + 6f, y + 6f, paintSmall)
+        } else {
+            canvas.drawText("Relab — Сервисный центр", MARGIN, y + 6f, paintSmall)
+        }
+
+        val pageStr = "стр. $pageNum"
+        val pageW = paintSmall.measureText(pageStr)
+        canvas.drawText(pageStr, PAGE_W - MARGIN - pageW, y + 6f, paintSmall)
+    }
+
+    // ======================= HELPERS =======================
+
+    private fun translateStatus(status: String?): String = when (status) {
+        "new" -> "Новый"
+        "in_progress" -> "В работе"
+        "waiting_parts" -> "Ожидание запчастей"
+        "done" -> "Выполнен"
+        "cancelled" -> "Отменён"
+        "delivered" -> "Выдан"
+        else -> status ?: "—"
+    }
+
+    private fun loadLogoBitmap(): Bitmap? {
+        return try {
+            val drawable: Drawable? = AppCompatResources.getDrawable(context, R.drawable.relab)
+            drawableToBitmap(drawable)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
         if (drawable == null) return null
-        try {
-            if (drawable is BitmapDrawable) {
-                return drawable.bitmap
-            }
-
-            val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 100
-            val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 100
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        if (drawable is BitmapDrawable) return drawable.bitmap
+        return try {
+            val w = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 100
+            val h = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 100
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.setBounds(0, 0, w, h)
             drawable.draw(canvas)
-            return bitmap
+            bitmap
         } catch (e: Exception) {
-            return null
+            null
         }
     }
 
-    private fun drawMultilineText(canvas: Canvas, text: String, x: Float, yStart: Float, paint: Paint, maxWidth: Float) {
+    private fun drawWrappedText(canvas: Canvas, text: String, x: Float, yStart: Float, paint: Paint, maxWidth: Float): Float {
         val words = text.split(Regex("\\s+"))
         var line = StringBuilder()
         var y = yStart
         for (w in words) {
-            val test = if (line.isEmpty()) w else line.toString() + " " + w
-            if (paint.measureText(test) > maxWidth) {
+            val test = if (line.isEmpty()) w else "${line} $w"
+            if (paint.measureText(test) > maxWidth && line.isNotEmpty()) {
                 canvas.drawText(line.toString(), x, y, paint)
                 line = StringBuilder(w)
-                y += 16f
+                y += LINE_H - 2f
             } else {
                 if (line.isNotEmpty()) line.append(" ")
                 line.append(w)
@@ -346,11 +460,7 @@ class GeneratePDF(
         }
         if (line.isNotEmpty()) {
             canvas.drawText(line.toString(), x, y, paint)
-            y += 16f
         }
-    }
-
-    private fun RectFToRect(rf: RectF): Rect {
-        return Rect(rf.left.toInt(), rf.top.toInt(), rf.right.toInt(), rf.bottom.toInt())
+        return y
     }
 }

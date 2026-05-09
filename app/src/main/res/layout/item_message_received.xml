@@ -89,6 +89,17 @@
             android:textColor="#9E9E9E"
             android:textSize="11sp"
             tools:text="14:31" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAcceptInvite"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Принять приглашение"
+            android:visibility="gone"
+            app:cornerRadius="8dp"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            tools:visibility="visible" />
             
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

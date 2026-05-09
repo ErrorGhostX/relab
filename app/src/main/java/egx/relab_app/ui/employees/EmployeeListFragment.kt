@@ -52,8 +52,14 @@ class EmployeeListFragment : Fragment() {
         fabAddEmployee = view.findViewById(R.id.fabAddEmployee)
 
         // Проверка прав на добавление сотрудника (Администратор или Руководитель)
-        val rank = tokenManager.rank?.lowercase()
-        if (rank == "admin" || rank == "manager" || rank == "руководитель" || rank == "администратор") {
+        val rank = tokenManager.rank?.lowercase()?.trim()
+        
+        // Ранги, которым разрешено управление сотрудниками
+        val isAdmin = rank == "admin" || rank == "manager" || rank == "руководитель" || rank == "администратор"
+        
+        android.util.Log.d("RelabPermission", "EmployeeList - Rank: '$rank', isAdmin: $isAdmin")
+        
+        if (isAdmin) {
             fabAddEmployee.visibility = View.VISIBLE
         } else {
             fabAddEmployee.visibility = View.GONE
@@ -66,6 +72,7 @@ class EmployeeListFragment : Fragment() {
         view.findViewById<View>(R.id.btnBack).setOnClickListener {
             findNavController().navigateUp()
         }
+
 
         adapter = EmployeeAdapter(
             onEmployeeClick = { employee ->
@@ -89,7 +96,14 @@ class EmployeeListFragment : Fragment() {
                         Toast.makeText(requireContext(), "Ошибка создания чата", Toast.LENGTH_SHORT).show()
                     }
                 }
-            }
+            },
+            onEditClick = { employee ->
+                showEditEmployeeDialog(employee)
+            },
+            onLongClick = if (isAdmin) { employee ->
+                showEditEmployeeDialog(employee)
+            } else null,
+            isAdmin = isAdmin
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -132,15 +146,19 @@ class EmployeeListFragment : Fragment() {
         val editUsername = dialogView.findViewById<TextInputEditText>(R.id.editUsername)
         val editPassword = dialogView.findViewById<TextInputEditText>(R.id.editPassword)
         val editFullName = dialogView.findViewById<TextInputEditText>(R.id.editFullName)
+        val editEmail = dialogView.findViewById<TextInputEditText>(R.id.editEmail)
+        val editPhone = dialogView.findViewById<TextInputEditText>(R.id.editPhone)
         val spinnerRank = dialogView.findViewById<android.widget.AutoCompleteTextView>(R.id.spinnerRank)
         val btnCancel = dialogView.findViewById<View>(R.id.btnCancel)
         val btnCreate = dialogView.findViewById<View>(R.id.btnCreate)
 
-        // Настройка выпадающего списка ролей
-        val ranks = arrayOf("admin", "manager", "technician", "employee")
-        val adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, ranks)
+        // Настройка выпадающего списка ролей (локализовано)
+        val roleDisplayNames = arrayOf("Администратор", "Менеджер", "Мастер", "Сотрудник")
+        val roleBackendNames = arrayOf("admin", "manager", "master", "employee")
+        
+        val adapter = android.widget.ArrayAdapter(requireContext(), R.layout.item_spinner_black, roleDisplayNames)
         spinnerRank.setAdapter(adapter)
-        spinnerRank.setText(ranks[2], false) // По умолчанию техник
+        spinnerRank.setText(roleDisplayNames[2], false) // По умолчанию мастер
 
         btnCancel.setOnClickListener { dialog.dismiss() }
 
@@ -148,17 +166,103 @@ class EmployeeListFragment : Fragment() {
             val username = editUsername.text.toString()
             val password = editPassword.text.toString()
             val fullName = editFullName.text.toString()
-            val rank = spinnerRank.text.toString()
+            val email = editEmail?.text?.toString() ?: ""
+            val phone = editPhone?.text?.toString() ?: ""
+            val selectedRoleDisplay = spinnerRank.text.toString()
+            val rankIndex = roleDisplayNames.indexOf(selectedRoleDisplay)
+            val rank = if (rankIndex != -1) roleBackendNames[rankIndex] else "employee"
 
-            if (username.isBlank() || password.isBlank() || fullName.isBlank()) {
-                Toast.makeText(requireContext(), "Заполните все поля", Toast.LENGTH_SHORT).show()
+            if (username.length < 3) {
+                Toast.makeText(requireContext(), "Логин должен быть не менее 3 символов", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val request = ApiService.RegisterEmployeeRequest(username, password, fullName, rank)
+            if (password.length < 6) {
+                Toast.makeText(requireContext(), "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (fullName.length < 3) {
+                Toast.makeText(requireContext(), "Введите полное ФИО", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (email.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                Toast.makeText(requireContext(), "Введите корректный Email", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val request = ApiService.RegisterEmployeeRequest(username, password, fullName, rank, email, phone)
             viewModel.createEmployee(request) {
                 dialog.dismiss()
                 Toast.makeText(requireContext(), "Сотрудник создан", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showEditEmployeeDialog(employee: egx.relab_app.models.UserResponse) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_employee, null)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        // Настраиваем заголовок
+        dialogView.findViewById<android.widget.TextView>(android.R.id.text1)?.text = "Редактировать сотрудника"
+
+        val editUsername = dialogView.findViewById<TextInputEditText>(R.id.editUsername)
+        val editPassword = dialogView.findViewById<TextInputEditText>(R.id.editPassword)
+        val editFullName = dialogView.findViewById<TextInputEditText>(R.id.editFullName)
+        val editEmail = dialogView.findViewById<TextInputEditText>(R.id.editEmail)
+        val editPhone = dialogView.findViewById<TextInputEditText>(R.id.editPhone)
+        val spinnerRank = dialogView.findViewById<android.widget.AutoCompleteTextView>(R.id.spinnerRank)
+        val btnCancel = dialogView.findViewById<View>(R.id.btnCancel)
+        val btnCreate = dialogView.findViewById<View>(R.id.btnCreate)
+
+        // Заполняем текущими данными
+        editUsername.setText(employee.username)
+        editUsername.isEnabled = false // Логин менять нельзя
+        editPassword.visibility = View.GONE // Пароль не редактируем тут
+        dialogView.findViewById<View>(R.id.editPassword)?.let {
+            (it.parent as? View)?.visibility = View.GONE
+        }
+        editFullName.setText(employee.full_name ?: "")
+        editEmail?.setText(employee.email ?: "")
+        editPhone?.setText(employee.phone ?: "")
+
+        // Настройка ролей (локализовано)
+        val roleDisplayNames = arrayOf("Администратор", "Менеджер", "Мастер", "Сотрудник")
+        val roleBackendNames = arrayOf("admin", "manager", "master", "employee")
+        
+        val rankAdapter = android.widget.ArrayAdapter(requireContext(), R.layout.item_spinner_black, roleDisplayNames)
+        spinnerRank.setAdapter(rankAdapter)
+        
+        val currentRankIndex = roleBackendNames.indexOf(employee.rank?.lowercase())
+        val currentRankDisplay = if (currentRankIndex != -1) roleDisplayNames[currentRankIndex] else "Сотрудник"
+        spinnerRank.setText(currentRankDisplay, false)
+
+        (btnCreate as? com.google.android.material.button.MaterialButton)?.text = "Сохранить"
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnCreate.setOnClickListener {
+            val employeeId = employee.id ?: return@setOnClickListener
+            val selectedRoleDisplay = spinnerRank.text.toString()
+            val rankIndex = roleDisplayNames.indexOf(selectedRoleDisplay)
+            val rank = if (rankIndex != -1) roleBackendNames[rankIndex] else null
+
+            val phone = editPhone?.text?.toString() ?: ""
+
+            val request = ApiService.UpdateEmployeeRequest(
+                full_name = editFullName.text.toString().ifBlank { null },
+                rank = rank,
+                email = editEmail?.text?.toString(),
+                phone = phone
+            )
+            viewModel.updateEmployee(employeeId, request) {
+                dialog.dismiss()
+                Toast.makeText(requireContext(), "Сотрудник обновлён", Toast.LENGTH_SHORT).show()
             }
         }
 

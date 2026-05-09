@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import egx.relab_app.MainActivity
 import egx.relab_app.R
 import egx.relab_app.storage.TokenManager
+import egx.relab_app.network.RetrofitClient
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -122,12 +123,8 @@ class NotificationWebSocketService : Service() {
             return
         }
 
-        // Формируем WebSocket URL
-        val baseUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
-        val wsBase = baseUrl
-            .replace("http://", "ws://")
-            .replace("https://", "wss://")
-            .replace("/api/", "")
+        // Формируем WebSocket URL динамически
+        val wsBase = RetrofitClient.getWsBaseUrl()
         val wsUrl = "${wsBase}/ws/notifications/?token=${token}"
 
         Log.d(TAG, "Connecting to: $wsUrl")

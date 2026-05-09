@@ -16,25 +16,25 @@ interface CustomerDao {
     /**
      * Получить всех клиентов (реактивно)
      */
-    @Query("SELECT * FROM customers ORDER BY fullName ASC")
+    @Query("SELECT * FROM customers WHERE syncStatus != 'DELETED' ORDER BY fullName ASC")
     fun getAllCustomers(): Flow<List<CustomerEntity>>
 
     /**
      * Получить всех клиентов (синхронно, для поиска)
      */
-    @Query("SELECT * FROM customers ORDER BY fullName ASC")
+    @Query("SELECT * FROM customers WHERE syncStatus != 'DELETED' ORDER BY fullName ASC")
     suspend fun getAllCustomersSync(): List<CustomerEntity>
 
     /**
      * Поиск клиентов по имени или телефону
      */
-    @Query("SELECT * FROM customers WHERE fullName LIKE '%' || :query || '%' OR phone LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' OR messenger LIKE '%' || :query || '%' ORDER BY fullName ASC")
+    @Query("SELECT * FROM customers WHERE (fullName LIKE '%' || :query || '%' OR phone LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' OR messenger LIKE '%' || :query || '%') AND syncStatus != 'DELETED' ORDER BY fullName ASC")
     fun searchCustomers(query: String): Flow<List<CustomerEntity>>
 
     /**
      * Поиск клиентов (синхронно)
      */
-    @Query("SELECT * FROM customers WHERE fullName LIKE '%' || :query || '%' OR phone LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' OR messenger LIKE '%' || :query || '%' ORDER BY fullName ASC")
+    @Query("SELECT * FROM customers WHERE (fullName LIKE '%' || :query || '%' OR phone LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' OR messenger LIKE '%' || :query || '%') AND syncStatus != 'DELETED' ORDER BY fullName ASC")
     fun searchCustomersSync(query: String): List<CustomerEntity>
 
     /**
@@ -86,4 +86,10 @@ interface CustomerDao {
      */
     @Query("SELECT * FROM customers WHERE syncStatus = 'PENDING'")
     suspend fun getPendingCustomers(): List<CustomerEntity>
+
+    /**
+     * Получить клиентов, ожидающих удаления на сервере
+     */
+    @Query("SELECT * FROM customers WHERE syncStatus = 'DELETED'")
+    suspend fun getDeletedCustomers(): List<CustomerEntity>
 }

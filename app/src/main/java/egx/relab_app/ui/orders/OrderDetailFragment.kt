@@ -229,27 +229,36 @@ class OrderDetailFragment : Fragment() {
         binding.buttonDelete.setOnClickListener { showDeleteConfirmationDialog() }
         binding.buttonAddService.setOnClickListener { showAddServiceDialog() }
         binding.buttonAddConsumable.setOnClickListener { showAddConsumableDialog() }
-        binding.buttonPrint.setOnClickListener { generateAndShareReport() }
+        binding.buttonPrint.setOnClickListener { showPrintSelectionDialog() }
         
-        binding.buttonAiHelp.setOnClickListener {
-            val orderId = currentOrder.id
-            if (orderId != null && orderId > 0) {
-                // Создаём/находим чат заказа через API, затем переходим в новый чат
-                val messagingVM = ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
-                messagingVM.getOrCreateOrderChat(orderId) { room ->
-                    if (room != null) {
-                        val bundle = Bundle().apply {
-                            putInt("roomId", room.id)
-                            putString("roomName", room.name ?: "Заказ #$orderId")
-                            putInt("orderId", orderId)
+        // В гостевом режиме AI-чат недоступен
+        val guestMode = egx.relab_app.storage.TokenManager(requireContext()).isGuestMode
+        if (guestMode) {
+            binding.buttonAiHelp.alpha = 0.4f
+            binding.buttonAiHelp.setOnClickListener {
+                Toast.makeText(requireContext(), "Необходимо войти в аккаунт", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            binding.buttonAiHelp.setOnClickListener {
+                val orderId = currentOrder.id
+                if (orderId != null && orderId > 0) {
+                    // Создаём/находим чат заказа через API, затем переходим в новый чат
+                    val messagingVM = ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+                    messagingVM.getOrCreateOrderChat(orderId) { room ->
+                        if (room != null) {
+                            val bundle = Bundle().apply {
+                                putInt("roomId", room.id)
+                                putString("roomName", room.name ?: "Заказ #$orderId")
+                                putInt("orderId", orderId)
+                            }
+                            findNavController().navigate(R.id.action_orderDetailFragment_to_chatDetailFragment, bundle)
+                        } else {
+                            Toast.makeText(requireContext(), "Не удалось открыть чат", Toast.LENGTH_SHORT).show()
                         }
-                        findNavController().navigate(R.id.action_orderDetailFragment_to_chatDetailFragment, bundle)
-                    } else {
-                        Toast.makeText(requireContext(), "Не удалось открыть чат", Toast.LENGTH_SHORT).show()
                     }
+                } else {
+                    Toast.makeText(requireContext(), "Сначала сохраните заказ на сервере", Toast.LENGTH_SHORT).show()
                 }
-            } else {
-                Toast.makeText(requireContext(), "Сначала сохраните заказ на сервере", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -270,12 +279,33 @@ class OrderDetailFragment : Fragment() {
 
         override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
             val photo = photos[position]
+            
             // Загружаем фото через Glide
-            Glide.with(holder.imageView.context)
-                .load(photo)
-                .placeholder(R.color.gray_200) // пока грузится
-                .error(R.drawable.ic_menu_camera) // если ошибка
-                .into(holder.imageView)
+            if (photo.isEmpty()) {
+                // Если фото нет — показываем нашу фирменную заглушку, как в списке заказов
+                Glide.with(holder.imageView.context)
+                    .load(R.drawable.ic_menu_camera)
+                    .placeholder(R.color.gray_200)
+                    .error(R.drawable.ic_menu_camera)
+                    .centerInside() // Чтобы иконка не растягивалась на весь экран
+                    .into(holder.imageView)
+            } else {
+                Glide.with(holder.imageView.context)
+                    .load(photo)
+                    .placeholder(R.color.gray_200) // пока грузится
+                    .error(R.drawable.ic_menu_camera) // если ошибка
+                    .centerCrop()
+                    .into(holder.imageView)
+            }
+            
+            // Клик — открыть фото на полный экран через ImageDetailActivity
+            holder.imageView.setOnClickListener {
+                if (photo.isNotEmpty()) {
+                    val intent = Intent(holder.imageView.context, egx.relab_app.ui.messaging.ImageDetailActivity::class.java)
+                    intent.putExtra("IMAGE_URL", photo)
+                    holder.imageView.context.startActivity(intent)
+                }
+            }
         }
 
         override fun getItemCount(): Int = photos.size
@@ -289,30 +319,46 @@ class OrderDetailFragment : Fragment() {
 // Если у TokenManager другое имя свойства для логина — замените `username` на нужное
         val currentUsername = try { tokenManager.username ?: "" } catch (e: Exception) { "" }
 
-// Разрешаем управление, если пользователь — админ или он — создатель заказа
-        canManageOrder = (userRank == "admin") || (!order.createdByUsername.isNullOrEmpty() && order.createdByUsername == currentUsername)
+        // Разрешаем управление, если пользователь — админ/менеджер или он — создатель заказа
+        // Менеджеры могут только создавать общие заказы. Они НЕ могут редактировать чужие заказы.
+        // Техники теперь называются Мастерами (они исполнители).
+        val userRankClean = userRank.lowercase().trim()
+        val isAdmin = userRankClean in listOf("admin", "руководитель", "администратор")
+        val isManager = userRankClean == "manager" || userRankClean == "менеджер"
+        val isMaster = userRankClean == "master" || userRankClean == "мастер" || userRankClean == "technician" || userRankClean == "техник"
         
-        // Коллабораторы и исполнители тоже могут добавлять услуги
+        // canManageOrder определяет права на Редактирование (Edit) и Удаление (Delete)
+        canManageOrder = isAdmin || (!order.createdByUsername.isNullOrEmpty() && order.createdByUsername == currentUsername)
+        
+        // isParticipant определяет права на добавление Услуг/Запчастей
         val isAssigned = order.assignedToUsername == currentUsername
         val isCollaborator = order.collaborators.any { it.username == currentUsername }
-
-// Применяем видимость к кнопкам управления
-        val manageVisibility = if (canManageOrder) View.VISIBLE else View.GONE
         
-        // Кнопка добавления услуги видна всем участникам (владелец, исполнитель, коллаборатор)
-        binding.buttonAddService.visibility = if (canManageOrder || isAssigned || isCollaborator) View.VISIBLE else View.GONE
+        // Менеджер не может добавлять услуги в чужие заказы, даже если они общие
+        val isParticipant = isAdmin || isMaster || isAssigned || isCollaborator || (isManager && order.createdByUsername == currentUsername)
+
+        // Функция-хелпер для управления состоянием кнопок (вместо скрытия делаем серыми)
+        fun setButtonState(container: android.view.View, button: android.view.View, enabled: Boolean) {
+            container.visibility = android.view.View.VISIBLE
+            button.isEnabled = enabled
+            container.alpha = if (enabled) 1.0f else 0.4f
+        }
+
+        // Кнопка добавления услуги/запчасти, ИИ и Отчет доступны участникам
+        setButtonState(binding.containerAddService, binding.buttonAddService, isParticipant)
+        setButtonState(binding.containerAddConsumable, binding.buttonAddConsumable, isParticipant)
+        setButtonState(binding.containerAiHelp, binding.buttonAiHelp, isParticipant)
+        setButtonState(binding.containerPrint, binding.buttonPrint, isParticipant)
         
-        binding.buttonEdit.visibility = manageVisibility
-        binding.buttonDelete.visibility = manageVisibility
+        // Правка и Удаление — только владельцу/админу
+        setButtonState(binding.containerEdit, binding.buttonEdit, canManageOrder)
+        setButtonState(binding.containerDelete, binding.buttonDelete, canManageOrder)
 
-// Кнопка печати обычно доступна всем — если хотите скрыть печать тоже, замените ниже на manageVisibility
-        binding.buttonPrint.visibility = View.VISIBLE
-
-// Кнопка удаления фото — показываем только если есть фото и если пользователь может управлять
+        // Кнопка удаления фото — показываем только если есть фото и если пользователь может управлять
         binding.btnDeletePhoto.visibility = if (canManageOrder && (binding.photosViewPager.adapter?.itemCount ?: 0) > 0) {
-            View.VISIBLE
+            android.view.View.VISIBLE
         } else {
-            View.GONE
+            android.view.View.GONE
         }
 
 
@@ -549,8 +595,18 @@ class OrderDetailFragment : Fragment() {
             val serviceText = "${svc.description} \nЦена: ${"%.2f".format(svc.price)} ₽"
             row.findViewById<TextView>(R.id.tvServiceDesc).text = serviceText
             
-            val chipComplexity = row.findViewById<com.google.android.material.chip.Chip>(R.id.chipComplexity)
-            chipComplexity.text = "Сложность: ${svc.complexityPoints}/10"
+            val tvComplexity = row.findViewById<TextView>(R.id.tvComplexity)
+            val complexity = svc.complexityPoints ?: 0
+            tvComplexity.text = "Сложность: $complexity/10"
+            
+            // Красим только текст
+            val compColor = when {
+                complexity <= 3 -> "#10B981" // Зеленый (Простая)
+                complexity <= 7 -> "#F59E0B" // Оранжевый (Средняя)
+                else -> "#EF4444" // Красный (Сложная)
+            }
+            tvComplexity.setTextColor(android.graphics.Color.parseColor(compColor))
+
             
             // Исполнитель (Аватар слева)
             val ivPerformer = row.findViewById<ImageView>(R.id.ivPerformerAvatar)
@@ -1177,24 +1233,29 @@ class OrderDetailFragment : Fragment() {
      * Обновить список фото в адаптере
      */
     private fun updatePhotosList() {
-        val photos: List<String> = try {
+        val photos: MutableList<String> = try {
             // ВАЖНО: Приоритет на фото с сервера (photos)
             if (currentOrder.photos.isNotEmpty()) {
                 // Убираем дубликаты URL
-                currentOrder.photos.mapNotNull { it.photoUrl }.distinct()
+                currentOrder.photos.mapNotNull { it.photoUrl }.distinct().toMutableList()
             } else {
                 val photosJson = currentOrder.photo
                 if (!photosJson.isNullOrEmpty() && photosJson.trim().startsWith("[")) {
                     val jsonArray = JSONArray(photosJson)
-                    List(jsonArray.length()) { index -> jsonArray.getString(index) }
+                    MutableList(jsonArray.length()) { index -> jsonArray.getString(index) }
                 } else if (!photosJson.isNullOrEmpty()) {
-                    listOf(photosJson)
+                    mutableListOf(photosJson)
                 } else {
-                    emptyList()
+                    mutableListOf()
                 }
             }
         } catch (e: Exception) {
-            emptyList()
+            mutableListOf()
+        }
+
+        // Если фото вообще нет — добавляем пустую строку, чтобы адаптер показал плейсхолдер
+        if (photos.isEmpty()) {
+            photos.add("")
         }
         
         // Обновляем адаптер с новым списком фото
@@ -1313,6 +1374,20 @@ class OrderDetailFragment : Fragment() {
     }
 
     /**
+     * Показать диалог выбора типа печати
+     */
+    private fun showPrintSelectionDialog() {
+        val options = arrayOf("Отчёт (Полный)", "Квитанция (Для клиента)")
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Выберите документ")
+            .setItems(options) { _, which ->
+                val type = if (which == 0) GeneratePDF.DocType.REPORT else GeneratePDF.DocType.RECEIPT
+                generateAndShareReport(type)
+            }
+            .show()
+    }
+
+    /**
      * Генерация PDF отчета локально
      *
      * - Генерирует PDF локально из данных заказа
@@ -1320,7 +1395,7 @@ class OrderDetailFragment : Fragment() {
      * - Для клиентов скрывает статус заказа
      * - Для сотрудников показывает все поля
      */
-    private fun generateAndShareReport() {
+    private fun generateAndShareReport(type: GeneratePDF.DocType = GeneratePDF.DocType.REPORT) {
         lifecycleScope.launch {
             try {
                 // ВАЖНО: Получаем ранг пользователя для определения, какие поля показывать
@@ -1330,11 +1405,12 @@ class OrderDetailFragment : Fragment() {
 
                 // Генерируем PDF локально
                 val pdfBytes = withContext(Dispatchers.IO) {
-                    generatePdfLocally(currentOrder, isEmployee)
+                    generatePdfLocally(currentOrder, isEmployee, type)
                 }
 
+                val docName = if (type == GeneratePDF.DocType.REPORT) "Отчет" else "Квитанция"
                 val orderId = currentOrder.id ?: currentOrder.orderName ?: "local"
-                val file = File(requireContext().cacheDir, "Order_${orderId}_Отчет.pdf")
+                val file = File(requireContext().cacheDir, "Order_${orderId}_${docName}.pdf")
                 FileOutputStream(file).use { it.write(pdfBytes) }
 
                 val uri = FileProvider.getUriForFile(
@@ -1348,7 +1424,7 @@ class OrderDetailFragment : Fragment() {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
-                startActivity(Intent.createChooser(intent, "Открыть отчёт"))
+                startActivity(Intent.createChooser(intent, "Открыть $docName"))
             } catch (e: ActivityNotFoundException) {
                 showToast("Нет приложения для открытия PDF")
             } catch (e: Exception) {
@@ -1358,6 +1434,10 @@ class OrderDetailFragment : Fragment() {
         }
     }
 
+    private fun generateAndShareReport() {
+        generateAndShareReport(GeneratePDF.DocType.REPORT)
+    }
+
     /**
      * Генерация PDF локально из данных заказа
      *
@@ -1365,9 +1445,13 @@ class OrderDetailFragment : Fragment() {
      * @param isEmployee - true если пользователь сотрудник (показывать статус), false если клиент (скрывать статус)
      * @return массив байтов PDF файла
      */
-    private fun generatePdfLocally(order: Order, isEmployee: Boolean): ByteArray {
+    private fun generatePdfLocally(order: Order, isEmployee: Boolean, type: GeneratePDF.DocType): ByteArray {
         val pdfGenerator = GeneratePDF(requireContext())
-        return pdfGenerator.generate(order, isEmployee)
+        return pdfGenerator.generate(order, isEmployee, type)
+    }
+
+    private fun generatePdfLocally(order: Order, isEmployee: Boolean): ByteArray {
+        return generatePdfLocally(order, isEmployee, GeneratePDF.DocType.REPORT)
     }
 
 
@@ -1558,6 +1642,10 @@ class OrderDetailFragment : Fragment() {
      * Показать диалог подтверждения удаления заказа
      */
     private fun showDeleteConfirmationDialog() {
+        if (!canManageOrder) {
+            Toast.makeText(requireContext(), "У вас нет прав на удаление этого заказа", Toast.LENGTH_SHORT).show()
+            return
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Удалить заказ?")
             .setMessage("Вы уверены, что хотите удалить этот заказ? Это действие нельзя отменить.")
@@ -1795,28 +1883,34 @@ class OrderDetailFragment : Fragment() {
             val headerView = TextView(requireContext()).apply {
                 text = "Участники (${order.collaborators.size}):"
                 setTextColor(resources.getColor(R.color.gray_900, null))
-                textSize = 13f
+                textSize = 12f
                 setTypeface(null, Typeface.BOLD)
-                setPadding(0, 0, 0, 4)
+                setPadding(0, 0, 0, 8)
             }
             collabContainer.addView(headerView)
             
+            // Горизонтальный список аватарок участников
+            val horizontalList = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, 0, 0, 8)
+            }
+            
             order.collaborators.forEach { collab ->
-                val collabView = LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    setPadding(0, 4, 0, 4)
+                val avatarFrame = FrameLayout(requireContext()).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
+                        (40 * resources.displayMetrics.density).toInt(),
+                        (40 * resources.displayMetrics.density).toInt()
+                    ).apply {
+                        marginEnd = (4 * resources.displayMetrics.density).toInt()
+                    }
                 }
                 
                 val avatarView = ImageView(requireContext()).apply {
-                    val size = (22 * resources.displayMetrics.density).toInt()
-                    layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                        marginEnd = (6 * resources.displayMetrics.density).toInt()
-                    }
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    )
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageResource(R.mipmap.ic_launcher_round)
                 }
@@ -1830,36 +1924,22 @@ class OrderDetailFragment : Fragment() {
                         .into(avatarView)
                 }
                 
-                // Клик по аватарке участника
-                if (collab.userId != null) {
-                    avatarView.setOnClickListener { showProfileBottomSheet(collab.userId) }
-                }
+                avatarFrame.addView(avatarView)
                 
-                val nameView = TextView(requireContext()).apply {
-                    text = collab.fullName ?: collab.username
-                    setTextColor(resources.getColor(R.color.gray_900, null))
-                    textSize = 13f
-                    maxLines = 1
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                }
-                
-                collabView.addView(avatarView)
-                collabView.addView(nameView)
-                
-                // Кнопка удаления коллаборатора — видна создателю или исполнителю
+                // Маленькая кнопка удаления поверх аватарки (только для админа/создателя)
                 if ((isCreator || isAssigned) && orderId != null && collab.userId != null) {
-                    val removeBtn = ImageButton(requireContext()).apply {
-                        val btnSize = (24 * resources.displayMetrics.density).toInt()
-                        layoutParams = LinearLayout.LayoutParams(btnSize, btnSize).apply {
-                            marginStart = (8 * resources.displayMetrics.density).toInt()
+                    val removeBtn = ImageView(requireContext()).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            (16 * resources.displayMetrics.density).toInt(),
+                            (16 * resources.displayMetrics.density).toInt()
+                        ).apply {
+                            gravity = android.view.Gravity.TOP or android.view.Gravity.END
                         }
-                        setImageResource(android.R.drawable.ic_delete)
-                        setColorFilter(resources.getColor(R.color.error_red, null))
-                        setBackgroundColor(Color.TRANSPARENT)
-                        contentDescription = "Удалить участника"
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                        setPadding(0, 0, 0, 0)
+                        setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                        setBackgroundResource(R.drawable.circle_back_button)
+                        backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                        setColorFilter(android.graphics.Color.RED)
+                        setPadding(2, 2, 2, 2)
                     }
                     removeBtn.setOnClickListener {
                         val collabUserId = collab.userId!!
@@ -1873,11 +1953,23 @@ class OrderDetailFragment : Fragment() {
                             .setNegativeButton("Отмена", null)
                             .show()
                     }
-                    collabView.addView(removeBtn)
+                    avatarFrame.addView(removeBtn)
                 }
                 
-                collabContainer.addView(collabView)
+                // Клик по аватарке участника для профиля
+                if (collab.userId != null) {
+                    avatarView.setOnClickListener { showProfileBottomSheet(collab.userId) }
+                }
+                
+                horizontalList.addView(avatarFrame)
             }
+            
+            val scrollView = HorizontalScrollView(requireContext()).apply {
+                isFillViewport = true
+                scrollBarSize = 0
+                addView(horizontalList)
+            }
+            collabContainer.addView(scrollView)
         }
         
         // --- Кнопки ---
@@ -1892,9 +1984,10 @@ class OrderDetailFragment : Fragment() {
             isCreator && hasAssignee && orderId != null
         ) View.VISIBLE else View.GONE
         
-        // Пригласить — виден создателю или исполнителю
+        // Пригласить — виден создателю или исполнителю (не в гостевом режиме)
+        val isGuestMode = egx.relab_app.storage.TokenManager(requireContext()).isGuestMode
         binding.buttonInvite.visibility = if (
-            (isCreator || isAssigned) && orderId != null
+            !isGuestMode && (isCreator || isAssigned) && orderId != null
         ) View.VISIBLE else View.GONE
         
         // Покинуть — виден коллаборатору (не создателю)
@@ -2047,10 +2140,21 @@ class OrderDetailFragment : Fragment() {
                 val userIds = employees.map { it.id }.toIntArray()
                 
                 MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Пригласить сотрудника")
+                    .setTitle("Выбрать сотрудника")
                     .setItems(names) { _, which ->
                         val selectedUserId = userIds[which]
-                        inviteCollaborator(orderId, selectedUserId)
+                        val selectedName = names[which]
+                        
+                        // ВТОРОЙ ШАГ: Выбор роли
+                        val roles = arrayOf("Исполнитель (делать ремонт)", "Участник (коллаборатор)")
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Роль для $selectedName")
+                            .setItems(roles) { _, roleWhich ->
+                                val asAssignee = (roleWhich == 0)
+                                inviteCollaborator(orderId, selectedUserId, asAssignee)
+                            }
+                            .setNegativeButton("Назад", null)
+                            .show()
                     }
                     .setNegativeButton("Отмена", null)
                     .show()
@@ -2061,7 +2165,7 @@ class OrderDetailFragment : Fragment() {
         }
     }
     
-    private fun inviteCollaborator(orderId: Int, userId: Int) {
+    private fun inviteCollaborator(orderId: Int, userId: Int, asAssignee: Boolean = false) {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
@@ -2070,7 +2174,24 @@ class OrderDetailFragment : Fragment() {
                         ApiService.InviteRequest(userId)
                     )
                 }
-                showToast("Сотрудник приглашён")
+                showToast(if (asAssignee) "Сотрудник приглашён как исполнитель" else "Сотрудник приглашён как участник")
+                
+                // Отправляем уведомление в чат заказа
+                try {
+                    val room = withContext(Dispatchers.IO) {
+                        RetrofitClient.apiService.getOrCreateOrderChat(ApiService.OrderChatRequest(orderId))
+                    }
+                    val orderName = currentOrder.orderName ?: currentOrder.deviceName ?: "Заказ #$orderId"
+                    val tag = if (asAssignee) "INVITE_ASSIGN" else "INVITE"
+                    val inviteMsg = "[$tag:$orderId:$orderName]"
+                    
+                    withContext(Dispatchers.IO) {
+                        RetrofitClient.apiService.sendChatMessage(room.id, ApiService.SendMessageRequest(inviteMsg))
+                    }
+                } catch (chatEx: Exception) {
+                    Log.e("OrderDetail", "Ошибка отправки уведомления в чат", chatEx)
+                }
+
                 refreshOrderFromServer(orderId)
             } catch (e: Exception) {
                 Log.e("OrderDetail", "Ошибка приглашения", e)
@@ -2092,7 +2213,11 @@ class OrderDetailFragment : Fragment() {
                         
                         if (response.isSuccessful) {
                             showToast("Вы покинули заказ")
-                            refreshOrderFromServer(orderId)
+                            // После выхода из заказа — возвращаемся назад, 
+                            // т.к. у пользователя может больше не быть доступа к заказу
+                            if (isAdded) {
+                                findNavController().popBackStack()
+                            }
                         } else {
                             val errorMsg = response.errorBody()?.string() ?: "Неизвестная ошибка"
                             showToast("Ошибка сервера: $errorMsg")
@@ -2106,7 +2231,6 @@ class OrderDetailFragment : Fragment() {
                         // Обработка 400 Bad Request (Вы не являетесь коллаборатором)
                         if (e is retrofit2.HttpException && e.code() == 400) {
                             showToast("Вы уже не являетесь участником этого заказа")
-                            // Принудительно обновляем данные, чтобы убрать кнопку Покинуть
                             refreshOrderFromServer(orderId)
                         } else {
                             showToast("Ошибка: ${e.message}")
@@ -2135,6 +2259,21 @@ class OrderDetailFragment : Fragment() {
                 loadFromLocalDatabase()
             } catch (e: Exception) {
                 Log.e("OrderDetail", "Ошибка обновления заказа с сервера", e)
+                // Если заказ не найден (404) — значит он удалён или нет доступа
+                if (e is retrofit2.HttpException && e.code() == 404) {
+                    // Очистка локальной БД: если заказа нет на сервере, удаляем его и локально
+                    // (если он не в очереди на синхронизацию)
+                    val entity = repository.getOrderEntityByServerId(orderId)
+                    if (entity != null && entity.syncStatus == egx.relab_app.database.entity.SyncStatus.SYNCED && !entity.isDeleted) {
+                        repository.markAsFullyDeleted(entity.localId)
+                        android.util.Log.d("OrderDetail", "Заказ $orderId удален из локальной БД (404 на сервере)")
+                    }
+                    
+                    if (isAdded) {
+                        showToast("Заказ больше не существует на сервере")
+                        findNavController().popBackStack()
+                    }
+                }
             }
         }
     }

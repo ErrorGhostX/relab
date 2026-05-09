@@ -30,9 +30,13 @@ import okhttp3.Interceptor
 object RetrofitClient {
     private const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/api/"
 
-
     lateinit var tokenManager: TokenManager
+
+    @Volatile
     private var retrofitInstance: Retrofit? = null
+
+    @Volatile
+    private var _apiService: ApiService? = null
     
     private val _authErrorFlow = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val authErrorFlow = _authErrorFlow.asSharedFlow()
@@ -46,16 +50,88 @@ object RetrofitClient {
             reqBuilder.addHeader("Authorization", "Bearer $token")
         }
         
-        val response = chain.proceed(reqBuilder.build())
-        
-        // Глобальный перехват 401 ошибки
-        if (response.code == 401) {
-            android.util.Log.w("RetrofitClient", "Detected 401 Unauthorized - clearing tokens")
-            tokenManager.accessToken = null
-            _authErrorFlow.tryEmit(Unit)
+        // НЕ обрабатываем 401 здесь — это делает tokenAuthenticator
+        chain.proceed(reqBuilder.build())
+    }
+
+    /**
+     * OkHttp Authenticator для автоматического обновления JWT токена.
+     * При получении 401:
+     * 1. Пытается обновить access через refresh-токен
+     * 2. Если успех — повторяет запрос с новым токеном
+     * 3. Если неудача — очищает токены, кидает на логин
+     */
+    private val tokenAuthenticator = object : okhttp3.Authenticator {
+        override fun authenticate(route: okhttp3.Route?, response: okhttp3.Response): okhttp3.Request? {
+            // Если уже пытались обновить — не зацикливаемся
+            if (response.request.header("X-Retry-Auth") != null) {
+                android.util.Log.w("RetrofitClient", "Refresh уже был — разлогиниваем")
+                tokenManager.accessToken = null
+                _authErrorFlow.tryEmit(Unit)
+                return null
+            }
+
+            val refreshToken = tokenManager.refreshToken
+            if (refreshToken.isNullOrEmpty()) {
+                android.util.Log.w("RetrofitClient", "Нет refresh-токена — разлогиниваем")
+                tokenManager.accessToken = null
+                _authErrorFlow.tryEmit(Unit)
+                return null
+            }
+
+            android.util.Log.d("RetrofitClient", "401 получен, пытаемся обновить токен...")
+
+            // Синхронный запрос на обновление токена
+            val refreshBody = "{\"refresh\": \"$refreshToken\"}"
+                .toRequestBody("application/json".toMediaType())
+            val refreshRequest = okhttp3.Request.Builder()
+                .url(getBaseUrl() + "auth/jwt/refresh/")
+                .post(refreshBody)
+                .build()
+
+            return try {
+                val refreshResponse = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                    .newCall(refreshRequest)
+                    .execute()
+
+                if (refreshResponse.isSuccessful) {
+                    val body = refreshResponse.body?.string()
+                    val json = com.google.gson.JsonParser.parseString(body).asJsonObject
+                    val newAccess = json.get("access")?.asString
+
+                    if (newAccess != null) {
+                        android.util.Log.d("RetrofitClient", "Токен обновлён успешно!")
+                        tokenManager.accessToken = newAccess
+
+                        // Повторяем оригинальный запрос с новым токеном
+                        response.request.newBuilder()
+                            .removeHeader("Authorization")
+                            .addHeader("Authorization", "Bearer $newAccess")
+                            .addHeader("X-Retry-Auth", "true")
+                            .build()
+                    } else {
+                        android.util.Log.e("RetrofitClient", "Refresh ответ без access")
+                        tokenManager.accessToken = null
+                        _authErrorFlow.tryEmit(Unit)
+                        null
+                    }
+                } else {
+                    android.util.Log.w("RetrofitClient", "Refresh неудачен: ${refreshResponse.code}")
+                    tokenManager.accessToken = null
+                    tokenManager.refreshToken = null
+                    _authErrorFlow.tryEmit(Unit)
+                    null
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("RetrofitClient", "Ошибка при refresh", e)
+                tokenManager.accessToken = null
+                _authErrorFlow.tryEmit(Unit)
+                null
+            }
         }
-        
-        response
     }
 
 
@@ -65,40 +141,63 @@ object RetrofitClient {
             .readTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
             .writeTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator)
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
             .build()
     }
 
+    /**
+     * Вычисляет текущий BaseURL (используется и в getRetrofit, и в Authenticator)
+     */
+    fun getBaseUrl(): String {
+        val companies = tokenManager.getCompanies()
+        val currentId = tokenManager.currentCompanyId
+        val selectedCompany = companies.find { it.id == currentId }
+        val baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
+        return if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+    }
+
+    /**
+     * Возвращает базовый URL для WebSocket соединений.
+     * Преобразует http://.../api/ в ws://.../
+     */
+    fun getWsBaseUrl(): String {
+        val baseUrl = getBaseUrl()
+        return baseUrl
+            .replace("http://", "ws://")
+            .replace("https://", "wss://")
+            .replace("/api/", "")
+            .removeSuffix("/")
+    }
+
     private fun getRetrofit(): Retrofit {
         if (retrofitInstance == null) {
-            // Приоритет: 1. Выбранная компания, 2. Ручной URL из настроек, 3. Дефолтный URL
-            val companies = tokenManager.getCompanies()
-            val currentId = tokenManager.currentCompanyId
-            val selectedCompany = companies.find { it.id == currentId }
-            
-            val baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
-            
-            // Гарантируем наличие / в конце
-            val finalUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
-            
-            android.util.Log.d("RetrofitClient", "Initializing Retrofit with BaseURL: $finalUrl")
-            
-            retrofitInstance = Retrofit.Builder()
-                .baseUrl(finalUrl)
-                .client(getClient())
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            synchronized(this) {
+                if (retrofitInstance == null) {
+                    val finalUrl = getBaseUrl()
+                    android.util.Log.d("RetrofitClient", "Initializing Retrofit with BaseURL: $finalUrl")
+                    
+                    retrofitInstance = Retrofit.Builder()
+                        .baseUrl(finalUrl)
+                        .client(getClient())
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+                }
+            }
         }
         return retrofitInstance!!
     }
     
     fun recreateRetrofit() {
-        retrofitInstance = null
+        synchronized(this) {
+            retrofitInstance = null
+            _apiService = null
+        }
     }
 
     fun updateBaseUrl(newUrl: String) {
         tokenManager.serverUrl = newUrl
-        retrofitInstance = null  // Пересоздаст Retrofit при следующем вызове apiService
+        recreateRetrofit()
     }
 
     fun init(context: Context) {
@@ -106,7 +205,19 @@ object RetrofitClient {
     }
 
     val apiService: ApiService
-        get() = getRetrofit().create(ApiService::class.java)
+        get() {
+            var service = _apiService
+            if (service == null) {
+                synchronized(this) {
+                    service = _apiService
+                    if (service == null) {
+                        service = getRetrofit().create(ApiService::class.java)
+                        _apiService = service
+                    }
+                }
+            }
+            return service!!
+        }
 
     fun createOrder(
         context: Context,

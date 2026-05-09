@@ -85,68 +85,27 @@ class AnalyticsFragment : Fragment() {
             binding.tvAnalyticsTitle.text = "Аналитика: $userName"
             binding.tvAnalyticsTitle.visibility = View.VISIBLE
             binding.toggleGroupAnalytics.visibility = View.GONE
-            binding.employeeSelectorLayout.visibility = View.GONE
         } else if (tokenManager.rank == "admin") {
             binding.toggleGroupAnalytics.visibility = View.VISIBLE
-            binding.employeeSelectorLayout.visibility = View.VISIBLE
-            
-            // Загрузка списка сотрудников для выпадающего списка
-            loadStaffList()
-            
-            binding.dropdownEmployee.setOnItemClickListener { _, _, position, _ ->
-                if (position == 0) {
-                    targetUserId = null
-                } else {
-                    targetUserId = staffList[position - 1].user_id
-                }
-                loadAnalytics()
-            }
             
             binding.toggleGroupAnalytics.addOnButtonCheckedListener { group, checkedId, isChecked ->
                 if (isChecked) {
                     when (checkedId) {
                         R.id.btnMyAnalytics -> {
                             isCompanyWide = false
-                            binding.employeeSelectorLayout.visibility = View.VISIBLE
+                            targetUserId = null
                             loadAnalytics()
                         }
                         R.id.btnCompanyAnalytics -> {
                             isCompanyWide = true
-                            binding.employeeSelectorLayout.visibility = View.GONE
                             loadAnalytics()
                         }
                     }
                 }
             }
-        } else {
-            binding.employeeSelectorLayout.visibility = View.GONE
         }
     }
-    
-    private fun loadStaffList() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val data = RetrofitClient.apiService.getStaffPerformance()
-                withContext(Dispatchers.Main) {
-                    if (isAdded && _binding != null) {
-                        staffList = data
-                        val names = mutableListOf("Моя аналитика")
-                        names.addAll(data.map { it.full_name ?: it.username ?: "Сотрудник" })
-                        
-                        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
-                        binding.dropdownEmployee.setAdapter(adapter)
-                        binding.dropdownEmployee.setText("Моя аналитика", false)
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    if (isAdded) {
-                        Toast.makeText(requireContext(), "Ошибка загрузки списка: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
-    }
+
 
     /**
      * Загрузить данные из кэша

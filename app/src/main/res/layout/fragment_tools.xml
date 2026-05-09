@@ -40,42 +40,241 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-
-        <!-- ADB инструменты -->
+        <!-- Сетевые инструменты -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/white"
-            app:strokeColor="#E0E0E0"
+            app:strokeColor="#EEF2F6"
             app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:gravity="center_horizontal">
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📡 Сетевые инструменты"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- WiFi Info -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#F1F5F9">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Подключение"
+                            android:textColor="@color/black"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvWifiSsid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="SSID: —"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvWifiIp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="IP: —"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvWifiSignal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Сигнал: —"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvWifiGateway"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Шлюз: —"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvWifiSpeed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Скорость: —"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Speed Test -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonSpeedTest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Speed Test"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="@color/gray_900"
+                    android:textColor="@color/white"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/ic_menu_rotate"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white"
+                    android:layout_marginBottom="8dp" />
+
+                <ProgressBar
+                    android:id="@+id/progressSpeedTest"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:indeterminate="true"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvSpeedTestResult"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#10B981"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Ping -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Адрес (IP/домен)"
+                        app:boxCornerRadiusTopStart="14dp"
+                        app:boxCornerRadiusTopEnd="14dp"
+                        app:boxCornerRadiusBottomStart="14dp"
+                        app:boxCornerRadiusBottomEnd="14dp"
+                        android:layout_marginEnd="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editPingAddress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="8.8.8.8"
+                            android:inputType="text"
+                            android:textSize="14sp"
+                            android:textColor="@color/black" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonPing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:text="Ping"
+                        style="@style/Widget.MaterialComponents.Button"
+                        app:backgroundTint="@color/gray_900"
+                        android:textColor="@color/white"
+                        app:cornerRadius="28dp"
+                        app:icon="@android:drawable/ic_menu_send"
+                        app:iconGravity="textStart"
+                        app:iconTint="@color/white" />
+                </LinearLayout>
+
+                <!-- Ping Results -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPingResults"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1E293B">
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxHeight="200dp">
+
+                        <TextView
+                            android:id="@+id/tvPingResults"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="14dp"
+                            android:textColor="#4FC3F7"
+                            android:textSize="12sp"
+                            android:fontFamily="monospace"
+                            android:text="" />
+                    </ScrollView>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+
+        <!-- ADB инструменты -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeColor="#EEF2F6"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="ADB Инструменты"
-                    android:textColor="@color/gray_900"
+                    android:textColor="@color/black"
                     android:textStyle="bold"
                     android:textSize="18sp"
-                    android:layout_marginBottom="8dp"
-                    android:textAlignment="center" />
+                    android:layout_marginBottom="8dp" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Инструменты ADB: скачайте драйверы, изучите руководство и настройте отладку по USB."
-                    android:textColor="@color/gray_700"
+                    android:text="Скачайте драйверы, изучите руководство и настройте отладку по USB."
+                    android:textColor="#64748B"
                     android:textSize="14sp"
-                    android:textAlignment="center"
                     android:lineSpacingExtra="4dp"
                     android:layout_marginBottom="16dp" />
 
@@ -87,17 +286,25 @@
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="@color/gray_900"
                     android:textColor="@color/white"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white"
                     android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonOpenDeveloperOptions"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Открыть настройки разработчика"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/gray_400"
+                    android:layout_marginBottom="8dp"
+                    android:text="Настройки разработчика"
                     android:textColor="@color/gray_900"
-                    android:layout_marginBottom="8dp" />
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/ic_menu_preferences"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/gray_900"
+                    app:strokeColor="#E2E8F0" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -111,7 +318,11 @@
                         android:layout_weight="1"
                         android:text="Руководство"
                         style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:textColor="@color/gray_700"
+                        android:textColor="#64748B"
+                        app:cornerRadius="28dp"
+
+                        app:iconGravity="textStart"
+                        app:iconTint="#64748B"
                         android:layout_marginEnd="4dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -121,7 +332,11 @@
                         android:layout_weight="1"
                         android:text="Об отладке"
                         style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:textColor="@color/gray_700"
+                        android:textColor="#64748B"
+                        app:cornerRadius="28dp"
+
+                        app:iconGravity="textStart"
+                        app:iconTint="#64748B"
                         android:layout_marginStart="4dp" />
                 </LinearLayout>
 
@@ -133,36 +348,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/white"
-            app:strokeColor="@color/teal_200"
+            app:strokeColor="#EEF2F6"
             app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:gravity="center_horizontal">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Интерактивный пульт"
-                    android:textColor="@color/teal_700"
+                    android:textColor="@color/black"
                     android:textStyle="bold"
                     android:textSize="18sp"
-                    android:layout_marginBottom="8dp"
-                    android:textAlignment="center" />
+                    android:layout_marginBottom="8dp" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Создайте пошаговую инструкцию для управления ТВ и отправьте её клиенту."
-                    android:textColor="@color/gray_700"
+                    android:textColor="#64748B"
                     android:textSize="14sp"
-                    android:textAlignment="center"
                     android:lineSpacingExtra="4dp"
                     android:layout_marginBottom="16dp" />
 
@@ -170,10 +382,14 @@
                     android:id="@+id/buttonOpenRemoteGuide"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Открыть виртуальный пульт"
+                    android:text="Виртуальный пульт"
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="@color/teal_700"
                     android:textColor="@color/white"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/ic_media_play"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white"
                     android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -182,8 +398,12 @@
                     android:layout_height="wrap_content"
                     android:text="Скачать в Play Market"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/teal_700"
-                    android:textColor="@color/teal_700" />
+                    app:strokeColor="#E2E8F0"
+                    android:textColor="@color/teal_700"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/teal_700" />
                 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -193,36 +413,34 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/white"
-            app:strokeColor="#C5E1A5"
+            app:strokeColor="#EEF2F6"
             app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:gravity="center_horizontal">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Драйверы Relab"
-                    android:textColor="#33691E"
+                    android:textColor="@color/black"
                     android:textStyle="bold"
                     android:textSize="18sp"
-                    android:layout_marginBottom="8dp"
-                    android:textAlignment="center" />
+                    android:layout_marginBottom="8dp" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Скачайте архив, перенесите файлы в папку Program Files и перезагрузитесь."
-                    android:textColor="@color/gray_700"
+                    android:textColor="#64748B"
                     android:textSize="14sp"
-                    android:textAlignment="center"
+                    android:lineSpacingExtra="4dp"
                     android:layout_marginBottom="16dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -233,6 +451,10 @@
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="#388E3C"
                     android:textColor="@color/white"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white"
                     android:layout_marginBottom="8dp" />
 
                 <LinearLayout
@@ -247,8 +469,12 @@
                         android:layout_weight="1"
                         android:text="Папка"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="#81C784"
+                        app:strokeColor="#E2E8F0"
                         android:textColor="#388E3C"
+                        app:cornerRadius="28dp"
+                        app:icon="@android:drawable/sym_contact_card"
+                        app:iconGravity="textStart"
+                        app:iconTint="#388E3C"
                         android:layout_marginEnd="4dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -258,8 +484,12 @@
                         android:layout_weight="1"
                         android:text="Установить"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="#81C784"
+                        app:strokeColor="#E2E8F0"
                         android:textColor="#388E3C"
+                        app:cornerRadius="28dp"
+
+                        app:iconGravity="textStart"
+                        app:iconTint="#388E3C"
                         android:layout_marginStart="4dp" />
                 </LinearLayout>
 

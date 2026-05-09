@@ -316,13 +316,67 @@ class ProfileFragment : Fragment() {
                 binding.profileImage.isClickable = true
                 binding.layoutOtherProfileButtons.visibility = View.GONE
             } else {
-                // Режим только для чтения (чужой профиль)
-                binding.buttonSaveProfile.visibility = View.GONE
-                binding.btnLogout.visibility = View.GONE
-                binding.editTextFullName.isEnabled = false
-                binding.editTextPhone.isEnabled = false
-                binding.profileImage.isClickable = false
+                // Чужой профиль
+                val myRank = tokenManager.rank?.lowercase()
+                val isAdminOrManager = myRank == "admin" || myRank == "manager" || 
+                                       myRank == "администратор" || myRank == "руководитель"
                 
+                if (isAdminOrManager) {
+                    // Админ/Руководитель может редактировать чужой профиль
+                    binding.buttonSaveProfile.visibility = View.VISIBLE
+                    binding.editTextFullName.isEnabled = true
+                    binding.editTextPhone.isEnabled = true
+                    binding.editTextEmail.isEnabled = true
+                    binding.editTextEmail.isFocusableInTouchMode = true
+                    binding.editTextEmail.isFocusable = true
+                    binding.editTextEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                    binding.profileImage.isClickable = false
+                    
+                    // Инициализируем начальные значения для отслеживания изменений
+                    initialFullName = user.full_name ?: ""
+                    initialPhone = user.phone ?: ""
+                    isAvatarChanged = false
+                    
+                    // Добавляем слушатель email
+                    binding.editTextEmail.addTextChangedListener(object : android.text.TextWatcher {
+                        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                        override fun afterTextChanged(s: android.text.Editable?) { checkChanges() }
+                    })
+                    checkChanges()
+                    
+                    // Переопределяем сохранение для чужого профиля
+                    binding.buttonSaveProfile.setOnClickListener {
+                        val employeeId = user.id ?: return@setOnClickListener
+                        val request = egx.relab_app.network.ApiService.UpdateEmployeeRequest(
+                            full_name = binding.editTextFullName.text.toString().trim().ifBlank { null },
+                            phone = binding.editTextPhone.text.toString().trim(),
+                            email = binding.editTextEmail.text.toString().trim()
+                        )
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            try {
+                                RetrofitClient.apiService.updateEmployee(employeeId, request)
+                                if (isAdded) {
+                                    Toast.makeText(requireContext(), "Профиль сотрудника обновлён", Toast.LENGTH_SHORT).show()
+                                    // Перезагружаем профиль
+                                    loadUserProfile(employeeId)
+                                }
+                            } catch (e: Exception) {
+                                if (isAdded) {
+                                    Toast.makeText(requireContext(), "Ошибка: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Обычный сотрудник — только чтение
+                    binding.buttonSaveProfile.visibility = View.GONE
+                    binding.editTextFullName.isEnabled = false
+                    binding.editTextPhone.isEnabled = false
+                    binding.profileImage.isClickable = false
+                }
+                
+                binding.btnLogout.visibility = View.GONE
                 binding.layoutOtherProfileButtons.visibility = View.VISIBLE
                 
                 binding.btnSendMessage.setOnClickListener {
@@ -339,7 +393,8 @@ class ProfileFragment : Fragment() {
                     }
                 }
                 
-                if (tokenManager.rank == "admin") {
+                // Аналитика — для admin и manager
+                if (isAdminOrManager) {
                     binding.btnAnalytics.visibility = View.VISIBLE
                     binding.btnAnalytics.setOnClickListener {
                         val bundle = android.os.Bundle().apply {

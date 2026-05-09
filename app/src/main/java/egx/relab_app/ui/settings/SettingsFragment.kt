@@ -187,7 +187,7 @@ class SettingsFragment : Fragment() {
             return
         }
         val displayNames = companies.map { it.nickname ?: it.name }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, displayNames)
+        val adapter = ArrayAdapter(requireContext(), R.layout.item_spinner_black, displayNames)
         binding.spinnerCompanySettings.setAdapter(adapter)
 
         val currentId = RetrofitClient.tokenManager.currentCompanyId

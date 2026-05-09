@@ -19,13 +19,18 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import java.io.File
 import java.io.FileOutputStream
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 /**
  * Экран чата — отображение сообщений + WebSocket.
  * 
@@ -144,7 +149,9 @@ class ChatDetailFragment : Fragment() {
         }
 
         val currentUserId = RetrofitClient.tokenManager.userId ?: 0
-        adapter = MessageAdapter(currentUserId)
+        adapter = MessageAdapter(currentUserId) { inviteOrderId ->
+            acceptInvite(inviteOrderId)
+        }
 
         val layoutManager = LinearLayoutManager(requireContext()).apply {
             stackFromEnd = true // Новые сообщения внизу
@@ -305,6 +312,41 @@ class ChatDetailFragment : Fragment() {
         }
         return name
     }
+    private fun acceptInvite(orderId: Int) {
+        lifecycleScope.launch {
+            try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    RetrofitClient.apiService.acceptOrder(orderId)
+                }
+                Toast.makeText(requireContext(), "Вы присоединились к заказу!", Toast.LENGTH_SHORT).show()
+                
+                // Предлагаем перейти к заказу
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Успех")
+                    .setMessage("Вы теперь участвуете в заказе #$orderId. Перейти к деталям?")
+                    .setPositiveButton("Перейти") { _, _ ->
+                        // Нам нужно загрузить заказ, чтобы передать его в фрагмент
+                        val app = requireContext().applicationContext as egx.relab_app.RelabApplication
+                        val repository = app.orderRepository
+                        lifecycleScope.launch {
+                            val order = withContext(Dispatchers.IO) {
+                                repository.getOrderByServerId(orderId)
+                            }
+                            if (order != null) {
+                                val bundle = Bundle().apply { putParcelable("order", order) }
+                                findNavController().navigate(R.id.orderDetailFragment, bundle)
+                            }
+                        }
+                    }
+                    .setNegativeButton("Позже", null)
+                    .show()
+            } catch (e: Exception) {
+                Log.e("ChatDetail", "Error accepting invite", e)
+                Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun uriToBase64(uri: Uri): String? {
         return try {
             val inputStream = requireContext().contentResolver.openInputStream(uri) ?: return null

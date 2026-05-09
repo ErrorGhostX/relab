@@ -63,6 +63,11 @@ class MainActivity : AppCompatActivity() {
         // Глобальный слушатель ошибок авторизации (401)
         lifecycleScope.launch {
             RetrofitClient.authErrorFlow.collect {
+                // В гостевом режиме 401 — это нормально, не выкидываем на логин
+                if (tokenManager.isGuestMode) {
+                    android.util.Log.d("MainActivity", "Guest mode: ignoring 401")
+                    return@collect
+                }
                 android.util.Log.w("MainActivity", "Global 401 detected, redirecting to login")
                 binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 androidx.navigation.Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment_content_main)
@@ -310,6 +315,14 @@ class MainActivity : AppCompatActivity() {
                 if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
                     tokenManager.avatarUrl = user.avatar
                 }
+
+                // ВАЖНО: Обновляем ранг пользователя
+                if (!user.rank.isNullOrBlank()) {
+                    tokenManager.rank = user.rank
+                }
+                if (!user.rank_display.isNullOrBlank()) {
+                    tokenManager.rankDisplay = user.rank_display
+                }
                 
                 // Создаем UserResponse с сохраненными значениями, если сервер не вернул
                 val userWithSavedData = user.copy(
@@ -346,7 +359,8 @@ class MainActivity : AppCompatActivity() {
                 updateConnectionIndicator(false)
                 
                 // ВАЖНО: Если сервер вернул 401 (Unauthorized), выкидываем на логин
-                if (e.message?.contains("401") == true || (e is retrofit2.HttpException && e.code() == 401)) {
+                // НО только если мы НЕ в гостевом режиме
+                if (!tokenManager.isGuestMode && (e.message?.contains("401") == true || (e is retrofit2.HttpException && e.code() == 401))) {
                     android.util.Log.w("MainActivity", "Сессия истекла (401), переход на логин")
                     tokenManager.accessToken = null
                     binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
@@ -417,6 +431,14 @@ class MainActivity : AppCompatActivity() {
         }
         if (!user.avatar.isNullOrEmpty() && user.avatar != "null") {
             tokenManager.avatarUrl = user.avatar
+        }
+
+        // Сохраняем ранг
+        if (!user.rank.isNullOrBlank()) {
+            tokenManager.rank = user.rank
+        }
+        if (!user.rank_display.isNullOrBlank()) {
+            tokenManager.rankDisplay = user.rank_display
         }
     }
     

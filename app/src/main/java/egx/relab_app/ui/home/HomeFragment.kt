@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import egx.relab_app.R
@@ -26,9 +27,8 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+
         return binding.root
-
-
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -37,8 +37,35 @@ class HomeFragment : Fragment() {
         // СНАЧАЛА показываем сохраненные данные для мгновенного отображения
         updateUserData()
         
-        // ЗАТЕМ загружаем данные с сервера в фоне
+        // ЗАТЕМ запускаем полную синхронизацию (она обновит ранг и права в фоне)
+        lifecycleScope.launch {
+            try {
+                val app = requireContext().applicationContext as egx.relab_app.RelabApplication
+                val syncManager = egx.relab_app.sync.SyncManager(
+                    app.orderRepository, 
+                    requireContext(),
+                    app.customerDao,
+                    app.consumableDao
+                )
+                syncManager.fullSync()
+                // После синхронизации еще раз обновляем UI на случай изменения ранга
+                updateUserData()
+            } catch (e: Exception) {
+                android.util.Log.e("HomeFragment", "Initial sync failed", e)
+            }
+        }
+        
+        // ЗАТЕМ загружаем данные с сервера в фоне (старая логика)
         loadUserData()
+
+        // Слушаем результат из сканера
+        findNavController().currentBackStackEntry?.savedStateHandle?.getLiveData<String>("scannedQr")
+            ?.observe(viewLifecycleOwner) { uri ->
+                if (uri != null) {
+                    findNavController().currentBackStackEntry?.savedStateHandle?.remove<String>("scannedQr")
+                    handleDeepLink(uri)
+                }
+            }
 
         val messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
         messagingViewModel.totalUnreadCount.observe(viewLifecycleOwner) { count ->
@@ -52,6 +79,61 @@ class HomeFragment : Fragment() {
         // Загружаем список чатов, чтобы получить актуальные бейджи
         messagingViewModel.loadChatRooms()
     }
+
+    private fun handleDeepLink(uriString: String) {
+        try {
+            val uri = android.net.Uri.parse(uriString)
+            if (uri.scheme == "relab" && uri.host == "order") {
+                val orderId = uri.lastPathSegment?.toIntOrNull()
+                if (orderId != null) {
+                    openOrderDetailsById(orderId)
+                }
+            } else {
+                Toast.makeText(requireContext(), "Неверный формат QR-кода", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openOrderDetailsById(orderId: Int) {
+        lifecycleScope.launch {
+            try {
+                // Сначала ищем локально в репозитории
+                val app = requireContext().applicationContext as egx.relab_app.RelabApplication
+                val repository = app.orderRepository
+                
+                var order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    repository.getOrderByServerId(orderId)
+                }
+                
+                if (order == null) {
+                    // Если нет локально, пробуем загрузить с сервера
+                    Toast.makeText(requireContext(), "Загрузка данных заказа #$orderId...", Toast.LENGTH_SHORT).show()
+                    order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            RetrofitClient.apiService.getOrderById(orderId.toString())
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+                
+                if (order != null) {
+                    // Переходим к деталям заказа, передавая полный объект Order
+                    val bundle = Bundle().apply { putParcelable("order", order) }
+                    findNavController().navigate(R.id.orderDetailFragment, bundle)
+                } else {
+                    Toast.makeText(requireContext(), "Заказ #$orderId не найден", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
+
     
     override fun onResume() {
         super.onResume()
@@ -67,6 +149,9 @@ class HomeFragment : Fragment() {
     }
     
     private fun setupClickListeners() {
+        val tokenManager = TokenManager(requireContext())
+        val isGuest = tokenManager.isGuestMode
+        
         binding.cardOrders.setOnClickListener {
             findNavController().navigate(R.id.action_homeFragment_to_orderListFragment)
         }
@@ -79,10 +164,6 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.nav_customers)
         }
         
-        binding.cardAnalytics.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
-        }
-        
         binding.cardSettings.setOnClickListener {
             findNavController().navigate(R.id.settingsFragment)
         }
@@ -91,34 +172,68 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.toolsFragment)
         }
 
-        binding.cardAssistant.setOnClickListener {
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val aiRoom = RetrofitClient.apiService.getOrCreateAiChat()
-                    val bundle = Bundle().apply {
-                        putInt("roomId", aiRoom.id)
-                        putString("roomName", aiRoom.name ?: "ИИ-Помощник")
-                    }
-                    findNavController().navigate(R.id.chatDetailFragment, bundle)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Ошибка открытия чата с ИИ: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+        binding.cardScanQr.setOnClickListener {
+            if (isGuest) {
+                Toast.makeText(requireContext(), "Необходимо войти в аккаунт", Toast.LENGTH_SHORT).show()
+            } else {
+                // Запускаем настоящий сканер через камеру
+                findNavController().navigate(R.id.qrScannerFragment)
             }
-        }
-
-
-        binding.cardEmployees.setOnClickListener {
-            findNavController().navigate(R.id.action_nav_home_to_employeeListFragment)
-        }
-
-        binding.cardChats.setOnClickListener {
-            findNavController().navigate(R.id.action_nav_home_to_chatListFragment)
         }
 
         binding.cardWarehouse.setOnClickListener {
             findNavController().navigate(R.id.action_nav_home_to_consumableListFragment)
         }
 
+        // --- Функции, требующие авторизацию ---
+        if (isGuest) {
+            val guestMessage = "Необходимо войти в аккаунт"
+            
+            // Делаем карточки серыми и полупрозрачными
+            listOf(binding.cardChats, binding.cardAssistant, binding.cardAnalytics, binding.cardEmployees).forEach { card ->
+                card.alpha = 0.45f
+            }
+            
+            binding.cardAnalytics.setOnClickListener {
+                Toast.makeText(requireContext(), guestMessage, Toast.LENGTH_SHORT).show()
+            }
+            binding.cardAssistant.setOnClickListener {
+                Toast.makeText(requireContext(), guestMessage, Toast.LENGTH_SHORT).show()
+            }
+            binding.cardEmployees.setOnClickListener {
+                Toast.makeText(requireContext(), guestMessage, Toast.LENGTH_SHORT).show()
+            }
+            binding.cardChats.setOnClickListener {
+                Toast.makeText(requireContext(), guestMessage, Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            binding.cardAnalytics.setOnClickListener {
+                findNavController().navigate(R.id.action_homeFragment_to_analyticsFragment)
+            }
+
+            binding.cardAssistant.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val aiRoom = RetrofitClient.apiService.getOrCreateAiChat()
+                        val bundle = Bundle().apply {
+                            putInt("roomId", aiRoom.id)
+                            putString("roomName", aiRoom.name ?: "ИИ-Помощник")
+                        }
+                        findNavController().navigate(R.id.chatDetailFragment, bundle)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Ошибка открытия чата с ИИ: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            binding.cardEmployees.setOnClickListener {
+                findNavController().navigate(R.id.action_nav_home_to_employeeListFragment)
+            }
+
+            binding.cardChats.setOnClickListener {
+                findNavController().navigate(R.id.action_nav_home_to_chatListFragment)
+            }
+        }
     }
     
     private fun updateUserData() {

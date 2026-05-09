@@ -5,13 +5,21 @@ import android.content.Context
 class TokenManager(context: Context) {
     private val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
+    /**
+     * Суффикс для хранения токенов по компании.
+     * Токены access/refresh привязаны к конкретному серверу компании.
+     * Если компания не выбрана, используется глобальный ключ (обратная совместимость).
+     */
+    private val tokenSuffix: String
+        get() = currentCompanyId?.let { "_$it" } ?: ""
+
     var accessToken: String?
-        get() = prefs.getString("ACCESS_TOKEN", null)
-        set(v) = prefs.edit().putString("ACCESS_TOKEN", v).apply()
+        get() = prefs.getString("ACCESS_TOKEN$tokenSuffix", null)
+        set(v) = prefs.edit().putString("ACCESS_TOKEN$tokenSuffix", v).apply()
 
     var refreshToken: String?
-        get() = prefs.getString("REFRESH_TOKEN", null)
-        set(v) = prefs.edit().putString("REFRESH_TOKEN", v).apply()
+        get() = prefs.getString("REFRESH_TOKEN$tokenSuffix", null)
+        set(v) = prefs.edit().putString("REFRESH_TOKEN$tokenSuffix", v).apply()
 
     var userId: Int?
         get() = prefs.getInt("USER_ID", 0).let { if (it == 0) null else it }

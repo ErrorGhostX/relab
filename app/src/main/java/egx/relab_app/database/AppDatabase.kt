@@ -87,7 +87,24 @@ abstract class AppDatabase : RoomDatabase() {
          */
         fun getDatabase(context: Context): AppDatabase {
             val tokenManager = egx.relab_app.storage.TokenManager(context)
-            val dbName = if (tokenManager.isGuestMode) "relab_guest.db" else "relab_database"
+            val dbName = when {
+                tokenManager.isGuestMode -> "relab_guest.db"
+                tokenManager.currentCompanyId != null -> {
+                    // Используем хэш companyId для имени файла (безопасные символы)
+                    val companyHash = tokenManager.currentCompanyId!!
+                        .hashCode().toUInt().toString(16).take(8)
+                    "relab_$companyHash"
+                }
+                else -> "relab_default"
+            }
+            
+            // Если имя БД изменилось (смена компании), пересоздаём экземпляр
+            val currentInstance = INSTANCE
+            if (currentInstance != null && currentInstance.openHelper.databaseName != dbName) {
+                android.util.Log.d("AppDatabase", "Смена БД: ${currentInstance.openHelper.databaseName} → $dbName")
+                currentInstance.close()
+                INSTANCE = null
+            }
             
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -95,6 +112,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     dbName
                 )
+                    // ВНИМАНИЕ: при изменении схемы БД (новая версия) все локальные данные удаляются!
+                    // Это допустимо т.к. данные восстанавливаются с сервера при синхронизации.
+                    // Если нужно сохранять данные — добавь Room Migration вместо этого.
                     .fallbackToDestructiveMigration(true)
                     .build()
                 

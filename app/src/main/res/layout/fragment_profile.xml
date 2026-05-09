@@ -14,7 +14,6 @@
         android:padding="24dp">
 
         <!-- Header -->
-        <!-- Header -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -155,112 +154,114 @@
                 tools:text="Завершено: 42  |  Доход: 150000 ₽" />
         </LinearLayout>
 
-        <!-- Inputs Section -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/inputLayoutFullName"
+        <!-- Personal Info Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="ФИО"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="24dp"
-            app:boxCornerRadiusTopEnd="24dp"
-            app:boxCornerRadiusBottomStart="24dp"
-            app:boxCornerRadiusBottomEnd="24dp"
-            app:boxStrokeColor="@color/gray_400"
-            app:hintTextColor="@color/gray_600">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#EEF2F6"
+            app:strokeWidth="1.2dp"
+            android:layout_marginBottom="24dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editTextFullName" 
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" 
-                android:minHeight="56dp"
-                android:inputType="textPersonName" 
-                android:textColor="@color/gray_900"
-                android:paddingStart="20dp" 
-                android:paddingEnd="20dp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/inputLayoutPhone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Номер телефона"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="24dp"
-            app:boxCornerRadiusTopEnd="24dp"
-            app:boxCornerRadiusBottomStart="24dp"
-            app:boxCornerRadiusBottomEnd="24dp"
-            app:boxStrokeColor="@color/gray_400"
-            app:hintTextColor="@color/gray_600">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editTextPhone"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:inputType="phone"
-                android:textColor="@color/gray_900"
-                android:paddingHorizontal="20dp" />
-        </com.google.android.material.textfield.TextInputLayout>
-        
-        <!-- Email Box (Read-only) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/inputLayoutEmail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Email"
-            android:layout_marginBottom="24dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="24dp"
-            app:boxCornerRadiusTopEnd="24dp"
-            app:boxCornerRadiusBottomStart="24dp"
-            app:boxCornerRadiusBottomEnd="24dp"
-            app:boxStrokeColor="@color/gray_200"
-            app:hintTextColor="@color/gray_500">
+                android:orientation="vertical"
+                android:padding="20dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editTextEmail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:inputType="none"
-                android:focusable="false"
-                android:longClickable="false"
-                android:textColor="@color/gray_600"
-                android:paddingHorizontal="20dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Личные данные"
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
 
-        <!-- Recent Orders (if applicable) -->
-        <TextView
-            android:id="@+id/tvRecentOrdersTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="Недавние заказы"
-            android:textColor="@color/gray_900"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputLayoutFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="ФИО"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxStrokeColor="@color/gray_200"
+                    app:hintTextColor="@color/gray_500">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvRecentOrders"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:nestedScrollingEnabled="false"
-            android:visibility="gone"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextFullName" 
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" 
+                        android:minHeight="52dp"
+                        android:inputType="textPersonName" 
+                        android:textColor="@color/gray_900"
+                        android:paddingHorizontal="16dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- OTHER PROFILE BUTTONS -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputLayoutPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Номер телефона"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxStrokeColor="@color/gray_200"
+                    app:hintTextColor="@color/gray_500">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="52dp"
+                        android:inputType="phone"
+                        android:textColor="@color/gray_900"
+                        android:paddingHorizontal="16dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputLayoutEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Email"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxStrokeColor="@color/gray_200"
+                    app:hintTextColor="@color/gray_500">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="52dp"
+                        android:inputType="none"
+                        android:focusable="false"
+                        android:longClickable="false"
+                        android:textColor="@color/gray_600"
+                        android:paddingHorizontal="16dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- OTHER PROFILE BUTTONS (Написать, Аналитика) — ПЕРЕД заказами -->
         <LinearLayout
             android:id="@+id/layoutOtherProfileButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone"
-            android:layout_marginTop="8dp">
+            android:layout_marginBottom="16dp">
             
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSendMessage"
@@ -287,6 +288,27 @@
                 app:cornerRadius="30dp"
                 android:layout_marginBottom="12dp" />
         </LinearLayout>
+
+        <!-- Recent Orders — ПОСЛЕ кнопок -->
+        <TextView
+            android:id="@+id/tvRecentOrdersTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Недавние заказы"
+            android:textColor="@color/gray_900"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvRecentOrders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:nestedScrollingEnabled="false"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
     </LinearLayout>
 </ScrollView>

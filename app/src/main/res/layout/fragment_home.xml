@@ -12,21 +12,22 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="20dp"
-            android:paddingTop="32dp"
+            android:paddingTop="140dp"
             android:paddingBottom="40dp"
             android:gravity="center_horizontal">
 
             <ImageView
                 android:id="@+id/logoImageView"
-                android:layout_width="140dp"
-                android:layout_height="140dp"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
                 android:contentDescription="Relab Logo"
                 android:scaleType="fitCenter"
                 android:src="@drawable/relab" />
@@ -39,7 +40,7 @@
                 android:text="Добро пожаловать в Relab"
                 android:textAlignment="center"
                 android:textColor="@color/gray_800"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -54,255 +55,167 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/textSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:text="Управляйте заказами на ходу!"
                 android:textAlignment="center"
                 android:textColor="@color/gray_700"
                 android:textSize="14sp" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardOrders"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="32dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/gray_900"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="4dp">
+                android:layout_height="72dp"
+                android:layout_marginTop="40dp"
+                android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardOrders"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:padding="20dp">
-
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="?attr/actionModePasteDrawable"
-                        app:tint="@color/white" />
-
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/gray_900"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
                     <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="?attr/actionModePasteDrawable"
+                            app:tint="@color/white" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
                             android:text="Заказы"
                             android:textColor="@color/white"
-                            android:textSize="22sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardScanQr"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="#6366F1"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/qr_code_scanner_svgrepo_com"
+                            app:tint="@color/white" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Сканер"
+                            android:textColor="@color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="86dp"
                     android:baselineAligned="false"
                     android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardCustomers"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical">
-
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:src="@android:drawable/ic_menu_my_calendar"
                                 app:tint="@color/gray_900" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="6dp"
                                 android:text="Клиенты"
                                 android:textColor="@color/gray_900"
+                                android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardProfile"
-                        android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:id="@+id/cardProfileAvatar"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:src="@mipmap/ic_launcher_round" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Профиль"
-                                android:textColor="@color/gray_900"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardAnalytics"
-                        android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:src="@drawable/analytics_svgrepo_com"
-                                app:tint="@color/gray_900" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Аналитика"
-                                android:textColor="@color/gray_900"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardSettings"
-                        android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:src="@drawable/gear_settings_svgrepo_com"
-                                app:tint="@color/gray_900" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Настройки"
-                                android:textColor="@color/gray_900"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardWarehouse"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical">
-
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:src="@drawable/ic_view_list"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_assignment"
                                 app:tint="@color/gray_900" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="6dp"
                                 android:text="Склад"
                                 android:textColor="@color/gray_900"
+                                android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -310,34 +223,34 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardTools"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginStart="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical">
-
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:src="@drawable/tools_svgrepo_com"
                                 app:tint="@color/gray_900" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="6dp"
                                 android:text="Инструменты"
                                 android:textColor="@color/gray_900"
+                                android:textSize="11sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -345,42 +258,42 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_height="86dp"
+                    android:layout_marginTop="12dp"
                     android:baselineAligned="false"
                     android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardEmployees"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical">
-
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:src="@drawable/ic_group"
                                 app:tint="@color/gray_900" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Сотрудники"
+                                android:layout_marginTop="6dp"
+                                android:text="Персонал"
                                 android:textColor="@color/gray_900"
+                                android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -388,38 +301,38 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardChats"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginStart="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <FrameLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
-
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:gravity="center"
                                 android:orientation="vertical">
-
                                 <ImageView
-                                    android:layout_width="36dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="28dp"
+                                    android:layout_height="28dp"
                                     android:src="@drawable/ic_chat"
                                     app:tint="@color/gray_900" />
-
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginTop="8dp"
+                                    android:layout_marginTop="6dp"
                                     android:text="Чаты"
                                     android:textColor="@color/gray_900"
+                                    android:textSize="12sp"
                                     android:textStyle="bold" />
                             </LinearLayout>
 
@@ -428,76 +341,153 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="top|end"
-                                android:layout_margin="12dp"
+                                android:layout_margin="8dp"
                                 android:background="@drawable/circle_avatar"
                                 android:backgroundTint="#F44336"
                                 android:gravity="center"
-                                android:minWidth="22dp"
-                                android:paddingHorizontal="6dp"
+                                android:minWidth="18dp"
+                                android:paddingHorizontal="4dp"
                                 android:paddingVertical="2dp"
                                 android:text="0"
                                 android:textColor="@color/white"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:visibility="gone"
                                 tools:text="3"
                                 tools:visibility="visible" />
                         </FrameLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal">
+                    </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardAssistant"
+                        android:id="@+id/cardAnalytics"
                         android:layout_width="0dp"
-                        android:layout_height="110dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="2dp">
-
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#D1D5DB"
+                        app:strokeWidth="1dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:orientation="vertical">
-
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:src="@drawable/ic_smart_toy"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/analytics_svgrepo_com"
                                 app:tint="@color/gray_900" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Помощник"
+                                android:layout_marginTop="6dp"
+                                android:text="Аналитика"
                                 android:textColor="@color/gray_900"
+                                android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1" />
                 </LinearLayout>
-
             </LinearLayout>
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAssistant"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeColor="#E3F2FD"
+                app:strokeWidth="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="24dp">
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_smart_toy"
+                        app:tint="@color/gray_900" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="Умный помощник ИИ"
+                        android:textColor="@color/gray_900"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+
     </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/topControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="20dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSettings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#D1D5DB"
+            app:strokeWidth="1dp">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:src="@drawable/gear_settings_svgrepo_com"
+                app:tint="@color/gray_900" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardProfile"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#D1D5DB"
+            app:strokeWidth="1dp">
+            <ImageView
+                android:id="@+id/cardProfileAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/ic_launcher_round" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

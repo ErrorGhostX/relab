@@ -18,7 +18,10 @@ import egx.relab_app.models.UserResponse
  */
 class EmployeeAdapter(
     private val onEmployeeClick: (UserResponse) -> Unit,
-    private val onMessageClick: (UserResponse) -> Unit
+    private val onMessageClick: (UserResponse) -> Unit,
+    private val onEditClick: ((UserResponse) -> Unit)? = null,
+    private val onLongClick: ((UserResponse) -> Unit)? = null,
+    var isAdmin: Boolean = false
 ) : ListAdapter<UserResponse, EmployeeAdapter.EmployeeViewHolder>(EmployeeDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmployeeViewHolder {
@@ -37,6 +40,7 @@ class EmployeeAdapter(
         private val tvRank: TextView = itemView.findViewById(R.id.tvEmployeeRank)
         private val tvSpecialization: TextView = itemView.findViewById(R.id.tvEmployeeSpecialization)
         private val btnMessage: View = itemView.findViewById(R.id.btnEmployeeMessage)
+        private val btnEdit: View = itemView.findViewById(R.id.btnEmployeeEdit)
 
         fun bind(employee: UserResponse) {
             tvName.text = employee.full_name ?: employee.username ?: "—"
@@ -62,7 +66,14 @@ class EmployeeAdapter(
             }
 
             itemView.setOnClickListener { onEmployeeClick(employee) }
+            itemView.setOnLongClickListener {
+                onLongClick?.invoke(employee)
+                onLongClick != null
+            }
             btnMessage.setOnClickListener { onMessageClick(employee) }
+            
+            btnEdit.visibility = if (isAdmin) View.VISIBLE else View.GONE
+            btnEdit.setOnClickListener { onEditClick?.invoke(employee) }
         }
     }
 }

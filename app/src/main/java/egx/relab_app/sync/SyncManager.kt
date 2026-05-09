@@ -10,6 +10,7 @@ import egx.relab_app.database.entity.SyncStatus
 import egx.relab_app.models.Order
 import egx.relab_app.network.RetrofitClient
 import egx.relab_app.repository.OrderRepository
+import egx.relab_app.storage.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -159,6 +160,7 @@ class SyncManager(
         try {
             // Сначала синхронизируем новых клиентов и расходники (если есть)
             pushPendingCustomers()
+            pushDeletedCustomers()
             pushPendingConsumables()
             
             // Получаем заказы, ожидающие синхронизации (новые и измененные)
@@ -180,7 +182,8 @@ class SyncManager(
                     
                     // ВАЖНО: Проверяем, является ли serverId временным (отрицательным)
                     // Отрицательные ID - это временные локальные ID
-                    val isNewOrder = orderEntity.serverId == null || orderEntity.serverId!! < 0
+                    val serverId = orderEntity.serverId
+                    val isNewOrder = serverId == null || serverId < 0
                     
                     if (isNewOrder) {
                         // Новый заказ - создаем на сервере
@@ -212,9 +215,10 @@ class SyncManager(
                 try {
                     // ВАЖНО: Проверяем, что serverId не отрицательный (временный ID)
                     // Отрицательные ID - это временные локальные ID, их не нужно удалять на сервере
-                    if (orderEntity.serverId != null && orderEntity.serverId!! > 0) {
+                    val serverId = orderEntity.serverId
+                    if (serverId != null && serverId > 0) {
                         // Удаляем на сервере только если заказ был синхронизирован (положительный serverId)
-                        deleteOrderOnServer(orderEntity.serverId!!)
+                        deleteOrderOnServer(serverId)
                         // Помечаем как полностью удаленный (можно физически удалить из БД)
                         repository.markAsFullyDeleted(orderEntity.localId)
                         deletedCount++
@@ -256,8 +260,22 @@ class SyncManager(
      * Загружает заказы с сервера и обновляет только те, которые не были изменены локально
      */
     suspend fun pullChanges(): SyncResult = withContext(Dispatchers.IO) {
+        val tokenManager = TokenManager(context)
         try {
             Log.d(TAG, "Начало Pull синхронизации")
+            
+            // ВАЖНО: Обновляем данные текущего пользователя (ранг, ФИО и т.д.)
+            // Это решает проблему "нужно перезайти, чтобы права обновились"
+            try {
+                val user = RetrofitClient.apiService.getCurrentUser()
+                tokenManager.rank = user.rank
+                tokenManager.fullName = user.full_name
+                tokenManager.avatarUrl = user.avatar
+                tokenManager.username = user.username
+                Log.d(TAG, "Профиль пользователя обновлен: ранг=${user.rank}")
+            } catch (e: Exception) {
+                Log.w(TAG, "Не удалось обновить профиль пользователя: ${e.message}")
+            }
             
             // Конвертируем callback-based API в suspend функцию
             val orders = suspendCancellableCoroutine<List<Order>> { continuation ->
@@ -311,6 +329,59 @@ class SyncManager(
             }
             
             Log.d(TAG, "Pull завершен: обновлено $updatedCount, пропущено $skippedCount (локальные изменения)")
+            
+            // ВАЖНО: Удаляем из локальной БД заказы, которых больше нет на сервере ИЛИ к которым пропал доступ (RBAC)
+            try {
+                val serverIds = orders.mapNotNull { it.id }.toSet()
+                val localOrders = repository.getAllOrderEntities()
+                
+                val tokenManager = TokenManager(context)
+                val currentUsername = tokenManager.username ?: ""
+                val userRank = (tokenManager.rank ?: "employee").lowercase().trim()
+                val isAdmin = userRank in listOf("admin", "руководитель", "администратор")
+                val isManager = userRank == "manager"
+                
+                var prunedCount = 0
+                localOrders.forEach { localOrder ->
+                    if (localOrder.serverId != null && localOrder.serverId!! > 0) {
+                        val stillOnServer = serverIds.contains(localOrder.serverId)
+                        
+                        // Проверяем доступность по RBAC (для тех что пришли с сервера)
+                        val serverOrder = orders.find { it.id == localOrder.serverId }
+                        val hasAccess = if (serverOrder == null) {
+                            // Если его нет в текущем пачке с сервера, значит либо удален, либо доступ пропал
+                            false 
+                        } else {
+                            // Если он есть в пачке, сервер уже отфильтровал, но на всякий случай проверим локально
+                            if (isAdmin) true
+                            else if (isManager) serverOrder.isPublic
+                            else {
+                                serverOrder.isPublic || 
+                                serverOrder.createdByUsername == currentUsername || 
+                                serverOrder.assignedToUsername == currentUsername || 
+                                serverOrder.collaborators.any { it.username == currentUsername }
+                            }
+                        }
+
+                        if (!stillOnServer || !hasAccess) {
+                            // Заказа нет на сервере ИЛИ к нему пропал доступ. 
+                            // Если он был синхронизирован (не PENDING) и не помечен как удаленный вручную
+                            if (localOrder.syncStatus == SyncStatus.SYNCED && !localOrder.isDeleted) {
+                                val reason = if (!stillOnServer) "отсутствует на сервере" else "пропал доступ (RBAC)"
+                                Log.d(TAG, "Удаление локального заказа ${localOrder.serverId} - $reason")
+                                repository.markAsFullyDeleted(localOrder.localId)
+                                prunedCount++
+                            }
+                        }
+                    }
+                }
+                if (prunedCount > 0) {
+                    Log.d(TAG, "Удалено $prunedCount устаревших или недоступных заказов")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка при очистке устаревших заказов: ${e.message}")
+            }
+            
             SyncResult(
                 success = true,
                 syncedCount = updatedCount
@@ -590,6 +661,11 @@ class SyncManager(
                 if (customer.id != null) {
                     val existing = customerDao.getCustomerByServerId(customer.id)
                     if (existing != null) {
+                        // ВАЖНО: Если клиент помечен как удаленный локально, не затираем этот статус
+                        if (existing.syncStatus == "DELETED") {
+                            Log.d(TAG, "Пропуск клиента ${customer.fullName} — помечен как удаленный")
+                            continue
+                        }
                         // Обновляем существующего клиента
                         val updated = CustomerEntity.fromCustomer(customer).copy(
                             localId = existing.localId
@@ -653,6 +729,43 @@ class SyncManager(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка в pushPendingCustomers", e)
+        }
+    }
+
+    /**
+     * Отправка удалений клиентов на сервер
+     */
+    private suspend fun pushDeletedCustomers() {
+        if (customerDao == null) return
+        
+        try {
+            val deletedCustomers = customerDao.getDeletedCustomers()
+            if (deletedCustomers.isEmpty()) return
+            
+            Log.d(TAG, "Найдено ${deletedCustomers.size} удаленных клиентов для синхронизации")
+            
+            for (entity in deletedCustomers) {
+                try {
+                    val serverId = entity.serverId
+                    if (serverId != null) {
+                        val response = RetrofitClient.apiService.deleteCustomer(serverId)
+                        if (response.isSuccessful || response.code() == 404) {
+                            // Удалено на сервере (или уже отсутствует) — удаляем из локальной БД совсем
+                            customerDao.deleteCustomer(entity)
+                            Log.d(TAG, "Клиент ${entity.fullName} удален с сервера и из локальной БД")
+                        } else {
+                            Log.w(TAG, "Ошибка удаления клиента ${entity.fullName} на сервере: ${response.code()}")
+                        }
+                    } else {
+                        // Нет serverId — просто удаляем локально
+                        customerDao.deleteCustomer(entity)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Ошибка синхронизации удаления клиента ${entity.fullName}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка в pushDeletedCustomers", e)
         }
     }
 

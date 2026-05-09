@@ -17,7 +17,8 @@ import egx.relab_app.network.ApiService
  * Два типа ViewHolder: отправленные (справа) и полученные (слева).
  */
 class MessageAdapter(
-    private val currentUserId: Int
+    private val currentUserId: Int,
+    private val onInviteAction: ((Int) -> Unit)? = null
 ) : ListAdapter<ApiService.RoomMessage, RecyclerView.ViewHolder>(MessageDiffCallback()) {
 
     companion object {
@@ -53,7 +54,26 @@ class MessageAdapter(
         private val ivAttachedImage: ImageView = itemView.findViewById(R.id.ivAttachedImage)
 
         fun bind(msg: ApiService.RoomMessage) {
-            tvText.text = msg.text ?: ""
+            // Обработка инвайта в отправленных (просто текст)
+            val text = msg.text ?: ""
+            if (text.startsWith("[INVITE:") || text.startsWith("[INVITE_ASSIGN:")) {
+                val cleanText = if (text.startsWith("[") && text.endsWith("]")) {
+                    text.substring(1, text.length - 1)
+                } else {
+                    text.replace("[", "").replace("]", "")
+                }
+                val parts = cleanText.split(":")
+                if (parts.size >= 3) {
+                    val orderName = parts.getOrNull(2) ?: "заказ"
+                    val type = if (text.startsWith("[INVITE_ASSIGN:")) "Приглашение исполнителем" else "Приглашение участником"
+                    tvText.text = "$type отправлено: $orderName"
+                } else {
+                    tvText.text = text
+                }
+            } else {
+                tvText.text = text
+            }
+
             tvText.visibility = if (!msg.text.isNullOrBlank()) View.VISIBLE else View.GONE
             tvTime.text = msg.created_at?.substringAfter("T")?.take(5) ?: ""
 
@@ -88,10 +108,58 @@ class MessageAdapter(
         private val ivAvatar: ImageView = itemView.findViewById(R.id.ivSenderAvatar)
         private val ivAttachedImage: ImageView = itemView.findViewById(R.id.ivAttachedImage)
         private val progressAi: View = itemView.findViewById(R.id.progressAiThinking)
+        private val btnAccept: View? = itemView.findViewById(R.id.btnAcceptInvite)
 
         fun bind(msg: ApiService.RoomMessage) {
             tvSender.text = if (msg.is_from_ai) "ИИ-Ассистент" else (msg.sender_full_name ?: msg.sender_username ?: "")
-            tvText.text = msg.text ?: ""
+            
+            val text = msg.text ?: ""
+            var isInvite = false
+            var inviteOrderId = -1
+
+            if (text.startsWith("[INVITE:") || text.startsWith("[INVITE_ASSIGN:")) {
+                val isAssignInvite = text.startsWith("[INVITE_ASSIGN:")
+                val cleanText = if (text.startsWith("[") && text.endsWith("]")) {
+                    text.substring(1, text.length - 1)
+                } else {
+                    text.replace("[", "").replace("]", "")
+                }
+                val parts = cleanText.split(":")
+                if (parts.size >= 3) {
+                    val orderId = parts[1].toIntOrNull() ?: -1
+                    val orderName = parts[2]
+                    
+                    if (isAssignInvite) {
+                        tvText.text = "Вас пригласили стать ИСПОЛНИТЕЛЕМ заказа: $orderName"
+                        if (btnAccept is android.widget.Button) {
+                            btnAccept.text = "Стать исполнителем"
+                        }
+                    } else {
+                        tvText.text = "Вы приглашены как участник в заказ: $orderName"
+                        if (btnAccept is android.widget.Button) {
+                            btnAccept.text = "Присоединиться"
+                        }
+                    }
+                    
+                    if (orderId != -1) {
+                        isInvite = true
+                        inviteOrderId = orderId
+                    }
+                } else {
+                    tvText.text = text
+                }
+            } else {
+                tvText.text = text
+            }
+
+            btnAccept?.visibility = if (isInvite) View.VISIBLE else View.GONE
+            btnAccept?.setOnClickListener {
+                if (inviteOrderId != -1) {
+                    onInviteAction?.invoke(inviteOrderId)
+                    btnAccept.visibility = View.GONE // Скрываем после клика
+                }
+            }
+
             tvText.visibility = if (!msg.text.isNullOrBlank()) View.VISIBLE else View.GONE
             tvTime.text = msg.created_at?.substringAfter("T")?.take(5) ?: ""
 

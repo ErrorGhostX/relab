@@ -40,85 +40,6 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Кастомизация (Оформление) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardCustomization"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white"
-            app:strokeWidth="0dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Оформление"
-                    android:textColor="@color/gray_900"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Стиль элементов"
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/toggleGroupStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:singleSelection="true"
-                    app:selectionRequired="true"
-                    app:checkedButton="@+id/btnStyleRound">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnStyleRound"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Круглые" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnStyleSquare"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Квадратные" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Цветовая схема компании"
-                    android:textColor="@color/gray_700"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switchCompanyTheme"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Использовать цвета компании"
-                    android:textColor="@color/gray_900"
-                    app:thumbTint="@color/teal_700"
-                    app:trackTint="@color/teal_200" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
 
         <!-- Компания -->
         <com.google.android.material.card.MaterialCardView
@@ -165,7 +86,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/gray_300"
-                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                    app:startIconDrawable="@drawable/googleg_standard_color_18"
                     app:startIconTint="@color/gray_600">
 
                     <AutoCompleteTextView
@@ -207,7 +128,7 @@
                         app:strokeColor="#FFCDD2"
                         android:textColor="#D32F2F"
                         app:cornerRadius="12dp"
-                        app:icon="@android:drawable/ic_menu_delete"
+                        app:icon="@drawable/trash_can_svgrepo_com"
                         app:iconTint="#D32F2F" />
                 </LinearLayout>
             </LinearLayout>
@@ -430,6 +351,93 @@
                     app:strokeColor="@color/gray_400"
                     android:textColor="@color/gray_900"
                     app:cornerRadius="12dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Кастомизация (Оформление) - Временно отключено -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCustomization"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:alpha="0.6"
+            android:enabled="false"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/gray_100"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/gray_300">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:enabled="false">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Оформление (скоро)"
+                    android:textColor="@color/gray_600"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Стиль элементов"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:enabled="false"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"
+                    app:checkedButton="@+id/btnStyleRound">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStyleRound"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:enabled="false"
+                        android:text="Круглые" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStyleSquare"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:enabled="false"
+                        android:text="Квадратные" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Цветовая схема компании"
+                    android:textColor="@color/gray_500"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchCompanyTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Использовать цвета компании"
+                    android:textColor="@color/gray_600"
+                    android:enabled="false"
+                    app:thumbTint="@color/gray_400"
+                    app:trackTint="@color/gray_200" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

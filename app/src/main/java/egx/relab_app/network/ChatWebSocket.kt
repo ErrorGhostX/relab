@@ -63,13 +63,8 @@ class ChatWebSocket(private val tokenManager: TokenManager) {
             return
         }
 
-        // Формируем WebSocket URL
-        // Из baseUrl (http://10.0.2.2:8000/api/) → ws://10.0.2.2:8000/ws/chat/{roomId}/
-        val baseUrl = tokenManager.serverUrl ?: "http://10.0.2.2:8000/api/"
-        val wsBase = baseUrl
-            .replace("http://", "ws://")
-            .replace("https://", "wss://")
-            .replace("/api/", "")
+        // Формируем WebSocket URL динамически из базового URL сервера
+        val wsBase = RetrofitClient.getWsBaseUrl()
         val wsUrl = "${wsBase}/ws/chat/${roomId}/?token=${token}"
 
         Log.d(TAG, "Connecting to: $wsUrl")

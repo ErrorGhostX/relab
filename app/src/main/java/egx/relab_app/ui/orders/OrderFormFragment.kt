@@ -123,6 +123,13 @@ class OrderFormFragment : Fragment() {
             binding.executionTypeSpinner.setText(executionTypes.first(), false)
             binding.statusSpinner.setText(statuses.first(), false)
             binding.textViewSelectedDate.text = "Выберите дату"
+            
+            // Ограничение для менеджеров
+            val userRank = (tokenManager.rank ?: "employee").lowercase().trim()
+            if (userRank == "manager") {
+                binding.switchIsPublic.isChecked = true
+                binding.switchIsPublic.isEnabled = false
+            }
         }
 
         binding.orderTypeSpinner.setOnItemClickListener { _, _, position, _ ->
@@ -909,7 +916,7 @@ class OrderFormFragment : Fragment() {
         
         lifecycleScope.launch {
             try {
-                val order = args.order!!
+                val order = args.order ?: return@launch
                 // Сначала пытаемся найти по serverId
                 order.id?.let { serverId ->
                     val orderEntity = repository.getOrderEntityByServerId(serverId)
@@ -1074,7 +1081,7 @@ class OrderFormFragment : Fragment() {
 
     private fun populateEditFields() {
         binding.tvTitle.text = "Редактировать заказ"
-        val o = args.order!!
+        val o = args.order ?: return
         binding.editTextOrderNumber.setText(o.orderName)
         
         // Если есть привязанный клиент — показываем его в карточке
@@ -1131,7 +1138,16 @@ class OrderFormFragment : Fragment() {
         
         binding.editTextAddress.setText(o.address ?: "")
         
-        binding.switchIsPublic.isChecked = o.isPublic
+        val userRank = (tokenManager.rank ?: "employee").lowercase().trim()
+        val isManager = userRank == "manager"
+        
+        if (isManager) {
+            binding.switchIsPublic.isChecked = true
+            binding.switchIsPublic.isEnabled = false
+            // Можно даже скрыть контейнер, если он есть в xml
+        } else {
+            binding.switchIsPublic.isChecked = o.isPublic
+        }
     }
 
     /**

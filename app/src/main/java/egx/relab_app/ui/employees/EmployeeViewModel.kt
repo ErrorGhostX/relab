@@ -106,6 +106,27 @@ class EmployeeViewModel : ViewModel() {
     }
 
     /**
+     * Обновить данные сотрудника (только для admin/manager)
+     */
+    fun updateEmployee(employeeId: Int, request: ApiService.UpdateEmployeeRequest, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                RetrofitClient.apiService.updateEmployee(employeeId, request)
+                Log.d(TAG, "Successfully updated employee: $employeeId")
+                loadEmployees() // Перезагружаем список
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating employee", e)
+                _error.value = "Ошибка при обновлении: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
      * Фильтрация по имени/username
      */
     fun filterEmployees(query: String) {

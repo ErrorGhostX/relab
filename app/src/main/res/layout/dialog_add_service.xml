@@ -3,32 +3,38 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="@color/surface_background_premium">
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="24dp"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="24dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/white">
+        android:layout_height="wrap_content">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Добавить услугу"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:textColor="@color/gray_900"
-            android:layout_marginBottom="16dp" />
+            android:textSize="22sp"
+            android:textColor="@color/text_premium_primary"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.02"
+            android:layout_marginBottom="20dp" />
 
         <!-- Предустановленные услуги -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Предустановленные услуги:"
+            android:text="Предустановленные:"
             android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@color/gray_800"
+            android:textSize="14sp"
+            android:textColor="@color/text_premium_secondary"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
             android:layout_marginBottom="12dp" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -38,34 +44,44 @@
             android:nestedScrollingEnabled="false"
             android:layout_marginBottom="24dp" />
 
-        <!-- Разделитель -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/gray_300"
-            android:layout_marginVertical="16dp" />
-
-        <TextView
+        <!-- Разделитель с текстом -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Или введите вручную:"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@color/gray_800"
-            android:layout_marginBottom="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#E2E8F0" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" ИЛИ ВРУЧНУЮ "
+                android:textSize="11sp"
+                android:textColor="#94A3B8"
+                android:textStyle="bold" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#E2E8F0" />
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Описание услуги"
+            android:hint="Название услуги"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:hintTextColor="@color/gray_600"
-            app:boxStrokeColor="@color/gray_400"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:hintTextColor="@color/text_premium_secondary"
+            app:boxStrokeColor="@color/accent_premium"
             android:layout_marginBottom="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -73,57 +89,63 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="56dp"
-                android:textColor="@color/gray_900"
-                android:textColorHint="@color/gray_600" />
+                android:textColor="@color/text_premium_primary"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilPrice"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Стоимость (руб.)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:hintTextColor="@color/gray_600"
-            app:boxStrokeColor="@color/gray_400"
-            android:layout_marginBottom="16dp">
+            android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etPrice"
-                android:inputType="numberDecimal"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPrice"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:textColor="@color/gray_900"
-                android:textColorHint="@color/gray_600" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_weight="1.5"
+                android:hint="Стоимость (₽)"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:hintTextColor="@color/text_premium_secondary"
+                android:layout_marginEnd="12dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilComplexity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Сложность (1-10)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:hintTextColor="@color/gray_600"
-            app:boxStrokeColor="@color/gray_400"
-            android:layout_marginBottom="16dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPrice"
+                    android:inputType="numberDecimal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:textColor="@color/text_premium_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etComplexity"
-                android:inputType="number"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilComplexity"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="1"
-                android:textColor="@color/gray_900"
-                android:textColorHint="@color/gray_600" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_weight="1"
+                android:hint="Сложность"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:hintTextColor="@color/text_premium_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etComplexity"
+                    android:inputType="number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="1"
+                    android:gravity="center"
+                    android:textColor="@color/text_premium_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>
+

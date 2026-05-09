@@ -13,85 +13,29 @@
 .externalNativeBuild
 .cxx
 local.properties
-/backend_relab_app/orders/migrations/0017_orderphoto.py
-/backend_relab_app/orders/migrations/0017_orderphoto.py
-/backend_relab_app/orders/migrations/0018_rename_orders_orde_order_i_idx_orders_orde_order_i_856bd9_idx.py
-/backend_relab_app/orders/migrations/0018_service_complexity_order_complexity.py
-/backend_relab_app/orders/migrations/0019_order_created_at.py
-/backend_relab_app/orders/migrations/0020_merge_20251217_2331.py
-/backend_relab_app/media/user_avatars/avatar_1766053499570.jpg
-/backend_relab_app/media/user_avatars/avatar_1766219318195.jpg
-/backend_relab_app/media/user_avatars/avatar_1766219340973.jpg
-/backend_relab_app/media/user_avatars/avatar_1766219365564.jpg
-/backend_relab_app/media/user_avatars/avatar_1766219380625.jpg
-/backend_relab_app/media/user_avatars/avatar_1766219543146.jpg
-/backend_relab_app/media/user_avatars/avatar_1767949201697.jpg
-/hs_err_pid17076.log
-/hs_err_pid36136.log
-/backend_relab_app/laba1.puml
-/backend_relab_app/media/orders_photos/photo_1765966930574_0.jpg
-/backend_relab_app/media/orders_photos/photo_1765967403845_0.jpg
-/backend_relab_app/media/orders_photos/photo_1765970819595_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766006096508_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766006128661_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766007410847_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766007627395_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766007627395_0_xjEZ7Ri.jpg
-/backend_relab_app/media/orders_photos/photo_1766008881389_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766008881389_0_ERF7OZd.jpg
-/backend_relab_app/media/orders_photos/photo_1766009388522_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766009388522_0_YEhBOOm.jpg
-/backend_relab_app/media/orders_photos/photo_1766009887781_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766009887781_0_Ja4mYbe.jpg
-/backend_relab_app/media/orders_photos/photo_1766009939310_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766009939310_0_AcFAQtB.jpg
-/backend_relab_app/media/orders_photos/photo_1766010464496_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766010464508_1.jpg
-/backend_relab_app/media/orders_photos/photo_1766012947296_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766026464053_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766026464068_1.jpg
-/backend_relab_app/media/orders_photos/photo_1766026560971_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766026560982_1.jpg
-/backend_relab_app/media/orders_photos/photo_1766026881019_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766026881030_1.jpg
-/backend_relab_app/media/orders_photos/photo_1766028712387_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766028712430_2.jpg
-/backend_relab_app/media/orders_photos/photo_1766028712448_3.jpg
-/backend_relab_app/media/orders_photos/photo_1766028712464_4.jpg
-/backend_relab_app/media/orders_photos/photo_1766058196214_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766058196237_1.jpg
-/backend_relab_app/media/orders_photos/photo_1766219477218_0.jpg
-/backend_relab_app/media/orders_photos/photo_1766219477232_1.jpg
-/backend_relab_app/media/orders_photos/photo_1767726061120_0.jpg
-/backend_relab_app/media/orders_photos/photo_1767726061131_1.jpg
-/backend_relab_app/media/orders_photos/photo_1767948798436_0.jpg
-/backend_relab_app/media/orders_photos/photo_1767949153618_0.jpg
-/backend_relab_app/media/orders_photos/photo_1767949153638_1.jpg
-/backend_relab_app/media/orders_photos/photo_1767950366888_0.jpg
-/backend_relab_app/media/orders_photos/photo_1767950366912_1.jpg
-/Версии/Relab Сервис v.alpha.6.0.0.apk
-/Версии/Relab Сервис v.alpha.7.0.0.apk
-/Версии/Relab Сервис v.alpha.7.1.5.apk
-/Версии/Relab Сервис v.alpha.7.2.6.apk
-/Версии/Relab Сервис v7.2.7-alpha.apk
-/Версии/Relab_Service_v7.3.8-alpha.apk
-/Версии/Relab_Service_v7.5.9-alpha.apk
-/Версии/Relab_Service_v8.0.0-alpha.apk
-/Версии/Relab_Service_v8.1.0-alpha.apk
-/imaes/Флаг_Луганской_Народной_республики.jpg
 
 # Python virtual environments
 **/.venv/
 **/venv/
-venv/
-.venv/
 
 # JVM crash and replay logs
 **/hs_err_pid*.log
 **/replay_pid*.log
-hs_err_pid*.log
-replay_pid*.log
 
 # APK versions and images
 /Версии/
 /imaes/
+
+# Backend media (загружаемые файлы — не хранить в git)
+/backend_relab_app/media/user_avatars/
+/backend_relab_app/media/orders_photos/
+/backend_relab_app/media/chat_photos/
+
+# Firebase и секреты
+**/firebase-credentials.json
+**/google-services.json
+**/*.keystore
+**/*.jks
+
+# Django migrations (опциональные конфликтные)
+# /backend_relab_app/orders/migrations/

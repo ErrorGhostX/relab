@@ -46,16 +46,16 @@
             style="@style/DetailTextStyleBlack"
             tools:text="Замена дисплея - 1500 руб" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipComplexity"
+        <TextView
+            android:id="@+id/tvComplexity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
+            android:textStyle="bold"
             android:textColor="@color/gray_800"
-            app:chipBackgroundColor="@color/gray_200"
-            app:chipMinHeight="24dp"
-            app:ensureMinTouchTargetSize="false"
+            android:fontFamily="sans-serif-medium"
             tools:text="Сложность: 3/10" />
+
 
     </LinearLayout>
 

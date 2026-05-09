@@ -96,6 +96,93 @@ class OrderListFragment : Fragment() {
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
+
+        binding.buttonScanQr.setOnClickListener {
+            findNavController().navigate(R.id.qrScannerFragment)
+        }
+
+        // Слушаем результат из сканера
+        findNavController().currentBackStackEntry?.savedStateHandle?.getLiveData<String>("scannedQr")
+            ?.observe(viewLifecycleOwner) { uri ->
+                if (uri != null) {
+                    findNavController().currentBackStackEntry?.savedStateHandle?.remove<String>("scannedQr")
+                    handleDeepLink(uri)
+                }
+            }
+    }
+
+    private fun startQrScanner() {
+        // Запускаем сканер QR кода
+        // В Relab обычно используется ML Kit или ZXing
+        // Пока реализуем через навигацию на будущий фрагмент сканера или вызов Intent
+        Toast.makeText(requireContext(), "Запуск сканера...", Toast.LENGTH_SHORT).show()
+        
+        // QR фрагмент пока не реализован в navigation graph, используем ручной ввод
+        showManualQrInputDialog()
+    }
+
+    private fun showManualQrInputDialog() {
+        val input = android.widget.EditText(requireContext())
+        input.hint = "relab://order/123"
+        
+        AlertDialog.Builder(requireContext())
+            .setTitle("Сканер QR (Демо)")
+            .setMessage("Введите содержимое QR-кода (или отсканируйте камерой в финальной версии)")
+            .setView(input)
+            .setPositiveButton("Открыть") { _, _ ->
+                val uri = input.text.toString()
+                handleDeepLink(uri)
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun handleDeepLink(uriString: String) {
+        try {
+            val uri = android.net.Uri.parse(uriString)
+            if (uri.scheme == "relab" && uri.host == "order") {
+                val orderId = uri.lastPathSegment?.toIntOrNull()
+                if (orderId != null) {
+                    openOrderDetailsById(orderId)
+                }
+            } else {
+                Toast.makeText(requireContext(), "Неверный формат QR-кода", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openOrderDetailsById(orderId: Int) {
+        lifecycleScope.launch {
+            try {
+                // Сначала ищем локально
+                var order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    repository.getOrderByServerId(orderId)
+                }
+                
+                if (order == null) {
+                    // Если нет локально, пробуем загрузить с сервера
+                    Toast.makeText(requireContext(), "Загрузка данных заказа #$orderId...", Toast.LENGTH_SHORT).show()
+                    order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            RetrofitClient.apiService.getOrderById(orderId.toString())
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+                
+                if (order != null) {
+                    val bundle = Bundle().apply { putParcelable("order", order) }
+                    findNavController().navigate(R.id.orderDetailFragment, bundle)
+                } else {
+                    Toast.makeText(requireContext(), "Заказ #$orderId не найден", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun setupMenu() {
@@ -300,6 +387,9 @@ class OrderListFragment : Fragment() {
         binding.buttonSync.setOnClickListener {
             performManualSync()
         }
+        binding.buttonClearDb.setOnClickListener {
+            showClearDatabaseDialog()
+        }
     }
     
     
@@ -442,27 +532,49 @@ class OrderListFragment : Fragment() {
 
     private fun filterOrdersByTab(orders: List<Order>): List<Order> {
         val currentUsername = tokenManager.username ?: ""
+        val userRank = (tokenManager.rank ?: "employee").lowercase().trim()
+        val isAdmin = userRank in listOf("admin", "руководитель", "администратор")
+        val isManager = userRank == "manager"
         val searchQuery = _binding?.searchEditText?.text?.toString()?.lowercase() ?: ""
         
-        val filtered = when (selectedTab) {
-            1 -> orders.filter { it.createdByUsername == currentUsername }
-            2 -> orders.filter { 
+        // 1. Сначала фильтруем по роли (глобально)
+        val roleFiltered = if (isAdmin) {
+            orders // Админы видят всё
+        } else if (isManager) {
+            // Менеджеры видят только публичные заказы
+            orders.filter { it.isPublic }
+        } else {
+            // Мастера (employee) видят публичные ИЛИ те, где они участники
+            orders.filter { 
+                it.isPublic || 
+                it.createdByUsername == currentUsername || 
+                it.assignedToUsername == currentUsername || 
+                it.collaborators.any { col -> col.username == currentUsername }
+            }
+        }
+
+        // 2. Затем фильтруем по вкладке
+        val tabFiltered = when (selectedTab) {
+            1 -> roleFiltered.filter { it.createdByUsername == currentUsername }
+            2 -> roleFiltered.filter { 
                 it.isPublic && (it.assignedToUsername.isNullOrEmpty() || it.assignedToUsername == "null") 
             }
-            3 -> orders.filter { 
+            3 -> roleFiltered.filter { 
                 it.assignedToUsername == currentUsername || 
                 it.collaborators.any { col -> col.username == currentUsername } 
             }
-            else -> orders // "Все"
+            else -> roleFiltered // "Все"
         }
         
+        // 3. В конце - поиск
         return if (searchQuery.isEmpty()) {
-            filtered
+            tabFiltered
         } else {
-            filtered.filter { 
+            tabFiltered.filter { 
                 (it.deviceName?.lowercase()?.contains(searchQuery) == true) ||
                 (it.id?.toString()?.contains(searchQuery) == true) ||
-                (it.createdByUsername?.lowercase()?.contains(searchQuery) == true)
+                (it.createdByUsername?.lowercase()?.contains(searchQuery) == true) ||
+                (it.orderName?.lowercase()?.contains(searchQuery) == true)
             }
         }
     }
