@@ -47,6 +47,9 @@ data class Service(
     val createdByFullName: String? = null,
 
     @SerializedName("created_by_avatar")
-    val createdByAvatar: String? = null
+    val createdByAvatar: String? = null,
+
+    // Локальный ID (для мгновенного выполнения услуг до синхронизации)
+    val localId: Long? = null
 ) : Parcelable
 

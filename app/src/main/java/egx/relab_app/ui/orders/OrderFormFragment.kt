@@ -843,17 +843,18 @@ class OrderFormFragment : Fragment() {
                 return object : android.widget.Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults {
                         val results = FilterResults()
-                        if (constraint.isNullOrBlank()) {
-                            results.values = emptyList<Customer>()
-                            results.count = 0
-                            return results
-                        }
+                        val query = constraint?.toString()?.trim() ?: ""
                         
-                        val query = constraint.toString().lowercase()
                         // Ищем в локальной БД (синхронно, так как это filter)
                         val fromDb = try {
-                            requireContext().app.customerDao.searchCustomersSync("%$query%")
-                                .map { it.toCustomer() }
+                            if (query.isBlank()) {
+                                // Если запрос пустой — показываем всех клиентов
+                                requireContext().app.customerDao.getAllCustomersSyncBlocking()
+                                    .map { it.toCustomer() }
+                            } else {
+                                requireContext().app.customerDao.searchCustomersSync("%$query%")
+                                    .map { it.toCustomer() }
+                            }
                         } catch (e: Exception) {
                             emptyList<Customer>()
                         }
@@ -876,6 +877,35 @@ class OrderFormFragment : Fragment() {
         }
         
         binding.autoCompleteCustomer.setAdapter(adapter)
+        binding.autoCompleteCustomer.threshold = 0 // Показывать список даже при пустом поле
+        
+        // Показываем dropdown сразу при фокусе/клике
+        // Важно: запускаем фильтрацию вручную через adapter.filter, затем показываем dropdown
+        binding.autoCompleteCustomer.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && isAdded) {
+                // Запускаем фильтр с текущим текстом — это загрузит данные в адаптер
+                adapter.filter.filter(binding.autoCompleteCustomer.text) {
+                    // После завершения фильтрации — показываем dropdown
+                    if (isAdded && _binding != null) {
+                        binding.autoCompleteCustomer.post { 
+                            if (isAdded && _binding != null) binding.autoCompleteCustomer.showDropDown() 
+                        }
+                    }
+                }
+            }
+        }
+        binding.autoCompleteCustomer.setOnClickListener {
+            if (isAdded) {
+                adapter.filter.filter(binding.autoCompleteCustomer.text) {
+                    if (isAdded && _binding != null) {
+                        binding.autoCompleteCustomer.post { 
+                            if (isAdded && _binding != null) binding.autoCompleteCustomer.showDropDown() 
+                        }
+                    }
+                }
+            }
+        }
+        
         binding.autoCompleteCustomer.setOnItemClickListener { parent, _, position, _ ->
             val customer = parent.getItemAtPosition(position) as Customer
             selectCustomer(customer)

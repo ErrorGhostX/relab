@@ -149,6 +149,14 @@ class OrderAdapter(
             } else {
                 complexityBadge.visibility = View.GONE
             }
+
+            // Sync Pending Badge
+            val syncPendingBadge: View? = itemView.findViewById(R.id.syncPendingBadge)
+            if (syncPendingBadge != null) {
+                val isPending = order.syncStatus == egx.relab_app.database.entity.SyncStatus.PENDING || 
+                               order.syncStatus == egx.relab_app.database.entity.SyncStatus.ERROR
+                syncPendingBadge.visibility = if (isPending) View.VISIBLE else View.GONE
+            }
             
             badgePublic.visibility = if (
                 order.isPublic && (order.assignedToUsername.isNullOrEmpty() || order.assignedToUsername == "null")
@@ -210,10 +218,10 @@ class OrderAdapter(
          */
         private fun getComplexityLevel(percentage: Double): String {
             return when {
-                percentage < 30 -> "Простая"
-                percentage < 60 -> "Средняя"
-                percentage < 80 -> "Высокая"
-                else -> "Очень высокая"
+                percentage < 30 -> "Простое"
+                percentage < 60 -> "Среднее"
+                percentage < 80 -> "Сложное"
+                else -> "Очень сложное"
             }
         }
     }

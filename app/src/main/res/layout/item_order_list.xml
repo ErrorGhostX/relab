@@ -27,6 +27,28 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- Sync Pending Badge (List Mode) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/syncPendingBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/error_red"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp"
+            app:layout_constraintStart_toStartOf="@id/orderImage"
+            app:layout_constraintBottom_toBottomOf="@id/orderImage"
+            android:layout_marginStart="-4dp"
+            android:layout_marginBottom="-4dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:padding="2dp"
+                android:src="@android:drawable/stat_notify_sync"
+                app:tint="@color/white" />
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Info -->
         <LinearLayout
             android:id="@+id/infoLayout"

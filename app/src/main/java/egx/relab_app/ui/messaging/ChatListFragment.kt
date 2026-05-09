@@ -74,8 +74,14 @@ class ChatListFragment : Fragment() {
                 mutableRooms.add(ApiService.ChatRoom(
                     id = -1, // Специальный ID для AI-чата
                     name = "ИИ-Помощник",
+                    order = null,
+                    order_name = null,
+                    order_device = null,
+                    is_direct = false,
+                    created_at = null,
                     unread_count = 0,
-                    last_message = null
+                    last_message = null,
+                    participants_info = null
                 ))
             }
 

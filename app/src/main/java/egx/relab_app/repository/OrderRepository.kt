@@ -89,9 +89,13 @@ class OrderRepository(
     suspend fun getOrderByLocalId(localId: Long): Order? {
         val entity = orderDao.getOrderByLocalId(localId) ?: return null
         val order = entity.toOrder()
-        // Прикрепляем расходники из отдельной таблицы
+        // Прикрепляем расходники и услуги из отдельных таблиц
         val orderConsumables = consumableDao.getConsumablesForOrder(localId).first()
-        return order.copy(orderConsumables = orderConsumables.map { it.toOrderConsumable() })
+        val services = serviceDao.getServicesByOrderLocalIdSync(localId)
+        return order.copy(
+            orderConsumables = orderConsumables.map { it.toOrderConsumable() },
+            services = services.map { it.toService() }
+        )
     }
     
     /**
@@ -100,9 +104,13 @@ class OrderRepository(
     suspend fun getOrderByServerId(serverId: Int): Order? {
         val entity = orderDao.getOrderByServerId(serverId) ?: return null
         val order = entity.toOrder()
-        // Прикрепляем расходники из отдельной таблицы
+        // Прикрепляем расходники и услуги из отдельных таблиц
         val orderConsumables = consumableDao.getConsumablesForOrder(entity.localId).first()
-        return order.copy(orderConsumables = orderConsumables.map { it.toOrderConsumable() })
+        val services = serviceDao.getServicesByOrderLocalIdSync(entity.localId)
+        return order.copy(
+            orderConsumables = orderConsumables.map { it.toOrderConsumable() },
+            services = services.map { it.toService() }
+        )
     }
     
     /**
@@ -171,9 +179,14 @@ class OrderRepository(
         description: String,
         price: Double,
         complexityPoints: Int = 1,
+        performedBy: Int? = null,
         performedByUsername: String? = null,
         performedByFullName: String? = null,
-        performedByAvatar: String? = null
+        performedByAvatar: String? = null,
+        createdBy: Int? = null,
+        createdByUsername: String? = null,
+        createdByFullName: String? = null,
+        createdByAvatar: String? = null
     ): Long {
         // Создаем Entity для новой услуги (serverId = null)
         val serviceEntity = egx.relab_app.database.entity.ServiceEntity.fromNewService(
@@ -182,9 +195,14 @@ class OrderRepository(
             orderLocalId = orderLocalId,
             orderServerId = orderServerId,
             complexityPoints = complexityPoints,
+            performedBy = performedBy,
             performedByUsername = performedByUsername,
             performedByFullName = performedByFullName,
-            performedByAvatar = performedByAvatar
+            performedByAvatar = performedByAvatar,
+            createdBy = createdBy,
+            createdByUsername = createdByUsername,
+            createdByFullName = createdByFullName,
+            createdByAvatar = createdByAvatar
         )
         
         // Вставляем в локальную БД
@@ -235,10 +253,10 @@ class OrderRepository(
 
         // Определяем уровень сложности
         val level = when {
-            percentage < 30 -> "🟢"
-            percentage < 60 -> "🟡"
-            percentage < 80 -> "🟠"
-            else -> "🔴"
+            percentage < 30 -> "Простое"
+            percentage < 60 -> "Среднее"
+            percentage < 80 -> "Сложное"
+            else -> "Очень сложное"
         }
 
 
@@ -278,6 +296,59 @@ class OrderRepository(
             if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
                 // Если заказ был синхронизирован, помечаем как PENDING
                 orderDao.updateSyncStatus(orderLocalId, SyncStatus.PENDING)
+            }
+        }
+    }
+    
+    /**
+     * Переключить статус услуги локально (pending <-> done)
+     * 
+     * ВАЖНО: Приоритет на локальность
+     * - Обновляет статус услуги СРАЗУ в локальной БД
+     * - Не делает запросов к серверу
+     * - Помечает заказ как требующий синхронизации (PENDING)
+     * 
+     * @param serviceId - серверный ID услуги
+     * @param orderId - серверный ID заказа
+     * @param performerUsername - имя пользователя, выполнившего услугу (если done)
+     */
+    suspend fun updateServiceStatusLocally(
+        serviceId: Int,
+        orderId: Int,
+        performerId: Int?,
+        performerUsername: String?,
+        performerFullName: String?,
+        performerAvatar: String?,
+        serviceLocalId: Long? = null
+    ) {
+        val serviceEntity = if (serviceId > 0) {
+            serviceDao.getServiceByServerId(serviceId)
+        } else if (serviceLocalId != null) {
+            serviceDao.getServiceByLocalId(serviceLocalId)
+        } else {
+            null
+        }
+        
+        if (serviceEntity != null) {
+            val newStatus = if (serviceEntity.serviceStatus == "done") "pending" else "done"
+            
+            // Если переводим в done - записываем текущего пользователя как исполнителя
+            // Если возвращаем в pending - очищаем исполнителя
+            val updatedEntity = serviceEntity.copy(
+                serviceStatus = newStatus,
+                performedBy = if (newStatus == "done") performerId else null,
+                performedByUsername = if (newStatus == "done") performerUsername else null,
+                performedByFullName = if (newStatus == "done") performerFullName else null,
+                performedByAvatar = if (newStatus == "done") performerAvatar else null
+            )
+            
+            serviceDao.updateService(updatedEntity)
+            android.util.Log.d("OrderRepository", "Статус услуги $serviceId обновлен локально на $newStatus")
+            
+            // Помечаем заказ как требующий синхронизации
+            val orderEntity = orderDao.getOrderByServerId(orderId)
+            if (orderEntity != null && orderEntity.syncStatus == SyncStatus.SYNCED) {
+                orderDao.updateSyncStatus(orderEntity.localId, SyncStatus.PENDING)
             }
         }
     }
@@ -496,6 +567,15 @@ class OrderRepository(
             if (existing != null) {
                 // Сохраняем локальный ID, но обновляем serverId и все остальные поля
                 if (order.id != null) {
+                    // ВАЖНО: Приоритет на локальность. Если статус PENDING, мы не обновляем основные поля заказа,
+                    // НО мы обновляем услуги и расходники, так как они могут прийти с сервера после операций (toggle_status и т.д.)
+                    if (existing.syncStatus == SyncStatus.PENDING || existing.syncStatus == SyncStatus.ERROR) {
+                        android.util.Log.d("OrderRepository", "Заказ $localId в статусе PENDING/ERROR. Обновляем только услуги и расходники.")
+                        saveServicesForOrder(existing.localId, order.id, order.services)
+                        saveConsumablesForOrder(existing.localId, order.id, order.orderConsumables)
+                        return
+                    }
+
                     android.util.Log.d("OrderRepository", "Обновление заказа localId=$localId с serverId=${order.id}")
                     android.util.Log.d("OrderRepository", "До обновления: serverId=${existing.serverId}, syncStatus=${existing.syncStatus}")
                     
@@ -520,10 +600,8 @@ class OrderRepository(
                     // Обновляем заказ в БД
                     orderDao.updateOrder(updated)
                     
-                    // Сохраняем услуги заказа
-                    if (order.services.isNotEmpty()) {
-                        saveServicesForOrder(existing.localId, order.id, order.services)
-                    }
+                    // Сохраняем услуги заказа (всегда, даже если список пуст - чтобы очистить удаленные)
+                    saveServicesForOrder(existing.localId, order.id, order.services)
                     
                     //Проверяем, что serverId действительно обновлен
                     val verify = orderDao.getOrderByLocalId(localId)
@@ -556,10 +634,12 @@ class OrderRepository(
         
         if (existing != null) {
             // Заказ уже существует локально
-            //  Не перезаписываем, если заказ был изменен локально (PENDING или ERROR)
-            if (existing.syncStatus == SyncStatus.PENDING || 
-                existing.syncStatus == SyncStatus.ERROR) {
-                android.util.Log.d("OrderRepository", "Пропуск обновления заказа ${order.id} - локальные изменения в приоритете")
+            // ВАЖНО: Если статус PENDING, мы не обновляем основные поля заказа,
+            // НО мы обновляем услуги и расходники, так как они могут прийти с сервера после операций
+            if (existing.syncStatus == SyncStatus.PENDING || existing.syncStatus == SyncStatus.ERROR) {
+                android.util.Log.d("OrderRepository", "Заказ ${order.id} в статусе PENDING/ERROR. Обновляем только услуги и расходники.")
+                saveServicesForOrder(existing.localId, order.id, order.services)
+                saveConsumablesForOrder(existing.localId, order.id, order.orderConsumables)
                 return
             }
 
@@ -574,13 +654,9 @@ class OrderRepository(
             )
             orderDao.updateOrder(updated)
             
-            // Сохраняем услуги и расходники заказа
-            if (order.services.isNotEmpty()) {
-                saveServicesForOrder(existing.localId, order.id, order.services)
-            }
-            if (order.orderConsumables.isNotEmpty()) {
-                saveConsumablesForOrder(existing.localId, order.id, order.orderConsumables)
-            }
+            // Сохраняем услуги и расходники заказа (всегда, даже если пусты)
+            saveServicesForOrder(existing.localId, order.id, order.services)
+            saveConsumablesForOrder(existing.localId, order.id, order.orderConsumables)
         } else {
             // Новый заказ с сервера - сохраняем
             val entity = OrderEntity.fromOrder(order, SyncStatus.SYNCED)
@@ -604,12 +680,41 @@ class OrderRepository(
         orderServerId: Int?,
         services: List<Service>
     ) {
+        // Получаем текущие локальные услуги, чтобы сохранить их статус если заказ PENDING
+        val orderEntity = orderDao.getOrderByLocalId(orderLocalId)
+        val isPending = orderEntity?.syncStatus == SyncStatus.PENDING || orderEntity?.syncStatus == SyncStatus.ERROR
+        val localServices = serviceDao.getServicesByOrderLocalIdSync(orderLocalId)
+        
         // Удаляем старые услуги
         serviceDao.deleteServicesByOrderLocalId(orderLocalId)
         
         // Вставляем новые услуги
         val serviceEntities = services.map { service ->
-            ServiceEntity.fromService(service, orderLocalId, orderServerId)
+            val entity = ServiceEntity.fromService(service, orderLocalId, orderServerId)
+            
+            if (isPending) {
+                // Если заказ в PENDING, пытаемся сохранить локальный статус для этой услуги
+                // Ищем совпадение по serverId ИЛИ по описанию (для новых локальных услуг)
+                val localMatch = localServices.find { 
+                    (it.serverId != null && it.serverId == service.id) || 
+                    (it.serverId == null && it.description == service.description) 
+                }
+                
+                if (localMatch != null) {
+                    // Сохраняем локальный статус и исполнителя
+                    entity.copy(
+                        serviceStatus = localMatch.serviceStatus,
+                        performedBy = localMatch.performedBy,
+                        performedByUsername = localMatch.performedByUsername,
+                        performedByFullName = localMatch.performedByFullName,
+                        performedByAvatar = localMatch.performedByAvatar
+                    )
+                } else {
+                    entity
+                }
+            } else {
+                entity
+            }
         }
         serviceDao.insertServices(serviceEntities)
     }

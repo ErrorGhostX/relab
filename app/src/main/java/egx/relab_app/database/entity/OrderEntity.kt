@@ -103,7 +103,9 @@ data class OrderEntity(
             assignedToAvatar = assignedToAvatar,
             assignedAt = assignedAt,
             collaborators = parseCollaborators(collaboratorsJson),
-            orderConsumables = parseConsumables(orderConsumablesJson)
+            orderConsumables = parseConsumables(orderConsumablesJson),
+            localId = localId,
+            syncStatus = syncStatus
         )
     }
 

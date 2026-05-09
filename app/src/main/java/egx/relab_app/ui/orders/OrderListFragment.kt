@@ -508,8 +508,13 @@ class OrderListFragment : Fragment() {
                 binding.syncStatusCard.visibility = View.VISIBLE
                 binding.syncStatusText.text = "⚠ Ожидает синхронизации: $pendingCount заказов"
                 binding.syncStatusText.setTextColor(ctx.getColor(android.R.color.holo_orange_dark))
+                
+                // Обновляем бейдж на кнопке
+                binding.syncBadgeText.visibility = View.VISIBLE
+                binding.syncBadgeText.text = if (pendingCount > 99) "99+" else pendingCount.toString()
             } else {
                 binding.syncStatusCard.visibility = View.GONE
+                binding.syncBadgeText.visibility = View.GONE
             }
         }
     }
@@ -526,6 +531,7 @@ class OrderListFragment : Fragment() {
         ordersJob = lifecycleScope.launch {
             repository.getAllOrders().collect { orders ->
                 showOrders(filterOrdersByTab(orders))
+                updateSyncStatus()
             }
         }
     }
@@ -586,6 +592,7 @@ class OrderListFragment : Fragment() {
         ordersJob = lifecycleScope.launch {
             repository.getOrdersByStatus(status).collect { orders ->
                 showOrders(filterOrdersByTab(orders))
+                updateSyncStatus()
             }
         }
     }

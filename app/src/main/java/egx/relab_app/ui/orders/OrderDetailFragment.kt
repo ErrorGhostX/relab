@@ -504,13 +504,39 @@ class OrderDetailFragment : Fragment() {
         bindStatusBadge(order.status)
         
         // Отображение сложности заказа
-        val complexityText = if (order.complexityPercentage != null) {
-            val level = order.complexityLevel ?: getComplexityLevel(order.complexityPercentage!!)
-            "Сложность: ${"%.1f".format(order.complexityPercentage)}% ($level)"
+        if (order.complexityPercentage != null) {
+            val percentage = order.complexityPercentage!!
+            val level = order.complexityLevel ?: getComplexityLevel(percentage)
+            val fullText = "Сложность: ${"%.1f".format(percentage)}% ($level)"
+            val spannable = formatText(fullText)
+            
+            // Находим индекс начала уровня сложности (в скобках)
+            val levelPart = "($level)"
+            val start = fullText.indexOf(levelPart)
+            if (start != -1) {
+                val color = when {
+                    percentage < 30 -> android.graphics.Color.parseColor("#10B981") // Green
+                    percentage < 60 -> android.graphics.Color.parseColor("#F59E0B") // Orange
+                    percentage < 80 -> android.graphics.Color.parseColor("#F97316") // Dark Orange
+                    else -> android.graphics.Color.parseColor("#EF4444") // Red
+                }
+                spannable.setSpan(
+                    android.text.style.ForegroundColorSpan(color),
+                    start,
+                    start + levelPart.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                spannable.setSpan(
+                    android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                    start,
+                    start + levelPart.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            binding.orderComplexity.text = spannable
         } else {
-            "Сложность: не рассчитана"
+            binding.orderComplexity.text = formatText("Сложность: не рассчитана")
         }
-        binding.orderComplexity.text = formatText(complexityText)
 
         bindCollaborationUI(order)
         displayServices(order)
@@ -580,9 +606,9 @@ class OrderDetailFragment : Fragment() {
             
             cbStatus.isEnabled = canToggleStatus
             
-            if (canToggleStatus && order.id != null && (svc.id ?: 0) > 0) {
+            if (canToggleStatus && order.id != null && ((svc.id ?: 0) > 0 || svc.localId != null)) {
                 cbStatus.setOnClickListener {
-                    toggleServiceStatus(order.id!!, svc.id ?: 0)
+                    toggleServiceStatus(order.id!!, svc.id ?: 0, svc.localId)
                 }
             } else if (svc.serviceStatus == "done" && !canToggleStatus) {
                 cbStatus.setOnClickListener {
@@ -608,10 +634,17 @@ class OrderDetailFragment : Fragment() {
             tvComplexity.setTextColor(android.graphics.Color.parseColor(compColor))
 
             
-            // Исполнитель (Аватар слева)
+            // Исполнитель (Аватар слева + Имя)
             val ivPerformer = row.findViewById<ImageView>(R.id.ivPerformerAvatar)
+            val tvPerformerName = row.findViewById<TextView>(R.id.tvPerformerName)
+            
             if (svc.serviceStatus == "done") {
                 ivPerformer.visibility = View.VISIBLE
+                tvPerformerName.visibility = View.VISIBLE
+                
+                val performerName = svc.performedByFullName ?: svc.performedByUsername ?: "Неизвестно"
+                tvPerformerName.text = "Выполнил: $performerName"
+
                 if (!svc.performedByAvatar.isNullOrEmpty() && svc.performedByAvatar != "null") {
                     Glide.with(this).load(svc.performedByAvatar).placeholder(R.drawable.relab).circleCrop().into(ivPerformer)
                 } else {
@@ -621,9 +654,11 @@ class OrderDetailFragment : Fragment() {
                 // Клик по исполнителю
                 svc.performedBy?.let { userId ->
                     ivPerformer.setOnClickListener { showProfileBottomSheet(userId) }
+                    tvPerformerName.setOnClickListener { showProfileBottomSheet(userId) }
                 }
             } else {
                 ivPerformer.visibility = View.GONE
+                tvPerformerName.visibility = View.GONE
             }
             
             // Создатель (Аватар справа перед удалением)
@@ -872,17 +907,49 @@ class OrderDetailFragment : Fragment() {
     /**
      * Переключить статус услуги (pending <-> done)
      */
-    private fun toggleServiceStatus(orderId: Int, serviceId: Int) {
+    private fun toggleServiceStatus(orderId: Int, serviceId: Int, serviceLocalId: Long? = null) {
         lifecycleScope.launch {
             try {
+                // ВАЖНО: Оптимистичное обновление локальной БД для мгновенного отклика
+                val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+                val currentUserId = tokenManager.userId
+                val currentUsername = tokenManager.username
+                val currentFullName = tokenManager.fullName ?: currentUsername
+                val currentAvatar = tokenManager.avatarUrl
+                
                 withContext(Dispatchers.IO) {
-                    RetrofitClient.apiService.toggleServiceStatus(orderId, serviceId)
+                    // Обновляем в локальной БД ПЕРЕД запросом к серверу
+                    repository.updateServiceStatusLocally(
+                        serviceId = serviceId,
+                        orderId = orderId,
+                        performerId = currentUserId,
+                        performerUsername = currentUsername,
+                        performerFullName = currentFullName,
+                        performerAvatar = currentAvatar,
+                        serviceLocalId = serviceLocalId
+                    )
                 }
-                showToast("Статус услуги обновлён")
-                refreshOrderFromServer(orderId)
+                
+                // Сразу обновляем UI из локальной БД
+                loadFromLocalDatabase()
+                
+                // Теперь отправляем запрос на сервер (ТОЛЬКО если есть серверный ID)
+                if (serviceId > 0) {
+                    withContext(Dispatchers.IO) {
+                        RetrofitClient.apiService.toggleServiceStatus(orderId, serviceId)
+                    }
+                    showToast("Статус услуги обновлён")
+                    refreshOrderFromServer(orderId)
+                } else {
+                    showToast("Статус обновлён локально (синхронизация...)")
+                }
+                
             } catch (e: Exception) {
                 Log.e("OrderDetail", "Ошибка переключения статуса услуги", e)
                 showToast("Ошибка: ${e.message}")
+                
+                // В случае ошибки возвращаем как было (перезагружаем из БД)
+                loadFromLocalDatabase()
             }
         }
     }
@@ -1032,12 +1099,17 @@ class OrderDetailFragment : Fragment() {
 
                 if (orderEntity != null) {
                     // Добавляем услугу СРАЗУ в локальную БД
+                    val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
                     repository.addServiceToOrder(
                         orderLocalId = orderEntity.localId,
                         orderServerId = currentOrder.id,
                         description = description,
                         price = price,
-                        complexityPoints = complexityPoints
+                        complexityPoints = complexityPoints,
+                        createdBy = tokenManager.userId,
+                        createdByUsername = tokenManager.username,
+                        createdByFullName = tokenManager.fullName ?: tokenManager.username,
+                        createdByAvatar = tokenManager.avatarUrl
                     )
 
                     // Обновляем UI СРАЗУ из локальной БД
@@ -1713,10 +1785,10 @@ class OrderDetailFragment : Fragment() {
      */
     private fun getComplexityLevel(percentage: Double): String {
         return when {
-            percentage < 30 -> "Простая"
-            percentage < 60 -> "Средняя"
-            percentage < 80 -> "Высокая"
-            else -> "Очень высокая"
+            percentage < 30 -> "Простое"
+            percentage < 60 -> "Среднее"
+            percentage < 80 -> "Сложное"
+            else -> "Очень сложное"
         }
     }
 

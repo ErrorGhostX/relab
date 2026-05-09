@@ -117,8 +117,11 @@ data class Order(
     val collaborators: @RawValue List<OrderCollaborator> = emptyList(),
 
     @SerializedName("collaborators_count")
-    val collaboratorsCount: Int = 0
+    val collaboratorsCount: Int = 0,
 
+    // Локальные поля (не для сервера)
+    val localId: Long? = null,
+    val syncStatus: @RawValue egx.relab_app.database.entity.SyncStatus? = null
 ) : Parcelable
 
 @Parcelize

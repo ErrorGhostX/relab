@@ -53,11 +53,11 @@ class SyncManager(
     private val customerDao: CustomerDao? = null,
     private val consumableDao: egx.relab_app.database.dao.ConsumableDao? = null
 ) {
-    
+
     companion object {
         private const val TAG = "SyncManager"
     }
-    
+
     /**
      * Полная синхронизация: сначала Push (локальные изменения в приоритете), потом Pull
      * ВАЖНО: Локальные изменения имеют приоритет над серверными
@@ -70,14 +70,14 @@ class SyncManager(
             Log.d(TAG, "Синхронизация пропущена: Режим Гостя активен")
             return SyncResult(success = true, syncedCount = 0, error = "Режим Гостя (Локально)")
         }
-        
+
         return withContext(Dispatchers.IO) {
             try {
                 Log.d(TAG, "Начало полной синхронизации")
-                
+
                 var pushResult = SyncResult(success = false, error = "Не выполнено")
                 var pullResult = SyncResult(success = false, error = "Не выполнено")
-                
+
                 // ВАЖНО: Сначала отправляем локальные изменения (Push) - локальные данные в приоритете
                 try {
                     pushResult = pushChanges()
@@ -94,7 +94,7 @@ class SyncManager(
                     Log.w(TAG, "Ошибка Push (офлайн режим): ${e.message}")
                     pushResult = SyncResult(success = false, error = "Нет подключения к серверу")
                 }
-                
+
                 // Затем получаем обновления с сервера (Pull), но не перезаписываем локальные изменения
                 try {
                     pullResult = pullChanges()
@@ -110,7 +110,7 @@ class SyncManager(
                     Log.w(TAG, "Ошибка Pull (офлайн режим): ${e.message}")
                     pullResult = SyncResult(success = false, error = "Нет подключения к серверу")
                 }
-                
+
                 // Синхронизация клиентской базы
                 try {
                     syncCustomers()
@@ -147,10 +147,10 @@ class SyncManager(
             }
         }
     }
-    
+
     /**
      * Отправка локальных изменений на сервер (Push)
-     * 
+     *
      * ВАЖНО: Локальные изменения имеют приоритет
      * 1. Отправляет новые заказы (создание)
      * 2. Отправляет измененные заказы (обновление)
@@ -162,29 +162,35 @@ class SyncManager(
             pushPendingCustomers()
             pushDeletedCustomers()
             pushPendingConsumables()
-            
+
             // Получаем заказы, ожидающие синхронизации (новые и измененные)
             val pendingOrders = repository.getPendingOrders()
-            Log.d(TAG, "Найдено ${pendingOrders.size} заказов для синхронизации (создание/обновление)")
-            
+            Log.d(
+                TAG,
+                "Найдено ${pendingOrders.size} заказов для синхронизации (создание/обновление)"
+            )
+
             // Получаем удаленные заказы, которые нужно удалить на сервере
             val deletedOrders = repository.getDeletedOrdersForSync()
             Log.d(TAG, "Найдено ${deletedOrders.size} заказов для удаления на сервере")
-            
+
             var syncedCount = 0
             var deletedCount = 0
             var errorCount = 0
-            
+
             // Обрабатываем создание и обновление заказов
             for (orderEntity in pendingOrders) {
                 try {
-                    val order = orderEntity.toOrder()
-                    
+                    // ВАЖНО: Получаем ПОЛНУЮ модель заказа из репозитория (с услугами и расходниками)
+                    // Это гарантирует, что мы отправим актуальные данные, даже если они в разных таблицах
+                    val order =
+                        repository.getOrderByLocalId(orderEntity.localId) ?: orderEntity.toOrder()
+
                     // ВАЖНО: Проверяем, является ли serverId временным (отрицательным)
                     // Отрицательные ID - это временные локальные ID
                     val serverId = orderEntity.serverId
                     val isNewOrder = serverId == null || serverId < 0
-                    
+
                     if (isNewOrder) {
                         // Новый заказ - создаем на сервере
                         createOrderOnServer(orderEntity, order)
@@ -209,7 +215,7 @@ class SyncManager(
                     errorCount++
                 }
             }
-            
+
             // Обрабатываем удаление заказов на сервере
             for (orderEntity in deletedOrders) {
                 try {
@@ -240,8 +246,11 @@ class SyncManager(
                     }
                 }
             }
-            
-            Log.d(TAG, "Push завершен: создано/обновлено $syncedCount, удалено $deletedCount, ошибок $errorCount")
+
+            Log.d(
+                TAG,
+                "Push завершен: создано/обновлено $syncedCount, удалено $deletedCount, ошибок $errorCount"
+            )
             SyncResult(
                 success = errorCount == 0,
                 syncedCount = syncedCount + deletedCount,
@@ -252,10 +261,10 @@ class SyncManager(
             SyncResult(success = false, error = e.message ?: "Неизвестная ошибка")
         }
     }
-    
+
     /**
      * Получение обновлений с сервера (Pull)
-     * 
+     *
      * ВАЖНО: Не перезаписывает локальные изменения
      * Загружает заказы с сервера и обновляет только те, которые не были изменены локально
      */
@@ -263,7 +272,7 @@ class SyncManager(
         val tokenManager = TokenManager(context)
         try {
             Log.d(TAG, "Начало Pull синхронизации")
-            
+
             // ВАЖНО: Обновляем данные текущего пользователя (ранг, ФИО и т.д.)
             // Это решает проблему "нужно перезайти, чтобы права обновились"
             try {
@@ -276,44 +285,49 @@ class SyncManager(
             } catch (e: Exception) {
                 Log.w(TAG, "Не удалось обновить профиль пользователя: ${e.message}")
             }
-            
+
             // Конвертируем callback-based API в suspend функцию
             val orders = suspendCancellableCoroutine<List<Order>> { continuation ->
-                RetrofitClient.apiService.getOrders().enqueue(object : retrofit2.Callback<List<Order>> {
-                    override fun onResponse(
-                        call: retrofit2.Call<List<Order>>,
-                        response: retrofit2.Response<List<Order>>
-                    ) {
-                        if (response.isSuccessful) {
-                            continuation.resume(response.body() ?: emptyList())
-                        } else {
-                            continuation.resumeWithException(
-                                Exception("Ошибка сервера: ${response.code()}")
-                            )
+                RetrofitClient.apiService.getOrders()
+                    .enqueue(object : retrofit2.Callback<List<Order>> {
+                        override fun onResponse(
+                            call: retrofit2.Call<List<Order>>,
+                            response: retrofit2.Response<List<Order>>
+                        ) {
+                            if (response.isSuccessful) {
+                                continuation.resume(response.body() ?: emptyList())
+                            } else {
+                                continuation.resumeWithException(
+                                    Exception("Ошибка сервера: ${response.code()}")
+                                )
+                            }
                         }
-                    }
-                    
-                    override fun onFailure(call: retrofit2.Call<List<Order>>, t: Throwable) {
-                        continuation.resumeWithException(t)
-                    }
-                })
+
+                        override fun onFailure(call: retrofit2.Call<List<Order>>, t: Throwable) {
+                            continuation.resumeWithException(t)
+                        }
+                    })
             }
-            
+
             Log.d(TAG, "Получено ${orders.size} заказов с сервера")
-            
+
             var updatedCount = 0
             var skippedCount = 0
-            
+
             // Сохраняем каждый заказ в локальную БД, но не перезаписываем локальные изменения
             orders.forEach { order ->
                 if (order.id != null) {
                     val existing = repository.getOrderEntityByServerId(order.id!!)
                     if (existing != null) {
                         // Заказ уже существует локально
-                        if (existing.syncStatus == SyncStatus.PENDING || 
-                            existing.syncStatus == SyncStatus.ERROR) {
+                        if (existing.syncStatus == SyncStatus.PENDING ||
+                            existing.syncStatus == SyncStatus.ERROR
+                        ) {
                             // Локальный заказ был изменен - НЕ перезаписываем (локальные данные в приоритете)
-                            Log.d(TAG, "Пропуск заказа ${order.id} - локальные изменения в приоритете")
+                            Log.d(
+                                TAG,
+                                "Пропуск заказа ${order.id} - локальные изменения в приоритете"
+                            )
                             skippedCount++
                         } else {
                             // Локальный заказ не изменялся - обновляем с сервера
@@ -327,39 +341,42 @@ class SyncManager(
                     }
                 }
             }
-            
-            Log.d(TAG, "Pull завершен: обновлено $updatedCount, пропущено $skippedCount (локальные изменения)")
-            
+
+            Log.d(
+                TAG,
+                "Pull завершен: обновлено $updatedCount, пропущено $skippedCount (локальные изменения)"
+            )
+
             // ВАЖНО: Удаляем из локальной БД заказы, которых больше нет на сервере ИЛИ к которым пропал доступ (RBAC)
             try {
                 val serverIds = orders.mapNotNull { it.id }.toSet()
                 val localOrders = repository.getAllOrderEntities()
-                
+
                 val tokenManager = TokenManager(context)
                 val currentUsername = tokenManager.username ?: ""
                 val userRank = (tokenManager.rank ?: "employee").lowercase().trim()
                 val isAdmin = userRank in listOf("admin", "руководитель", "администратор")
                 val isManager = userRank == "manager"
-                
+
                 var prunedCount = 0
                 localOrders.forEach { localOrder ->
                     if (localOrder.serverId != null && localOrder.serverId!! > 0) {
                         val stillOnServer = serverIds.contains(localOrder.serverId)
-                        
+
                         // Проверяем доступность по RBAC (для тех что пришли с сервера)
                         val serverOrder = orders.find { it.id == localOrder.serverId }
                         val hasAccess = if (serverOrder == null) {
                             // Если его нет в текущем пачке с сервера, значит либо удален, либо доступ пропал
-                            false 
+                            false
                         } else {
                             // Если он есть в пачке, сервер уже отфильтровал, но на всякий случай проверим локально
                             if (isAdmin) true
                             else if (isManager) serverOrder.isPublic
                             else {
-                                serverOrder.isPublic || 
-                                serverOrder.createdByUsername == currentUsername || 
-                                serverOrder.assignedToUsername == currentUsername || 
-                                serverOrder.collaborators.any { it.username == currentUsername }
+                                serverOrder.isPublic ||
+                                        serverOrder.createdByUsername == currentUsername ||
+                                        serverOrder.assignedToUsername == currentUsername ||
+                                        serverOrder.collaborators.any { it.username == currentUsername }
                             }
                         }
 
@@ -367,8 +384,12 @@ class SyncManager(
                             // Заказа нет на сервере ИЛИ к нему пропал доступ. 
                             // Если он был синхронизирован (не PENDING) и не помечен как удаленный вручную
                             if (localOrder.syncStatus == SyncStatus.SYNCED && !localOrder.isDeleted) {
-                                val reason = if (!stillOnServer) "отсутствует на сервере" else "пропал доступ (RBAC)"
-                                Log.d(TAG, "Удаление локального заказа ${localOrder.serverId} - $reason")
+                                val reason =
+                                    if (!stillOnServer) "отсутствует на сервере" else "пропал доступ (RBAC)"
+                                Log.d(
+                                    TAG,
+                                    "Удаление локального заказа ${localOrder.serverId} - $reason"
+                                )
                                 repository.markAsFullyDeleted(localOrder.localId)
                                 prunedCount++
                             }
@@ -381,7 +402,7 @@ class SyncManager(
             } catch (e: Exception) {
                 Log.e(TAG, "Ошибка при очистке устаревших заказов: ${e.message}")
             }
-            
+
             SyncResult(
                 success = true,
                 syncedCount = updatedCount
@@ -391,7 +412,7 @@ class SyncManager(
             SyncResult(success = false, error = e.message ?: "Неизвестная ошибка")
         }
     }
-    
+
     /**
      * Создание заказа на сервере
      */
@@ -410,88 +431,120 @@ class SyncManager(
                     null
                 }
             }
-        
-        Log.d(TAG, "Создание заказа на сервере с ${photoUris.size} фото. isPublic=${order.isPublic}")
-        
+
+        Log.d(
+            TAG,
+            "Создание заказа на сервере с ${photoUris.size} фото. isPublic=${order.isPublic}"
+        )
+
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
-            RetrofitClient.createOrder(context, order, photoUris) { success, code, errorBody, createdOrder ->
+            RetrofitClient.createOrder(
+                context,
+                order,
+                photoUris
+            ) { success, code, errorBody, createdOrder ->
                 if (success && createdOrder != null) {
                     continuation.resume(true to createdOrder)
                 } else {
                     continuation.resumeWithException(
-                        Exception("Ошибка $code: ${errorBody ?: "Неизвестная ошибка"}"))
+                        Exception("Ошибка $code: ${errorBody ?: "Неизвестная ошибка"}")
+                    )
                 }
             }
         }
-        
+
         val (success, serverOrder) = result
         if (success && serverOrder != null && serverOrder.id != null) {
             // ВАЖНО: Обновляем локальный заказ с данными с сервера (включая serverId и статус синхронизации)
             // Передаем localId, чтобы гарантированно обновить правильный заказ
-            Log.d(TAG, "Заказ успешно создан на сервере. localId=${orderEntity.localId}, serverId=${serverOrder.id}")
+            Log.d(
+                TAG,
+                "Заказ успешно создан на сервере. localId=${orderEntity.localId}, serverId=${serverOrder.id}"
+            )
             Log.d(TAG, "Фото уже загружены при создании заказа: ${serverOrder.photos.size} фото")
+// СНАЧАЛА меняем статус, чтобы отключить защиту от перезаписи внутри saveOrderFromServer
+            repository.updateSyncStatus(orderEntity.localId, SyncStatus.SYNCED)
+            // ТЕПЕРЬ сохраняем — он успешно обновит serverId
             repository.saveOrderFromServer(serverOrder, orderEntity.localId)
-            
+
             // ВАЖНО: Фото уже загружены при создании заказа, не нужно загружать повторно
             // uploadPhotosToServer больше не нужен здесь
-            
+
             // ВАЖНО: Проверяем, что serverId действительно обновлен
             val verify = repository.getOrderEntityByServerId(serverOrder.id!!)
             if (verify != null && verify.localId == orderEntity.localId) {
-                Log.d(TAG, "Заказ успешно обновлен. localId=${verify.localId}, serverId=${verify.serverId}, syncStatus=${verify.syncStatus}")
+                Log.d(
+                    TAG,
+                    "Заказ успешно обновлен. localId=${verify.localId}, serverId=${verify.serverId}, syncStatus=${verify.syncStatus}"
+                )
             } else {
-                Log.e(TAG, "ОШИБКА: Заказ не обновлен правильно! localId=${orderEntity.localId}, serverId=${serverOrder.id}")
+                Log.e(
+                    TAG,
+                    "ОШИБКА: Заказ не обновлен правильно! localId=${orderEntity.localId}, serverId=${serverOrder.id}"
+                )
             }
         } else {
-            Log.e(TAG, "Не удалось создать заказ на сервере. success=$success, serverOrder=$serverOrder, serverOrder.id=${serverOrder?.id}")
+            Log.e(
+                TAG,
+                "Не удалось создать заказ на сервере. success=$success, serverOrder=$serverOrder, serverOrder.id=${serverOrder?.id}"
+            )
             throw Exception("Не удалось создать заказ на сервере")
         }
     }
-    
+
     /**
      * Загрузить все локальные фото на сервер
      */
-    private suspend fun uploadPhotosToServer(orderEntity: OrderEntity, serverOrderId: Int) = withContext(Dispatchers.IO) {
-        try {
-            val photoPaths = getPhotoPathsList(orderEntity.photo)
-            if (photoPaths.isEmpty()) {
-                Log.d(TAG, "Нет фото для загрузки для заказа $serverOrderId")
-                return@withContext
-            }
-            
-            // Конвертируем пути в Uri (только локальные файлы)
-            val photoUris = photoPaths.mapNotNull { path ->
-                if (!path.startsWith("http://") && !path.startsWith("https://")) {
-                    val file = java.io.File(path)
-                    if (file.exists()) {
-                        android.net.Uri.fromFile(file)
-                    } else {
-                        null
-                    }
-                } else {
-                    null // Уже загружено на сервер
+    private suspend fun uploadPhotosToServer(orderEntity: OrderEntity, serverOrderId: Int) =
+        withContext(Dispatchers.IO) {
+            try {
+                val photoPaths = getPhotoPathsList(orderEntity.photo)
+                if (photoPaths.isEmpty()) {
+                    Log.d(TAG, "Нет фото для загрузки для заказа $serverOrderId")
+                    return@withContext
                 }
-            }
-            
-            if (photoUris.isNotEmpty()) {
-                val result = suspendCancellableCoroutine<Pair<Boolean, List<egx.relab_app.models.OrderPhoto>?>> { continuation ->
-                    RetrofitClient.uploadPhotos(context, serverOrderId.toString(), photoUris) { success, photos, error ->
-                        if (success) {
-                            continuation.resume(true to photos)
+
+                // Конвертируем пути в Uri (только локальные файлы)
+                val photoUris = photoPaths.mapNotNull { path ->
+                    if (!path.startsWith("http://") && !path.startsWith("https://")) {
+                        val file = java.io.File(path)
+                        if (file.exists()) {
+                            android.net.Uri.fromFile(file)
                         } else {
-                            continuation.resumeWithException(Exception("Ошибка загрузки фото: $error"))
+                            null
                         }
+                    } else {
+                        null // Уже загружено на сервер
                     }
                 }
-                Log.d(TAG, "Фото загружены на сервер для заказа $serverOrderId: ${result.second?.size ?: 0} фото")
+
+                if (photoUris.isNotEmpty()) {
+                    val result =
+                        suspendCancellableCoroutine<Pair<Boolean, List<egx.relab_app.models.OrderPhoto>?>> { continuation ->
+                            RetrofitClient.uploadPhotos(
+                                context,
+                                serverOrderId.toString(),
+                                photoUris
+                            ) { success, photos, error ->
+                                if (success) {
+                                    continuation.resume(true to photos)
+                                } else {
+                                    continuation.resumeWithException(Exception("Ошибка загрузки фото: $error"))
+                                }
+                            }
+                        }
+                    Log.d(
+                        TAG,
+                        "Фото загружены на сервер для заказа $serverOrderId: ${result.second?.size ?: 0} фото"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Ошибка при загрузке фото на сервер для заказа $serverOrderId", e)
+                // Не прерываем синхронизацию из-за ошибки загрузки фото
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Ошибка при загрузке фото на сервер для заказа $serverOrderId", e)
-            // Не прерываем синхронизацию из-за ошибки загрузки фото
         }
-    }
-    
+
     /**
      * Получить список путей к фото из строки (может быть JSON массив или один путь)
      */
@@ -499,7 +552,7 @@ class SyncManager(
         if (photoString.isNullOrEmpty() || photoString == "null") {
             return emptyList()
         }
-        
+
         try {
             val trimmed = photoString.trim()
             if (trimmed.startsWith("[")) {
@@ -515,7 +568,7 @@ class SyncManager(
             return listOf(photoString)
         }
     }
-    
+
     /**
      * Обновление заказа на сервере
      */
@@ -536,14 +589,14 @@ class SyncManager(
             Log.e(TAG, "Ошибка получения фото с сервера: ${e.message}")
             emptyList()
         }
-        
+
         // Получаем локальные фото из orderEntity.photo (JSON массив URL)
         val localPhotoUrls = getPhotoPathsList(orderEntity.photo)
             .filter { path -> path.startsWith("http://") || path.startsWith("https://") }
             .toSet()
-        
+
         Log.d(TAG, "Локальные фото: ${localPhotoUrls.size}, фото на сервере: ${serverPhotos.size}")
-        
+
         // Удаляем фото с сервера, которых нет в локальной БД
         for (serverPhoto in serverPhotos) {
             if (serverPhoto.id != null && serverPhoto.photoUrl != null) {
@@ -552,7 +605,10 @@ class SyncManager(
                     // Фото есть на сервере, но нет локально - удаляем с сервера
                     try {
                         val deleteResult = suspendCancellableCoroutine<Boolean> { continuation ->
-                            RetrofitClient.deletePhoto(order.id!!.toString(), serverPhoto.id!!.toString()) { success, error ->
+                            RetrofitClient.deletePhoto(
+                                order.id!!.toString(),
+                                serverPhoto.id!!.toString()
+                            ) { success, error ->
                                 if (success) {
                                     Log.d(TAG, "Фото $photoUrl удалено с сервера")
                                     continuation.resume(true)
@@ -568,7 +624,7 @@ class SyncManager(
                 }
             }
         }
-        
+
         // ВАЖНО: Загружаем только новые локальные фото (не URL)
         val photoUris = getPhotoPathsList(orderEntity.photo)
             .filter { path -> !path.startsWith("http://") && !path.startsWith("https://") }
@@ -580,12 +636,19 @@ class SyncManager(
                     null
                 }
             }
-        
-        Log.d(TAG, "Обновление заказа на сервере с ${photoUris.size} новыми фото. isPublic=${order.isPublic}")
-        
+
+        Log.d(
+            TAG,
+            "Обновление заказа на сервере с ${photoUris.size} новыми фото. isPublic=${order.isPublic}"
+        )
+
         // Конвертируем callback в suspend функцию
         val result = suspendCancellableCoroutine<Pair<Boolean, Order?>> { continuation ->
-            RetrofitClient.updateOrder(context, order, photoUris) { isSuccess, code, errorBody, updatedOrder ->
+            RetrofitClient.updateOrder(
+                context,
+                order,
+                photoUris
+            ) { isSuccess, code, errorBody, updatedOrder ->
                 if (isSuccess) {
                     continuation.resume(true to updatedOrder)
                 } else {
@@ -595,12 +658,13 @@ class SyncManager(
                 }
             }
         }
-        
+
         val (success, updatedOrder) = result
         if (success) {
             // Обновляем локальный заказ с данными с сервера, сохраняя локальные изменения
             if (updatedOrder != null && updatedOrder.id != null) {
                 Log.d(TAG, "Заказ обновлен на сервере: ${updatedOrder.photos.size} фото")
+                repository.updateSyncStatus(orderEntity.localId, SyncStatus.SYNCED)
                 repository.saveOrderFromServer(updatedOrder, orderEntity.localId)
             } else {
                 // Если сервер не вернул обновленный заказ, просто помечаем как синхронизированный
@@ -611,7 +675,7 @@ class SyncManager(
             }
         }
     }
-    
+
     /**
      * Удаление заказа на сервере
      */
@@ -626,13 +690,13 @@ class SyncManager(
                         ) {
                             continuation.resume(response.isSuccessful)
                         }
-                        
+
                         override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
                             continuation.resumeWithException(t)
                         }
                     })
             }
-            
+
             if (!result) {
                 throw Exception("Не удалось удалить заказ на сервере")
             }
@@ -641,7 +705,7 @@ class SyncManager(
             throw e
         }
     }
-    
+
     /**
      * Синхронизация клиентской базы с сервером
      * Загружает всех клиентов с сервера и обновляет локальную БД
@@ -651,19 +715,22 @@ class SyncManager(
             Log.w(TAG, "CustomerDao не инициализирован, пропускаем синхронизацию клиентов")
             return@withContext
         }
-        
+
         try {
             Log.d(TAG, "Начало синхронизации клиентов")
             val customers = RetrofitClient.apiService.getCustomers()
             Log.d(TAG, "Получено ${customers.size} клиентов с сервера")
-            
+
             for (customer in customers) {
                 if (customer.id != null) {
                     val existing = customerDao.getCustomerByServerId(customer.id)
                     if (existing != null) {
                         // ВАЖНО: Если клиент помечен как удаленный локально, не затираем этот статус
                         if (existing.syncStatus == "DELETED") {
-                            Log.d(TAG, "Пропуск клиента ${customer.fullName} — помечен как удаленный")
+                            Log.d(
+                                TAG,
+                                "Пропуск клиента ${customer.fullName} — помечен как удаленный"
+                            )
                             continue
                         }
                         // Обновляем существующего клиента
@@ -677,7 +744,7 @@ class SyncManager(
                     }
                 }
             }
-            
+
             Log.d(TAG, "Синхронизация клиентов завершена")
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка синхронизации клиентов", e)
@@ -689,13 +756,13 @@ class SyncManager(
      */
     private suspend fun pushPendingCustomers() {
         if (customerDao == null) return
-        
+
         try {
             val pendingCustomers = customerDao.getPendingCustomers()
             if (pendingCustomers.isEmpty()) return
-            
+
             Log.d(TAG, "Найдено ${pendingCustomers.size} клиентов для отправки на сервер")
-            
+
             for (entity in pendingCustomers) {
                 try {
                     val request = egx.relab_app.network.ApiService.CreateCustomerRequest(
@@ -708,20 +775,22 @@ class SyncManager(
                         blacklist_reason = entity.blacklistReason,
                         notes = entity.notes
                     )
-                    
-                    val created = egx.relab_app.network.RetrofitClient.apiService.createCustomer(request)
-                    
+
+                    val created =
+                        egx.relab_app.network.RetrofitClient.apiService.createCustomer(request)
+
                     // Обновляем локального клиента серверным ID
                     val updatedEntity = entity.copy(serverId = created.id, syncStatus = "SYNCED")
                     customerDao.updateCustomer(updatedEntity)
-                    
+
                     // Обновляем все локальные заказы, которые ссылаются на этот временный ID (-localId)
                     val localRefId = -entity.localId.toInt()
-                    val pendingOrders = repository.getPendingOrders().filter { it.customerRefId == localRefId }
+                    val pendingOrders =
+                        repository.getPendingOrders().filter { it.customerRefId == localRefId }
                     for (order in pendingOrders) {
                         repository.updateOrder(order.copy(customerRefId = created.id))
                     }
-                    
+
                     Log.d(TAG, "Клиент ${entity.fullName} успешно отправлен (ID: ${created.id})")
                 } catch (e: Exception) {
                     Log.e(TAG, "Ошибка отправки клиента ${entity.fullName}", e)
@@ -737,13 +806,13 @@ class SyncManager(
      */
     private suspend fun pushDeletedCustomers() {
         if (customerDao == null) return
-        
+
         try {
             val deletedCustomers = customerDao.getDeletedCustomers()
             if (deletedCustomers.isEmpty()) return
-            
+
             Log.d(TAG, "Найдено ${deletedCustomers.size} удаленных клиентов для синхронизации")
-            
+
             for (entity in deletedCustomers) {
                 try {
                     val serverId = entity.serverId
@@ -752,9 +821,15 @@ class SyncManager(
                         if (response.isSuccessful || response.code() == 404) {
                             // Удалено на сервере (или уже отсутствует) — удаляем из локальной БД совсем
                             customerDao.deleteCustomer(entity)
-                            Log.d(TAG, "Клиент ${entity.fullName} удален с сервера и из локальной БД")
+                            Log.d(
+                                TAG,
+                                "Клиент ${entity.fullName} удален с сервера и из локальной БД"
+                            )
                         } else {
-                            Log.w(TAG, "Ошибка удаления клиента ${entity.fullName} на сервере: ${response.code()}")
+                            Log.w(
+                                TAG,
+                                "Ошибка удаления клиента ${entity.fullName} на сервере: ${response.code()}"
+                            )
                         }
                     } else {
                         // Нет serverId — просто удаляем локально
@@ -777,7 +852,7 @@ class SyncManager(
         val syncedCount: Int = 0,
         val error: String? = null
     )
-    
+
     /**
      * Извлекает первый путь к фото из строки (может быть JSON массив или просто путь)
      */
@@ -785,7 +860,7 @@ class SyncManager(
         if (photoString.isNullOrEmpty() || photoString == "null") {
             return null
         }
-        
+
         try {
             // Проверяем, начинается ли строка с "[" - это JSON массив
             val trimmed = photoString.trim()
@@ -803,7 +878,7 @@ class SyncManager(
             // Если не удалось распарсить, пробуем как одно фото
             return photoString
         }
-        
+
         return null
     }
 
@@ -812,13 +887,13 @@ class SyncManager(
      */
     private suspend fun pushPendingConsumables() {
         if (consumableDao == null) return
-        
+
         try {
             val pending = consumableDao.getPendingConsumables()
             if (pending.isEmpty()) return
-            
+
             Log.d(TAG, "Найдено ${pending.size} расходников для синхронизации")
-            
+
             for (entity in pending) {
                 try {
                     val model = entity.toConsumable()
@@ -827,7 +902,7 @@ class SyncManager(
                     } else {
                         RetrofitClient.apiService.updateConsumable(entity.serverId!!, model)
                     }
-                    
+
                     consumableDao.updateConsumableSyncStatus(
                         entity.localId,
                         result.id,
@@ -847,29 +922,38 @@ class SyncManager(
      */
     private suspend fun pullConsumables() {
         if (consumableDao == null) return
-        
+
         try {
             val serverList = RetrofitClient.apiService.getConsumables()
             Log.d(TAG, "Получено ${serverList.size} расходников с сервера для склада")
-            
+
             for (model in serverList) {
                 if (model.id != null) {
                     val existing = consumableDao.getConsumableByServerId(model.id!!)
                     if (existing != null) {
                         // Если есть локальные изменения, которые еще не ушли на сервер - не затираем остаток
                         if (existing.syncStatus == SyncStatus.PENDING) {
-                            Log.d(TAG, "Пропуск обновления товара ${model.name} - есть локальные изменения")
+                            Log.d(
+                                TAG,
+                                "Пропуск обновления товара ${model.name} - есть локальные изменения"
+                            )
                             continue
                         }
-                        
+
                         // Обновляем существующий, сохраняя localId
-                        val updated = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(model, SyncStatus.SYNCED).copy(
+                        val updated = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(
+                            model,
+                            SyncStatus.SYNCED
+                        ).copy(
                             localId = existing.localId
                         )
                         consumableDao.insertConsumable(updated)
                     } else {
                         // Новый товар
-                        val entity = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(model, SyncStatus.SYNCED)
+                        val entity = egx.relab_app.database.entity.ConsumableEntity.fromConsumable(
+                            model,
+                            SyncStatus.SYNCED
+                        )
                         consumableDao.insertConsumable(entity)
                     }
                 }
@@ -879,4 +963,3 @@ class SyncManager(
         }
     }
 }
-

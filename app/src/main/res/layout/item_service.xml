@@ -56,6 +56,17 @@
             android:fontFamily="sans-serif-medium"
             tools:text="Сложность: 3/10" />
 
+        <TextView
+            android:id="@+id/tvPerformerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@color/gray_700"
+            android:fontFamily="sans-serif"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="Выполнил: Иван Иванов" />
+
 
     </LinearLayout>
 

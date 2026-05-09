@@ -26,6 +26,12 @@ interface CustomerDao {
     suspend fun getAllCustomersSync(): List<CustomerEntity>
 
     /**
+     * Получить всех клиентов (блокирующий, для Filter)
+     */
+    @Query("SELECT * FROM customers WHERE syncStatus != 'DELETED' ORDER BY fullName ASC")
+    fun getAllCustomersSyncBlocking(): List<CustomerEntity>
+
+    /**
      * Поиск клиентов по имени или телефону
      */
     @Query("SELECT * FROM customers WHERE (fullName LIKE '%' || :query || '%' OR phone LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' OR messenger LIKE '%' || :query || '%') AND syncStatus != 'DELETED' ORDER BY fullName ASC")
