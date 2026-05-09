@@ -187,13 +187,13 @@ class Order(models.Model):
         """
         percentage = self.get_complexity_percentage()
         if percentage < 30:
-            return "Простая"
+            return "Простое"
         elif percentage < 60:
-            return "Средняя"
+            return "Среднее"
         elif percentage < 80:
-            return "Высокая"
+            return "Сложное"
         else:
-            return "Очень высокая"
+            return "Очень сложное"
 
 
     def __str__(self):
