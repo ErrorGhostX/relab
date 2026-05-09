@@ -118,11 +118,16 @@ class EmployeeListFragment : Fragment() {
             }
         })
 
-        // Наблюдаем за данными
+        // Наблюдаем за данными (сотрудники)
         viewModel.employees.observe(viewLifecycleOwner) { list ->
-            adapter.submitList(list)
-            emptyView.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-            recyclerView.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+            // Скрываем технических пользователей (admin, ai-assistant)
+            val filteredList = list.filter { 
+                val username = it.username?.lowercase() ?: ""
+                !username.contains("admin") && !username.contains("ai")
+            }
+            adapter.submitList(filteredList)
+            emptyView.visibility = if (filteredList.isEmpty()) View.VISIBLE else View.GONE
+            recyclerView.visibility = if (filteredList.isEmpty()) View.GONE else View.VISIBLE
         }
 
         viewModel.isLoading.observe(viewLifecycleOwner) { loading ->

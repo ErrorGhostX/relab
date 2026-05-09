@@ -67,15 +67,27 @@ class ChatListFragment : Fragment() {
 
         // Наблюдаем за данными
         viewModel.chatRooms.observe(viewLifecycleOwner) { rooms ->
+            val mutableRooms = rooms.toMutableList()
+            
+            // Если чата с ИИ нет в списке (например, ещё не создавался) — добавляем виртуальный
+            if (mutableRooms.none { it.name == "ИИ-Помощник" }) {
+                mutableRooms.add(ApiService.ChatRoom(
+                    id = -1, // Специальный ID для AI-чата
+                    name = "ИИ-Помощник",
+                    unread_count = 0,
+                    last_message = null
+                ))
+            }
+
             // Сортируем: ИИ-Помощник всегда сверху, остальные по времени последнего сообщения
-            val sortedRooms = rooms.sortedWith(
+            val sortedRooms = mutableRooms.sortedWith(
                 compareByDescending<ApiService.ChatRoom> { it.name == "ИИ-Помощник" }
                 .thenByDescending { it.last_message?.created_at ?: "" }
             )
             
             adapter.submitList(sortedRooms)
-            emptyView.visibility = if (rooms.isEmpty()) View.VISIBLE else View.GONE
-            recyclerView.visibility = if (rooms.isEmpty()) View.GONE else View.VISIBLE
+            emptyView.visibility = if (sortedRooms.isEmpty()) View.VISIBLE else View.GONE
+            recyclerView.visibility = if (sortedRooms.isEmpty()) View.GONE else View.VISIBLE
         }
 
         viewModel.isLoadingRooms.observe(viewLifecycleOwner) { loading ->
