@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# TODO (production): вынести в переменные окружения: os.environ.get('DJANGO_SECRET_KEY')
 SECRET_KEY = 'django-insecure-(sat5=7b078l6xptlyf&bh_!nm_&x3ywpi5#iv=bc82-r(f!)*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -44,6 +45,13 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+}
+
+DJOSER = {
+    'USER_CREATE_PASSWORD_RETYPE': False,  # Не требуем re_password
+    'SERIALIZERS': {
+        'user_create': 'orders.serializers.CustomUserCreateSerializer',
+    },
 }
 
 # Application definition
@@ -75,13 +83,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+# CORS — актуален только для браузеров, Android-приложение не использует CORS.
+# Если будет веб-клиент — настрой CORS_ALLOWED_ORIGINS.
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "https://baseblock.ru",
-    "https://www.baseblock.ru",
-    "http://baseblock.ru",
-]
+
 
 ROOT_URLCONF = 'backend_relab_app.urls'
 
@@ -168,3 +174,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ======================
+# Настройки компании
+# ======================
+COMPANY_NAME = 'Relab Service'
+COMPANY_DESCRIPTION = 'Локальная CRM система Relab'

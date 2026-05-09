@@ -1,10 +1,14 @@
 # urls.py
 from rest_framework.routers import DefaultRouter
-from .views import (
-    OrderViewSet, AnalyticsViewSet, CustomerViewSet, AIViewSet,
-    EmployeeViewSet, ChatRoomViewSet, StaffAnalyticsViewSet, FCMDeviceViewSet,
-    ConsumableViewSet, OrderConsumableViewSet
-)
+
+# Импорты из разбитых модулей views
+from .views import OrderViewSet, AIViewSet
+from .customer_views import CustomerViewSet
+from .consumable_views import ConsumableViewSet, OrderConsumableViewSet
+from .analytics_views import AnalyticsViewSet, StaffAnalyticsViewSet
+from .employee_views import EmployeeViewSet
+from .chat_views import ChatRoomViewSet
+from .fcm_views import FCMDeviceViewSet
 
 router = DefaultRouter()
 # теперь все CRUD-эндпоинты и дополнительный create-with-photo под /api/orders/

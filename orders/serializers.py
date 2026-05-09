@@ -1,4 +1,5 @@
-from djoser.conf import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from rest_framework import serializers
 from .models import (
     Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer,
@@ -298,16 +299,20 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'phone', 'rank', 'rank_display', 'specialization', 'profile')
     
+    def _get_profile(self, obj):
+        """Получить профиль один раз (использует select_related если доступен)"""
+        if hasattr(obj, 'profile'):
+            return obj.profile
+        # Fallback: создаём профиль если нет (первый запуск)
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile
+    
     def get_full_name(self, obj):
-        """Получить ФИО из профиля"""
-        # Гарантируем наличие профиля
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.full_name if profile.full_name else None
     
     def get_avatar(self, obj):
-        """Получить URL аватара из профиля"""
-        # Гарантируем наличие профиля
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         if profile and profile.avatar:
             request = self.context.get('request')
             if request:
@@ -315,23 +320,19 @@ class UserSerializer(serializers.ModelSerializer):
         return None
     
     def get_rank(self, obj):
-        """Получить ранг пользователя"""
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.rank if profile else 'employee'
     
     def get_rank_display(self, obj):
-        """Получить отображаемое название ранга"""
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.get_rank_display() if profile else 'Сотрудник'
     
     def get_phone(self, obj):
-        """Получить номер телефона из профиля"""
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.phone if profile else None
     
     def get_specialization(self, obj):
-        """Получить специализацию из профиля"""
-        profile, created = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.specialization if profile else None
 
 
@@ -498,12 +499,19 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
             'completed_orders', 'stats'
         ]
 
-    def get_full_name(self, obj):
+    def _get_profile(self, obj):
+        """Получить профиль один раз (использует select_related если доступен)"""
+        if hasattr(obj, 'profile'):
+            return obj.profile
         profile, _ = UserProfile.objects.get_or_create(user=obj)
+        return profile
+
+    def get_full_name(self, obj):
+        profile = self._get_profile(obj)
         return profile.full_name if profile.full_name else None
 
     def get_avatar(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         if profile and profile.avatar:
             request = self.context.get('request')
             if request:
@@ -511,19 +519,19 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
         return None
 
     def get_phone(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.phone if profile else None
 
     def get_rank(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.rank if profile else 'employee'
 
     def get_rank_display(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.get_rank_display() if profile else 'Сотрудник'
 
     def get_specialization(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
+        profile = self._get_profile(obj)
         return profile.specialization if profile else None
 
     def get_completed_orders(self, obj):
@@ -578,3 +586,56 @@ class FCMDeviceSerializer(serializers.ModelSerializer):
             device.save(update_fields=['user'])
             
         return device
+
+
+class CustomUserCreateSerializer(serializers.ModelSerializer):
+    """
+    Кастомный сериализатор для регистрации через Djoser.
+    Принимает full_name, rank и email из Android-приложения
+    и сохраняет их в User + UserProfile.
+    """
+    full_name = serializers.CharField(required=False, default='')
+    rank = serializers.CharField(required=False, default='employee')
+    email = serializers.EmailField(required=False, default='', allow_blank=True)
+    phone = serializers.CharField(required=False, default='', allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'password', 'email', 'full_name', 'rank', 'phone')
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def create(self, validated_data):
+        full_name = validated_data.pop('full_name', '')
+        rank = validated_data.pop('rank', 'employee')
+
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password'],
+            email=validated_data.get('email', ''),
+        )
+
+        # UserProfile создаётся автоматически через signal,
+        # обновляем full_name, rank и phone
+        if hasattr(user, 'profile'):
+            user.profile.full_name = full_name
+            user.profile.rank = rank
+            if 'phone' in validated_data:
+                user.profile.phone = validated_data['phone']
+            user.profile.save(update_fields=['full_name', 'rank', 'phone'])
+
+        return user
+
+
+class UpdateEmployeeSerializer(serializers.Serializer):
+    """
+    Сериализатор для редактирования сотрудника админом/руководителем.
+    PATCH /api/employees/{id}/update_profile/
+    """
+    full_name = serializers.CharField(required=False)
+    rank = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    specialization = serializers.CharField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)

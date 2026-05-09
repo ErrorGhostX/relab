@@ -120,11 +120,13 @@ def upload_avatar(request):
 def get_company_info(request):
     """
     GET /api/company-info/ - Получить информацию о компании
-    Не требует аутентификации, чтобы приложение могло проверить адрес сервера до входа
+    Не требует аутентификации, чтобы приложение могло проверить адрес сервера до входа.
+    Название и описание берутся из settings.py (COMPANY_NAME, COMPANY_DESCRIPTION).
     """
+    from django.conf import settings
     data = {
-        "name": "Relab Server",
+        "name": getattr(settings, 'COMPANY_NAME', 'Relab Server'),
         "logo_url": None,
-        "description": "Локальная CRM система Relab"
+        "description": getattr(settings, 'COMPANY_DESCRIPTION', 'Локальная CRM система Relab'),
     }
     return Response(data)

@@ -187,13 +187,14 @@ class Order(models.Model):
         """
         percentage = self.get_complexity_percentage()
         if percentage < 30:
-            return "🟢"
+            return "Простая"
         elif percentage < 60:
-            return "🟡"
+            return "Средняя"
         elif percentage < 80:
-            return "🟠"
+            return "Высокая"
         else:
-            return "🔴"
+            return "Очень высокая"
+
 
     def __str__(self):
         return f"{self.order_name} — {self.device_name}"
