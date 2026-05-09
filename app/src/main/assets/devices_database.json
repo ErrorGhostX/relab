@@ -1,0 +1,1011 @@
+{
+  "manufacturers": [
+    "Apple",
+    "Samsung",
+    "Xiaomi",
+    "Huawei",
+    "Oppo",
+    "Vivo",
+    "OnePlus",
+    "Realme",
+    "Honor",
+    "Motorola",
+    "LG",
+    "Sony",
+    "Nokia",
+    "Google",
+    "Asus",
+    "Lenovo",
+    "Acer",
+    "HP",
+    "Dell",
+    "MSI",
+    "Razer",
+    "Alienware",
+    "Gigabyte",
+    "ASRock",
+    "Intel",
+    "AMD",
+    "NVIDIA",
+    "Samsung",
+    "Western Digital",
+    "Seagate",
+    "Kingston",
+    "Crucial",
+    "Corsair",
+    "G.Skill",
+    "EVGA",
+    "Zotac",
+    "Palit",
+    "PowerColor",
+    "Sapphire",
+    "XFX",
+    "Cooler Master",
+    "be quiet!",
+    "Noctua",
+    "Arctic",
+    "Fractal Design",
+    "NZXT",
+    "Lian Li",
+    "Thermaltake",
+    "DeepCool"
+  ],
+  "deviceTypes": [
+    "Смартфон",
+    "Планшет",
+    "Ноутбук",
+    "Ультрабук",
+    "Игровой ноутбук",
+    "Рабочая станция",
+    "Моноблок",
+    "Умные часы",
+    "Наушники",
+    "Планшетный компьютер",
+    "Гибридный ноутбук",
+    "Мини-ПК",
+    "Настольный ПК",
+    "Игровой ПК",
+    "Рабочая станция ПК",
+    "Материнская плата",
+    "Видеокарта",
+    "Процессор",
+    "Оперативная память",
+    "SSD накопитель",
+    "HDD накопитель",
+    "Блок питания",
+    "Корпус",
+    "Система охлаждения",
+    "Кулер процессора",
+    "Водяное охлаждение",
+    "Термопаста"
+  ],
+  "devices": [
+    {
+      "manufacturer": "Apple",
+      "deviceType": "Смартфон",
+      "models": [
+        "iPhone 15 Pro Max",
+        "iPhone 15 Pro",
+        "iPhone 15",
+        "iPhone 15 Plus",
+        "iPhone 14 Pro Max",
+        "iPhone 14 Pro",
+        "iPhone 14",
+        "iPhone 14 Plus",
+        "iPhone 13 Pro Max",
+        "iPhone 13 Pro",
+        "iPhone 13",
+        "iPhone 13 mini",
+        "iPhone 12 Pro Max",
+        "iPhone 12 Pro",
+        "iPhone 12",
+        "iPhone 12 mini",
+        "iPhone 11 Pro Max",
+        "iPhone 11 Pro",
+        "iPhone 11",
+        "iPhone XS Max",
+        "iPhone XS",
+        "iPhone XR",
+        "iPhone X",
+        "iPhone SE (2022)",
+        "iPhone SE (2020)"
+      ]
+    },
+    {
+      "manufacturer": "Samsung",
+      "deviceType": "Смартфон",
+      "models": [
+        "Galaxy S24 Ultra",
+        "Galaxy S24+",
+        "Galaxy S24",
+        "Galaxy S23 Ultra",
+        "Galaxy S23+",
+        "Galaxy S23",
+        "Galaxy S22 Ultra",
+        "Galaxy S22+",
+        "Galaxy S22",
+        "Galaxy S21 Ultra",
+        "Galaxy S21+",
+        "Galaxy S21",
+        "Galaxy Note 20 Ultra",
+        "Galaxy Note 20",
+        "Galaxy A54",
+        "Galaxy A34",
+        "Galaxy A24",
+        "Galaxy A14",
+        "Galaxy A73",
+        "Galaxy A53",
+        "Galaxy Z Fold 5",
+        "Galaxy Z Flip 5",
+        "Galaxy Z Fold 4",
+        "Galaxy Z Flip 4"
+      ]
+    },
+    {
+      "manufacturer": "Xiaomi",
+      "deviceType": "Смартфон",
+      "models": [
+        "Xiaomi 14 Pro",
+        "Xiaomi 14",
+        "Xiaomi 13 Pro",
+        "Xiaomi 13",
+        "Xiaomi 13T Pro",
+        "Xiaomi 13T",
+        "Xiaomi 12T Pro",
+        "Xiaomi 12T",
+        "Xiaomi 12 Pro",
+        "Xiaomi 12",
+        "Redmi Note 13 Pro",
+        "Redmi Note 13",
+        "Redmi Note 12 Pro",
+        "Redmi Note 12",
+        "Redmi Note 11",
+        "Redmi 13C",
+        "Redmi 12",
+        "POCO X6 Pro",
+        "POCO X6",
+        "POCO F5 Pro",
+        "POCO F5",
+        "POCO M6 Pro",
+        "POCO M6"
+      ]
+    },
+    {
+      "manufacturer": "Huawei",
+      "deviceType": "Смартфон",
+      "models": [
+        "Mate 60 Pro",
+        "Mate 60",
+        "Mate 50 Pro",
+        "Mate 50",
+        "P60 Pro",
+        "P60",
+        "P50 Pro",
+        "P50",
+        "nova 12",
+        "nova 11",
+        "nova 10"
+      ]
+    },
+    {
+      "manufacturer": "Apple",
+      "deviceType": "Планшет",
+      "models": [
+        "iPad Pro 12.9\" (2024)",
+        "iPad Pro 11\" (2024)",
+        "iPad Air (2024)",
+        "iPad (2022)",
+        "iPad mini (2021)",
+        "iPad Pro 12.9\" (2022)",
+        "iPad Pro 11\" (2022)"
+      ]
+    },
+    {
+      "manufacturer": "Samsung",
+      "deviceType": "Планшет",
+      "models": [
+        "Galaxy Tab S9 Ultra",
+        "Galaxy Tab S9+",
+        "Galaxy Tab S9",
+        "Galaxy Tab S8 Ultra",
+        "Galaxy Tab S8+",
+        "Galaxy Tab S8",
+        "Galaxy Tab A9+",
+        "Galaxy Tab A9"
+      ]
+    },
+    {
+      "manufacturer": "Apple",
+      "deviceType": "Ноутбук",
+      "models": [
+        "MacBook Pro 16\" M3 Max",
+        "MacBook Pro 16\" M3 Pro",
+        "MacBook Pro 14\" M3 Max",
+        "MacBook Pro 14\" M3 Pro",
+        "MacBook Pro 16\" M2 Max",
+        "MacBook Pro 16\" M2 Pro",
+        "MacBook Pro 14\" M2 Max",
+        "MacBook Pro 14\" M2 Pro",
+        "MacBook Air 15\" M3",
+        "MacBook Air 13\" M3",
+        "MacBook Air 13\" M2",
+        "MacBook Pro 13\" M2",
+        "MacBook Pro 13\" M1",
+        "MacBook Air M1"
+      ]
+    },
+    {
+      "manufacturer": "Asus",
+      "deviceType": "Ноутбук",
+      "models": [
+        "ROG Strix G18",
+        "ROG Zephyrus G16",
+        "ROG Zephyrus M16",
+        "VivoBook Pro 16X",
+        "ZenBook Pro 16X",
+        "TUF Gaming A16",
+        "TUF Gaming F15",
+        "ROG Flow X16",
+        "ROG Flow Z13",
+        "ZenBook 14",
+        "ZenBook 15",
+        "VivoBook 15",
+        "VivoBook 17",
+        "ExpertBook B9",
+        "ExpertBook B5"
+      ]
+    },
+    {
+      "manufacturer": "Asus",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "ROG Strix Scar 18",
+        "ROG Strix Scar 16",
+        "ROG Strix G18",
+        "ROG Strix G16",
+        "ROG Zephyrus Duo 16",
+        "ROG Zephyrus M16",
+        "ROG Flow X16",
+        "TUF Gaming A17",
+        "TUF Gaming A15",
+        "TUF Gaming F17",
+        "TUF Gaming F15"
+      ]
+    },
+    {
+      "manufacturer": "Asus",
+      "deviceType": "Ультрабук",
+      "models": [
+        "ZenBook 14 OLED",
+        "ZenBook 15 OLED",
+        "ZenBook S 13",
+        "ZenBook Flip 14",
+        "ZenBook Pro Duo 15",
+        "VivoBook S 15",
+        "VivoBook S 14"
+      ]
+    },
+    {
+      "manufacturer": "Lenovo",
+      "deviceType": "Ноутбук",
+      "models": [
+        "Legion Pro 7i",
+        "Legion 7i",
+        "Legion 5i Pro",
+        "Legion 5i",
+        "ThinkPad X1 Carbon",
+        "ThinkPad X1 Yoga",
+        "IdeaPad Gaming 3",
+        "Yoga 9i",
+        "ThinkPad P16",
+        "ThinkPad P14s",
+        "IdeaPad 5 Pro",
+        "IdeaPad 3",
+        "Yoga 7i",
+        "Yoga 6",
+        "ThinkBook 16p",
+        "ThinkBook 14p"
+      ]
+    },
+    {
+      "manufacturer": "Lenovo",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "Legion Pro 7i Gen 9",
+        "Legion 7i Gen 9",
+        "Legion 5i Pro Gen 9",
+        "Legion 5i Gen 9",
+        "Legion Slim 7i",
+        "Legion Slim 5i",
+        "IdeaPad Gaming 3i",
+        "LOQ 15",
+        "LOQ 16"
+      ]
+    },
+    {
+      "manufacturer": "HP",
+      "deviceType": "Ноутбук",
+      "models": [
+        "OMEN 17",
+        "OMEN 16",
+        "Pavilion Gaming 15",
+        "EliteBook 840",
+        "ProBook 450",
+        "Spectre x360",
+        "Envy x360",
+        "Pavilion Plus 14",
+        "EliteBook 850",
+        "ZBook Studio",
+        "ZBook Firefly",
+        "Victus 16",
+        "Victus 15"
+      ]
+    },
+    {
+      "manufacturer": "HP",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "OMEN 17-ck2000ur",
+        "OMEN 16-wf0000ur",
+        "OMEN Transcend 16",
+        "Victus 16",
+        "Victus 15",
+        "Pavilion Gaming 15",
+        "Pavilion Gaming 16"
+      ]
+    },
+    {
+      "manufacturer": "Dell",
+      "deviceType": "Ноутбук",
+      "models": [
+        "Alienware m18",
+        "Alienware m16",
+        "Alienware x16",
+        "Alienware x14",
+        "G15 Gaming",
+        "G16 Gaming",
+        "XPS 15",
+        "XPS 13",
+        "Latitude 5540",
+        "Latitude 5440",
+        "Precision 5680",
+        "Precision 5480",
+        "Inspiron 16 Plus",
+        "Inspiron 15"
+      ]
+    },
+    {
+      "manufacturer": "Dell",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "Alienware m18 R2",
+        "Alienware m16 R2",
+        "Alienware x16 R2",
+        "Alienware x14 R2",
+        "G15 5530",
+        "G16 7630"
+      ]
+    },
+    {
+      "manufacturer": "MSI",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "Raider GE78 HX",
+        "Titan GT77 HX",
+        "Stealth 18 Studio",
+        "Vector GP78 HX",
+        "Katana 17",
+        "Cyborg 15",
+        "Pulse 17",
+        "Creator Z17",
+        "Summit E16",
+        "Prestige 16",
+        "Modern 15",
+        "Bravo 15"
+      ]
+    },
+    {
+      "manufacturer": "Acer",
+      "deviceType": "Ноутбук",
+      "models": [
+        "Predator Helios 18",
+        "Predator Helios 16",
+        "Nitro 17",
+        "Nitro 5",
+        "Aspire 5",
+        "Aspire 7",
+        "Swift 3",
+        "Swift 5",
+        "TravelMate P6",
+        "ConceptD 7"
+      ]
+    },
+    {
+      "manufacturer": "Acer",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "Predator Helios 18",
+        "Predator Helios 16",
+        "Predator Triton 17 X",
+        "Predator Triton 16",
+        "Nitro 17",
+        "Nitro 5"
+      ]
+    },
+    {
+      "manufacturer": "Razer",
+      "deviceType": "Игровой ноутбук",
+      "models": [
+        "Blade 18",
+        "Blade 16",
+        "Blade 15",
+        "Blade 14",
+        "Blade 17 Pro"
+      ]
+    },
+    {
+      "manufacturer": "OnePlus",
+      "deviceType": "Смартфон",
+      "models": [
+        "OnePlus 12",
+        "OnePlus 12R",
+        "OnePlus 11",
+        "OnePlus 11R",
+        "OnePlus 10 Pro",
+        "OnePlus 10T",
+        "OnePlus Nord 3",
+        "OnePlus Nord CE 3"
+      ]
+    },
+    {
+      "manufacturer": "Google",
+      "deviceType": "Смартфон",
+      "models": [
+        "Pixel 8 Pro",
+        "Pixel 8",
+        "Pixel 7 Pro",
+        "Pixel 7",
+        "Pixel 7a",
+        "Pixel 6 Pro",
+        "Pixel 6",
+        "Pixel 6a"
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "deviceType": "Смартфон",
+      "models": [
+        "Xperia 1 V",
+        "Xperia 5 V",
+        "Xperia 10 V",
+        "Xperia 1 IV",
+        "Xperia 5 IV"
+      ]
+    },
+    {
+      "manufacturer": "Oppo",
+      "deviceType": "Смартфон",
+      "models": [
+        "Find X7 Ultra",
+        "Find X7",
+        "Find X6 Pro",
+        "Find X6",
+        "Reno 11 Pro",
+        "Reno 11",
+        "Reno 10 Pro",
+        "Reno 10"
+      ]
+    },
+    {
+      "manufacturer": "Vivo",
+      "deviceType": "Смартфон",
+      "models": [
+        "X100 Pro",
+        "X100",
+        "X90 Pro",
+        "X90",
+        "V30 Pro",
+        "V30",
+        "V29"
+      ]
+    },
+    {
+      "manufacturer": "Asus",
+      "deviceType": "Материнская плата",
+      "models": [
+        "ROG Maximus Z790 Extreme",
+        "ROG Strix Z790-E Gaming",
+        "ROG Strix B760-F Gaming",
+        "TUF Gaming Z790-Plus",
+        "TUF Gaming B760-Plus",
+        "Prime Z790-A",
+        "Prime B760-Plus",
+        "ROG Crosshair X670E Extreme",
+        "ROG Strix X670E-E Gaming",
+        "TUF Gaming X670E-Plus",
+        "ROG Strix B650E-F Gaming",
+        "TUF Gaming B650-Plus"
+      ]
+    },
+    {
+      "manufacturer": "MSI",
+      "deviceType": "Материнская плата",
+      "models": [
+        "MEG Z790 Godlike",
+        "MPG Z790 Carbon WiFi",
+        "MAG Z790 Tomahawk",
+        "PRO Z790-A WiFi",
+        "MEG X670E Ace",
+        "MPG X670E Carbon WiFi",
+        "MAG X670E Tomahawk",
+        "MAG B650 Tomahawk",
+        "PRO B650-P WiFi"
+      ]
+    },
+    {
+      "manufacturer": "Gigabyte",
+      "deviceType": "Материнская плата",
+      "models": [
+        "Z790 Aorus Xtreme",
+        "Z790 Aorus Master",
+        "Z790 Aorus Elite AX",
+        "B760 Aorus Elite AX",
+        "X670E Aorus Xtreme",
+        "X670E Aorus Master",
+        "B650 Aorus Elite AX",
+        "B650M Aorus Elite AX"
+      ]
+    },
+    {
+      "manufacturer": "ASRock",
+      "deviceType": "Материнская плата",
+      "models": [
+        "Z790 Taichi",
+        "Z790 Steel Legend",
+        "B760M Steel Legend",
+        "X670E Taichi",
+        "B650E Steel Legend",
+        "B650M Pro RS"
+      ]
+    },
+    {
+      "manufacturer": "NVIDIA",
+      "deviceType": "Видеокарта",
+      "models": [
+        "GeForce RTX 4090",
+        "GeForce RTX 4080 Super",
+        "GeForce RTX 4080",
+        "GeForce RTX 4070 Ti Super",
+        "GeForce RTX 4070 Ti",
+        "GeForce RTX 4070 Super",
+        "GeForce RTX 4070",
+        "GeForce RTX 4060 Ti",
+        "GeForce RTX 4060",
+        "GeForce RTX 3090 Ti",
+        "GeForce RTX 3090",
+        "GeForce RTX 3080 Ti",
+        "GeForce RTX 3080",
+        "GeForce RTX 3070 Ti",
+        "GeForce RTX 3070",
+        "GeForce RTX 3060 Ti",
+        "GeForce RTX 3060"
+      ]
+    },
+    {
+      "manufacturer": "AMD",
+      "deviceType": "Видеокарта",
+      "models": [
+        "Radeon RX 7900 XTX",
+        "Radeon RX 7900 XT",
+        "Radeon RX 7800 XT",
+        "Radeon RX 7700 XT",
+        "Radeon RX 7600 XT",
+        "Radeon RX 7600",
+        "Radeon RX 6950 XT",
+        "Radeon RX 6900 XT",
+        "Radeon RX 6800 XT",
+        "Radeon RX 6800",
+        "Radeon RX 6750 XT",
+        "Radeon RX 6700 XT",
+        "Radeon RX 6650 XT",
+        "Radeon RX 6600 XT",
+        "Radeon RX 6600"
+      ]
+    },
+    {
+      "manufacturer": "Intel",
+      "deviceType": "Процессор",
+      "models": [
+        "Core i9-14900K",
+        "Core i9-13900K",
+        "Core i9-12900K",
+        "Core i7-14700K",
+        "Core i7-13700K",
+        "Core i7-12700K",
+        "Core i5-14600K",
+        "Core i5-13600K",
+        "Core i5-12600K",
+        "Core i3-13100",
+        "Core i3-12100",
+        "Pentium Gold G7400",
+        "Celeron G6900"
+      ]
+    },
+    {
+      "manufacturer": "AMD",
+      "deviceType": "Процессор",
+      "models": [
+        "Ryzen 9 7950X3D",
+        "Ryzen 9 7950X",
+        "Ryzen 9 7900X3D",
+        "Ryzen 9 7900X",
+        "Ryzen 7 7800X3D",
+        "Ryzen 7 7700X",
+        "Ryzen 5 7600X",
+        "Ryzen 5 5600X",
+        "Ryzen 5 5500",
+        "Ryzen 3 5300G",
+        "Threadripper PRO 5995WX",
+        "Threadripper PRO 5975WX"
+      ]
+    },
+    {
+      "manufacturer": "Samsung",
+      "deviceType": "SSD накопитель",
+      "models": [
+        "990 PRO 2TB",
+        "990 PRO 1TB",
+        "980 PRO 2TB",
+        "980 PRO 1TB",
+        "980 1TB",
+        "970 EVO Plus 2TB",
+        "970 EVO Plus 1TB",
+        "970 PRO 1TB",
+        "870 EVO 2TB",
+        "870 EVO 1TB",
+        "860 EVO 1TB"
+      ]
+    },
+    {
+      "manufacturer": "Western Digital",
+      "deviceType": "SSD накопитель",
+      "models": [
+        "WD Black SN850X 2TB",
+        "WD Black SN850X 1TB",
+        "WD Black SN850 2TB",
+        "WD Black SN850 1TB",
+        "WD Blue SN580 1TB",
+        "WD Blue SN570 1TB",
+        "WD Green SN350 1TB"
+      ]
+    },
+    {
+      "manufacturer": "Western Digital",
+      "deviceType": "HDD накопитель",
+      "models": [
+        "WD Black 8TB",
+        "WD Black 4TB",
+        "WD Black 2TB",
+        "WD Blue 4TB",
+        "WD Blue 2TB",
+        "WD Blue 1TB",
+        "WD Red Plus 8TB",
+        "WD Red Plus 4TB",
+        "WD Purple 4TB"
+      ]
+    },
+    {
+      "manufacturer": "Seagate",
+      "deviceType": "HDD накопитель",
+      "models": [
+        "BarraCuda 4TB",
+        "BarraCuda 2TB",
+        "BarraCuda 1TB",
+        "IronWolf Pro 8TB",
+        "IronWolf Pro 4TB",
+        "FireCuda 2TB",
+        "FireCuda 1TB"
+      ]
+    },
+    {
+      "manufacturer": "Kingston",
+      "deviceType": "SSD накопитель",
+      "models": [
+        "KC3000 2TB",
+        "KC3000 1TB",
+        "NV2 2TB",
+        "NV2 1TB",
+        "A2000 1TB",
+        "UV400 480GB"
+      ]
+    },
+    {
+      "manufacturer": "Crucial",
+      "deviceType": "SSD накопитель",
+      "models": [
+        "P5 Plus 2TB",
+        "P5 Plus 1TB",
+        "P3 Plus 2TB",
+        "P3 Plus 1TB",
+        "MX500 2TB",
+        "MX500 1TB",
+        "BX500 1TB"
+      ]
+    },
+    {
+      "manufacturer": "Corsair",
+      "deviceType": "Оперативная память",
+      "models": [
+        "Vengeance RGB DDR5 32GB 6000MHz",
+        "Vengeance RGB DDR5 16GB 6000MHz",
+        "Vengeance DDR5 32GB 5600MHz",
+        "Vengeance DDR5 16GB 5600MHz",
+        "Vengeance RGB Pro DDR4 32GB 3600MHz",
+        "Vengeance RGB Pro DDR4 16GB 3600MHz",
+        "Vengeance LPX DDR4 32GB 3200MHz",
+        "Vengeance LPX DDR4 16GB 3200MHz"
+      ]
+    },
+    {
+      "manufacturer": "G.Skill",
+      "deviceType": "Оперативная память",
+      "models": [
+        "Trident Z5 RGB DDR5 32GB 6000MHz",
+        "Trident Z5 RGB DDR5 16GB 6000MHz",
+        "Trident Z5 DDR5 32GB 5600MHz",
+        "Ripjaws S5 DDR5 32GB 5600MHz",
+        "Trident Z RGB DDR4 32GB 3600MHz",
+        "Trident Z RGB DDR4 16GB 3600MHz",
+        "Ripjaws V DDR4 32GB 3200MHz",
+        "Ripjaws V DDR4 16GB 3200MHz"
+      ]
+    },
+    {
+      "manufacturer": "Kingston",
+      "deviceType": "Оперативная память",
+      "models": [
+        "FURY Beast DDR5 32GB 6000MHz",
+        "FURY Beast DDR5 16GB 6000MHz",
+        "FURY Renegade DDR5 32GB 6000MHz",
+        "FURY Beast DDR4 32GB 3600MHz",
+        "FURY Beast DDR4 16GB 3600MHz"
+      ]
+    },
+    {
+      "manufacturer": "Corsair",
+      "deviceType": "Блок питания",
+      "models": [
+        "RM1000x 1000W",
+        "RM850x 850W",
+        "RM750x 750W",
+        "RM650x 650W",
+        "RM550x 550W",
+        "HX1500i 1500W",
+        "HX1200i 1200W",
+        "HX1000i 1000W"
+      ]
+    },
+    {
+      "manufacturer": "Cooler Master",
+      "deviceType": "Блок питания",
+      "models": [
+        "V1300 Platinum 1300W",
+        "V1100 Platinum 1100W",
+        "MWE Gold 850W",
+        "MWE Gold 750W",
+        "MWE Gold 650W",
+        "MWE Bronze 550W"
+      ]
+    },
+    {
+      "manufacturer": "be quiet!",
+      "deviceType": "Блок питания",
+      "models": [
+        "Dark Power 13 1000W",
+        "Straight Power 12 850W",
+        "Straight Power 11 750W",
+        "System Power 10 650W",
+        "Pure Power 12 550W"
+      ]
+    },
+    {
+      "manufacturer": "Fractal Design",
+      "deviceType": "Корпус",
+      "models": [
+        "Define 7 XL",
+        "Define 7",
+        "Define 7 Compact",
+        "Meshify 2 XL",
+        "Meshify 2",
+        "North",
+        "Torrent",
+        "Pop Air"
+      ]
+    },
+    {
+      "manufacturer": "NZXT",
+      "deviceType": "Корпус",
+      "models": [
+        "H9 Elite",
+        "H9 Flow",
+        "H7 Elite",
+        "H7 Flow",
+        "H5 Elite",
+        "H5 Flow",
+        "H510 Elite",
+        "H510 Flow"
+      ]
+    },
+    {
+      "manufacturer": "Lian Li",
+      "deviceType": "Корпус",
+      "models": [
+        "O11 Dynamic EVO XL",
+        "O11 Dynamic EVO",
+        "O11 Dynamic Mini",
+        "Lancool 216",
+        "Lancool III",
+        "PC-O11 Dynamic"
+      ]
+    },
+    {
+      "manufacturer": "Cooler Master",
+      "deviceType": "Корпус",
+      "models": [
+        "MasterBox TD500 Mesh",
+        "MasterBox MB520",
+        "MasterCase H500M",
+        "Cosmos C700M",
+        "HAF 700 EVO"
+      ]
+    },
+    {
+      "manufacturer": "Noctua",
+      "deviceType": "Кулер процессора",
+      "models": [
+        "NH-D15",
+        "NH-D15S",
+        "NH-U12A",
+        "NH-U12S",
+        "NH-L9i",
+        "NH-L9a-AM4"
+      ]
+    },
+    {
+      "manufacturer": "be quiet!",
+      "deviceType": "Кулер процессора",
+      "models": [
+        "Dark Rock Pro 4",
+        "Dark Rock 4",
+        "Shadow Rock 3",
+        "Pure Rock 2",
+        "Pure Rock Slim"
+      ]
+    },
+    {
+      "manufacturer": "Cooler Master",
+      "deviceType": "Кулер процессора",
+      "models": [
+        "Hyper 212 EVO V2",
+        "MasterAir MA620M",
+        "MasterLiquid ML360",
+        "MasterLiquid ML240"
+      ]
+    },
+    {
+      "manufacturer": "Arctic",
+      "deviceType": "Кулер процессора",
+      "models": [
+        "Freezer 34 eSports DUO",
+        "Freezer 34 eSports",
+        "Liquid Freezer II 360",
+        "Liquid Freezer II 280",
+        "Liquid Freezer II 240"
+      ]
+    },
+    {
+      "manufacturer": "Corsair",
+      "deviceType": "Водяное охлаждение",
+      "models": [
+        "iCUE H150i Elite LCD XT",
+        "iCUE H150i Elite Capellix",
+        "iCUE H100i Elite LCD XT",
+        "iCUE H100i Elite Capellix",
+        "iCUE H115i Elite Capellix",
+        "iCUE H170i Elite LCD"
+      ]
+    },
+    {
+      "manufacturer": "NZXT",
+      "deviceType": "Водяное охлаждение",
+      "models": [
+        "Kraken 360",
+        "Kraken 280",
+        "Kraken 240",
+        "Kraken Z73",
+        "Kraken X73",
+        "Kraken X63"
+      ]
+    },
+    {
+      "manufacturer": "DeepCool",
+      "deviceType": "Водяное охлаждение",
+      "models": [
+        "LT720 360mm",
+        "LT720 240mm",
+        "LS720 360mm",
+        "LS720 240mm",
+        "AK620",
+        "AK400"
+      ]
+    },
+    {
+      "manufacturer": "Arctic",
+      "deviceType": "Термопаста",
+      "models": [
+        "MX-6",
+        "MX-5",
+        "MX-4",
+        "Silver 5"
+      ]
+    },
+    {
+      "manufacturer": "Noctua",
+      "deviceType": "Термопаста",
+      "models": [
+        "NT-H2",
+        "NT-H1"
+      ]
+    },
+    {
+      "manufacturer": "Thermaltake",
+      "deviceType": "Корпус",
+      "models": [
+        "View 71 TG",
+        "Core P8",
+        "Core P5",
+        "Level 20 GT",
+        "Versa H18"
+      ]
+    },
+    {
+      "manufacturer": "EVGA",
+      "deviceType": "Видеокарта",
+      "models": [
+        "GeForce RTX 4090 FTW3",
+        "GeForce RTX 4080 FTW3",
+        "GeForce RTX 4070 Ti FTW3",
+        "GeForce RTX 4070 FTW3"
+      ]
+    },
+    {
+      "manufacturer": "Zotac",
+      "deviceType": "Видеокарта",
+      "models": [
+        "GeForce RTX 4090 AMP Extreme",
+        "GeForce RTX 4080 AMP Extreme",
+        "GeForce RTX 4070 Ti AMP Extreme",
+        "GeForce RTX 4070 AMP"
+      ]
+    },
+    {
+      "manufacturer": "Sapphire",
+      "deviceType": "Видеокарта",
+      "models": [
+        "Radeon RX 7900 XTX Nitro+",
+        "Radeon RX 7900 XT Nitro+",
+        "Radeon RX 7800 XT Nitro+",
+        "Radeon RX 7700 XT Pulse"
+      ]
+    },
+    {
+      "manufacturer": "PowerColor",
+      "deviceType": "Видеокарта",
+      "models": [
+        "Radeon RX 7900 XTX Red Devil",
+        "Radeon RX 7900 XT Red Devil",
+        "Radeon RX 7800 XT Red Devil"
+      ]
+    }
+  ]
+}

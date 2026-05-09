@@ -1,0 +1,10 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Фоновая картинка -->
+    <item>
+        <bitmap
+            android:src="@drawable/___"
+            android:gravity="right"
+            android:alpha="1.0"/>
+    </item>
+
+</layer-list>

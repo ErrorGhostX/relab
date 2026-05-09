@@ -8,20 +8,48 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="egx.relab_app.ui.home.HomeFragment"
-        android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        android:label=""
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_orderListFragment"
+            app:destination="@id/orderListFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_analyticsFragment"
+            app:destination="@id/analyticsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_toolsFragment"
+            app:destination="@id/toolsFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_nav_customers"
+            app:destination="@id/nav_customers" />
+        <action
+            android:id="@+id/action_nav_home_to_employeeListFragment"
+            app:destination="@id/employeeListFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_chatListFragment"
+            app:destination="@id/chatListFragment" />
+        <action
+            android:id="@+id/action_nav_home_to_consumableListFragment"
+            app:destination="@id/consumableListFragment" />
+
+    </fragment>
 
     <fragment
-        android:id="@+id/nav_gallery"
-        android:name="egx.relab_app.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
-
-    <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="egx.relab_app.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        android:id="@+id/profileFragment"
+        android:name="egx.relab_app.ui.orders.ProfileFragment"
+        android:label="Профиль"
+        tools:layout="@layout/fragment_profile" >
+        <argument
+            android:name="userId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
 
     <fragment
         android:id="@+id/orderListFragment"
@@ -29,27 +57,203 @@
         android:label="Заказы"
         tools:layout="@layout/fragment_orders">
 
-        <action
-            android:id="@+id/action_nav_orders_to_createOrderFragment"
-            app:destination="@id/createOrderFragment" />
+
 
         <action
-            android:id="@+id/action_nav_orders_to_orderDetailFragment"
+            android:id="@+id/action_orderListFragment_to_orderFormFragment"
+            app:destination="@id/orderFormFragment" />
+
+        <action
+            android:id="@+id/action_orderListFragment_to_qrScannerFragment"
+            app:destination="@id/qrScannerFragment" />
+
+
+
+        <action
+            android:id="@+id/action_orderListFragment_to_orderDetailFragment"
+            app:destination="@id/orderDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+
+    </fragment>
+    
+    <fragment
+        android:id="@+id/nav_customers"
+        android:name="egx.relab_app.ui.customers.CustomerListFragment"
+        android:label="База Клиентов"
+        tools:layout="@layout/fragment_customer_list" >
+        <action
+            android:id="@+id/action_customerListFragment_to_customerDetailFragment"
+            app:destination="@id/customerDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_customerListFragment_to_customerFormFragment"
+            app:destination="@id/customerFormFragment" />
+    </fragment>
+        
+    <fragment
+        android:id="@+id/customerDetailFragment"
+        android:name="egx.relab_app.ui.customers.CustomerDetailFragment"
+        android:label="Карточка клиента"
+        tools:layout="@layout/fragment_customer_detail">
+        <argument
+            android:name="customer"
+            app:argType="egx.relab_app.models.Customer" />
+        <action
+            android:id="@+id/action_customerDetailFragment_to_customerFormFragment"
+            app:destination="@id/customerFormFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/customerFormFragment"
+        android:name="egx.relab_app.ui.customers.CustomerFormFragment"
+        android:label="Клиент"
+        tools:layout="@layout/fragment_customer_form">
+        <argument
+            android:name="customer"
+            app:argType="egx.relab_app.models.Customer"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/analyticsFragment"
+        android:name="egx.relab_app.ui.orders.AnalyticsFragment"
+        android:label="Аналитика"
+        tools:layout="@layout/fragment_analytics" >
+        <argument
+            android:name="userId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+        <argument
+            android:name="userName"
+            app:argType="string"
+            android:defaultValue='""' />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="egx.relab_app.ui.settings.SettingsFragment"
+        android:label="Настройки"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/toolsFragment"
+        android:name="egx.relab_app.ui.tools.ToolsFragment"
+        android:label="Инструменты"
+        tools:layout="@layout/fragment_tools" />
+
+
+
+    <fragment
+        android:id="@+id/orderFormFragment"
+        android:name="egx.relab_app.ui.orders.OrderFormFragment"
+        android:label="Форма заказа"
+        tools:layout="@layout/fragment_order_create">
+
+        <argument
+            android:name="order"
+            app:argType="egx.relab_app.models.Order"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/orderDetailFragment"
+        android:name="egx.relab_app.ui.orders.OrderDetailFragment"
+        android:label="Детали заказа"
+        tools:layout="@layout/fragment_order_detail">
+
+        <argument
+            android:name="order"
+            app:argType="egx.relab_app.models.Order" />
+        <action
+            android:id="@+id/action_orderDetailFragment_to_orderFormFragment"
+            app:destination="@id/orderFormFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_orderDetailFragment_to_chatDetailFragment"
+            app:destination="@id/chatDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="egx.relab_app.ui.orders.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+
+        <action
+            android:id="@+id/action_loginFragment_to_orderListFragment"
+            app:destination="@id/nav_home" />
+    </fragment>
+
+
+
+
+    <fragment
+        android:id="@+id/employeeListFragment"
+        android:name="egx.relab_app.ui.employees.EmployeeListFragment"
+        android:label="Сотрудники"
+        tools:layout="@layout/fragment_employee_list" >
+        <action
+            android:id="@+id/action_employeeListFragment_to_profileFragment"
+            app:destination="@id/profileFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/chatListFragment"
+        android:name="egx.relab_app.ui.messaging.ChatListFragment"
+        android:label="Чаты"
+        tools:layout="@layout/fragment_chat_list" >
+        <action
+            android:id="@+id/action_chatListFragment_to_chatDetailFragment"
+            app:destination="@id/chatDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatDetailFragment"
+        android:name="egx.relab_app.ui.messaging.ChatDetailFragment"
+        android:label="Чат"
+        tools:layout="@layout/fragment_chat_detail">
+        <argument
+            android:name="roomId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+        <argument
+            android:name="roomName"
+            app:argType="string"
+            android:defaultValue='"Чат"' />
+        <argument
+            android:name="orderId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+        <action
+            android:id="@+id/action_chatDetailFragment_to_orderDetailFragment"
             app:destination="@id/orderDetailFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
-        android:id="@+id/createOrderFragment"
-        android:name="egx.relab_app.ui.orders.CreateOrderFragment"
-        android:label="Создать заказ"
-        tools:layout="@layout/fragment_create_order" />
+        android:id="@+id/consumableListFragment"
+        android:name="egx.relab_app.ui.orders.ConsumableListFragment"
+        android:label="Склад"
+        tools:layout="@layout/fragment_consumable_list" />
 
     <fragment
-        android:id="@+id/orderDetailFragment"
-        android:name="egx.relab_app.ui.orders.OrderDetailFragment"
-        android:label="Детали заказа"
-        tools:layout="@layout/fragment_order_detail" />
+        android:id="@+id/qrScannerFragment"
+        android:name="egx.relab_app.ui.orders.QrScannerFragment"
+        android:label="Сканер QR"
+        tools:layout="@layout/fragment_qr_scanner" />
 
 </navigation>
+

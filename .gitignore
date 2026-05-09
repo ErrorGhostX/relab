@@ -13,3 +13,29 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Python virtual environments
+**/.venv/
+**/venv/
+
+# JVM crash and replay logs
+**/hs_err_pid*.log
+**/replay_pid*.log
+
+# APK versions and images
+/Версии/
+/imaes/
+
+# Backend media (загружаемые файлы — не хранить в git)
+/backend_relab_app/media/user_avatars/
+/backend_relab_app/media/orders_photos/
+/backend_relab_app/media/chat_photos/
+
+# Firebase и секреты
+**/firebase-credentials.json
+**/google-services.json
+**/*.keystore
+**/*.jks
+
+# Django migrations (опциональные конфликтные)
+# /backend_relab_app/orders/migrations/
