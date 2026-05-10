@@ -9,6 +9,7 @@ from .analytics_views import AnalyticsViewSet, StaffAnalyticsViewSet
 from .employee_views import EmployeeViewSet
 from .chat_views import ChatRoomViewSet
 from .fcm_views import FCMDeviceViewSet
+from .report_views import ReportViewSet
 
 router = DefaultRouter()
 # теперь все CRUD-эндпоинты и дополнительный create-with-photo под /api/orders/
@@ -22,5 +23,6 @@ router.register('admin-analytics', StaffAnalyticsViewSet, basename='admin-analyt
 router.register('devices', FCMDeviceViewSet, basename='device')
 router.register('consumables', ConsumableViewSet, basename='consumable')
 router.register('order-consumables', OrderConsumableViewSet, basename='order-consumable')
+router.register('reports', ReportViewSet, basename='report')
 
 urlpatterns = router.urls

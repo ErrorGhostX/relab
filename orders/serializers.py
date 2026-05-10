@@ -3,7 +3,7 @@ User = get_user_model()
 from rest_framework import serializers
 from .models import (
     Order, Service, UserProfile, OrderPhoto, OrderCollaborator, Customer,
-    ChatRoom, ChatParticipant, RoomMessage, Consumable, OrderConsumable
+    ChatRoom, ChatParticipant, RoomMessage, Consumable, OrderConsumable, BugReport
 )
 
 
@@ -639,3 +639,16 @@ class UpdateEmployeeSerializer(serializers.Serializer):
     phone = serializers.CharField(required=False, allow_blank=True)
     specialization = serializers.CharField(required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
+
+
+class BugReportSerializer(serializers.ModelSerializer):
+    """Сериализатор для отчетов об ошибках"""
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = BugReport
+        fields = [
+            'id', 'type', 'message', 'logs', 'device_info', 
+            'app_version', 'created_at', 'user', 'user_username'
+        ]
+        read_only_fields = ['id', 'created_at', 'user']

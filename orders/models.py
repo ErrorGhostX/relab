@@ -559,3 +559,33 @@ class FCMDevice(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.token[:20]}..."
+
+class BugReport(models.Model):
+    REPORT_TYPES = (
+        ('crash', 'Краш приложения'),
+        ('feedback', 'Обратная связь'),
+    )
+    
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='bug_reports',
+        verbose_name='Пользователь'
+    )
+    type = models.CharField(max_length=20, choices=REPORT_TYPES, default='feedback', verbose_name='Тип отчета')
+    message = models.TextField(verbose_name='Сообщение')
+    logs = models.TextField(null=True, blank=True, verbose_name='Логи / Стек-трейс')
+    device_info = models.TextField(null=True, blank=True, verbose_name='Информация об устройстве')
+    app_version = models.CharField(max_length=50, null=True, blank=True, verbose_name='Версия приложения')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Отчет об ошибке'
+        verbose_name_plural = 'Отчеты об ошибках'
+
+    def __str__(self):
+        user_str = self.user.username if self.user else "Аноним"
+        return f"{self.get_type_display()} от {user_str} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"

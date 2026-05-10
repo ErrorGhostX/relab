@@ -209,6 +209,72 @@ class AnalyticsViewSet(viewsets.ViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def detailed_stats(self, request):
+        """Возвращает расширенную аналитику: топ клиентов, популярные услуги, динамика"""
+        user = self._get_target_user(request)
+        today = now().date()
+        first_day = today.replace(day=1)
+        
+        # 1. Топ клиентов (кто принес больше всего денег в этом месяце)
+        orders_done = Order.objects.filter(status='done', date__gte=first_day, date__lte=today)
+        if user:
+            orders_done = orders_done.filter(created_by=user)
+            
+        top_customers = orders_done.filter(customer_ref__isnull=False).values(
+            'customer_ref__full_name', 'customer_ref_id'
+        ).annotate(
+            order_count=Count('id', distinct=True),
+            revenue=Sum('services__price')
+        ).order_by('-revenue')[:5]
+        
+        # 2. Популярные услуги
+        services_done = Service.objects.filter(
+            order__status='done', 
+            order__date__gte=first_day, 
+            order__date__lte=today,
+            service_status='done'
+        )
+        if user:
+            services_done = services_done.filter(order__created_by=user)
+            
+        popular_services = services_done.values('description').annotate(
+            count=Count('id'),
+            total_revenue=Sum('price')
+        ).order_by('-count')[:5]
+        
+        # 3. Динамика выручки (сравнение с прошлым месяцем)
+        last_month_end = first_day - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+        
+        last_month_services = Service.objects.filter(
+            order__status='done',
+            order__date__gte=last_month_start,
+            order__date__lte=last_month_end,
+            service_status='done'
+        )
+        if user:
+            last_month_services = last_month_services.filter(order__created_by=user)
+            
+        last_month_total = last_month_services.aggregate(total=Sum('price'))['total'] or 0
+        current_month_total = services_done.aggregate(total=Sum('price'))['total'] or 0
+        
+        growth = 0.0
+        if last_month_total > 0:
+            growth = ((float(current_month_total) - float(last_month_total)) / float(last_month_total)) * 100
+        elif current_month_total > 0:
+            growth = 100.0 # Если в прошлом месяце было 0, а в этом что-то есть
+            
+        return Response({
+            "top_customers": list(top_customers),
+            "popular_services": list(popular_services),
+            "revenue_comparison": {
+                "current_month": float(current_month_total),
+                "last_month": float(last_month_total),
+                "growth_percentage": round(growth, 1)
+            }
+        })
+
+    @action(detail=False, methods=['get'])
     def order_statistics(self, request):
         """Возвращает общую статистику по заказам за последние 30 дней"""
         user = self._get_target_user(request)

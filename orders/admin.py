@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Order, Service, UserProfile, OrderCollaborator, Customer,
-    ChatRoom, ChatParticipant, RoomMessage
+    ChatRoom, ChatParticipant, RoomMessage, BugReport
 )
 
 class ServiceInline(admin.TabularInline):
@@ -69,3 +69,15 @@ admin.site.register(OrderCollaborator)
 admin.site.register(ChatRoom, ChatRoomAdmin)
 admin.site.register(ChatParticipant)
 admin.site.register(RoomMessage, RoomMessageAdmin)
+
+class BugReportAdmin(admin.ModelAdmin):
+    list_display = ('id', 'type', 'user', 'message_short', 'app_version', 'created_at')
+    list_filter = ('type', 'app_version', 'created_at')
+    search_fields = ('message', 'logs', 'device_info', 'user__username')
+    readonly_fields = ('created_at',)
+
+    def message_short(self, obj):
+        return obj.message[:50] + "..." if len(obj.message) > 50 else obj.message
+    message_short.short_description = 'Сообщение'
+
+admin.site.register(BugReport, BugReportAdmin)
