@@ -22,6 +22,8 @@ import egx.relab_app.network.RetrofitClient
 import kotlinx.coroutines.launch
 import egx.relab_app.R
 import egx.relab_app.models.CompanyConfig
+import egx.relab_app.utils.CrashHandler
+import egx.relab_app.RelabApplication
 
 class SettingsFragment : Fragment() {
 
@@ -112,6 +114,11 @@ class SettingsFragment : Fragment() {
                 }
                 .setNegativeButton("Отмена", null)
                 .show()
+        }
+
+        // Сообщить о проблеме
+        binding.buttonReportProblem.setOnClickListener {
+            showReportProblemDialog()
         }
 
         // Настройки экрана (Cutout)
@@ -274,23 +281,16 @@ class SettingsFragment : Fragment() {
     private fun setupAiSettings() {
         val providers = listOf("ollama", "lmstudio")
         val adapter = ArrayAdapter(requireContext(), egx.relab_app.R.layout.item_spinner_black, providers)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerAiProvider.adapter = adapter
+        binding.autoCompleteAiProvider.setAdapter(adapter)
 
         val prefs = requireContext().getSharedPreferences("relab_prefs", Context.MODE_PRIVATE)
         val currentProvider = prefs.getString("ai_provider", "ollama")
-        val selection = providers.indexOf(currentProvider)
-        if (selection >= 0) {
-            binding.spinnerAiProvider.setSelection(selection)
-        }
+        binding.autoCompleteAiProvider.setText(currentProvider, false)
 
-        binding.spinnerAiProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selected = providers[position]
-                prefs.edit().putString("ai_provider", selected).apply()
-                checkAiStatus()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        binding.autoCompleteAiProvider.setOnItemClickListener { _, _, position, _ ->
+            val selected = providers[position]
+            prefs.edit().putString("ai_provider", selected).apply()
+            checkAiStatus()
         }
 
         checkAiStatus()
@@ -387,6 +387,48 @@ class SettingsFragment : Fragment() {
         } else {
             false
         }
+    }
+
+    private fun showReportProblemDialog() {
+        val editText = com.google.android.material.textfield.TextInputEditText(requireContext()).apply {
+            hint = "Опишите проблему..."
+            minLines = 3
+            gravity = android.view.Gravity.TOP
+            setTextColor(android.graphics.Color.BLACK)
+            setHintTextColor(android.graphics.Color.GRAY)
+        }
+        
+        val container = android.widget.FrameLayout(requireContext()).apply {
+            val margin = (20 * resources.displayMetrics.density).toInt()
+            setPadding(margin, margin/2, margin, margin/2)
+            addView(editText)
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Сообщить о проблеме")
+            .setMessage("Ваш отчет поможет нам сделать приложение лучше. К сообщению будет приложена техническая информация об устройстве.")
+            .setView(container)
+            .setPositiveButton("Отправить") { _, _ ->
+                val message = editText.text.toString().trim()
+                if (message.isNotEmpty()) {
+                    val app = requireContext().applicationContext as RelabApplication
+                    CrashHandler.sendFeedback(
+                        requireContext(),
+                        message,
+                        app.applicationScope
+                    ) { success ->
+                        if (success) {
+                            Toast.makeText(requireContext(), "Отчет отправлен. Спасибо!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(requireContext(), "Ошибка отправки отчета", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Пожалуйста, введите описание", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     override fun onDestroyView() {

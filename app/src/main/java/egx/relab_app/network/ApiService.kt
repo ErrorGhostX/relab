@@ -166,6 +166,47 @@ interface ApiService {
         val pending: Int
     )
 
+    @GET("analytics/detailed_stats/")
+    fun getDetailedStats(
+        @Query("user_id") userId: Int? = null, 
+        @Query("company_wide") companyWide: Boolean? = null
+    ): Call<DetailedStatsResponse>
+
+    data class TopCustomer(
+        @com.google.gson.annotations.SerializedName("customer_ref__full_name")
+        val fullName: String?,
+        @com.google.gson.annotations.SerializedName("customer_ref_id")
+        val customerId: Int?,
+        @com.google.gson.annotations.SerializedName("order_count")
+        val orderCount: Int,
+        val revenue: Double
+    )
+
+    data class PopularService(
+        val description: String,
+        val count: Int,
+        @com.google.gson.annotations.SerializedName("total_revenue")
+        val totalRevenue: Double
+    )
+
+    data class RevenueComparison(
+        @com.google.gson.annotations.SerializedName("current_month")
+        val currentMonth: Double,
+        @com.google.gson.annotations.SerializedName("last_month")
+        val lastMonth: Double,
+        @com.google.gson.annotations.SerializedName("growth_percentage")
+        val growthPercentage: Double
+    )
+
+    data class DetailedStatsResponse(
+        @com.google.gson.annotations.SerializedName("top_customers")
+        val topCustomers: List<TopCustomer>,
+        @com.google.gson.annotations.SerializedName("popular_services")
+        val popularServices: List<PopularService>,
+        @com.google.gson.annotations.SerializedName("revenue_comparison")
+        val revenueComparison: RevenueComparison
+    )
+
 
     @DELETE("orders/{orderId}/services/{serviceId}/")
     fun deleteService(
@@ -586,4 +627,18 @@ interface ApiService {
 
     @DELETE("consumables/{id}/")
     suspend fun deleteConsumable(@Path("id") id: Int): retrofit2.Response<Unit>
+
+    // =============================================
+    // Отчеты об ошибках и обратная связь
+    // =============================================
+    data class BugReportRequest(
+        val type: String, // "crash" or "feedback"
+        val message: String,
+        val logs: String? = null,
+        val device_info: String? = null,
+        val app_version: String? = null
+    )
+
+    @POST("reports/submit/")
+    suspend fun sendReport(@Body report: BugReportRequest): Map<String, String>
 }

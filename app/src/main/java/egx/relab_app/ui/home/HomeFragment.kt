@@ -69,11 +69,13 @@ class HomeFragment : Fragment() {
 
         val messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
         messagingViewModel.totalUnreadCount.observe(viewLifecycleOwner) { count ->
-            if (count > 0) {
-                binding.tvChatsBadge.text = if (count > 99) "99+" else count.toString()
-                binding.tvChatsBadge.visibility = View.VISIBLE
-            } else {
-                binding.tvChatsBadge.visibility = View.GONE
+            _binding?.let { b ->
+                if (count > 0) {
+                    b.tvChatsBadge.text = if (count > 99) "99+" else count.toString()
+                    b.tvChatsBadge.visibility = View.VISIBLE
+                } else {
+                    b.tvChatsBadge.visibility = View.GONE
+                }
             }
         }
         // Загружаем список чатов, чтобы получить актуальные бейджи
@@ -99,8 +101,8 @@ class HomeFragment : Fragment() {
     private fun openOrderDetailsById(orderId: Int) {
         lifecycleScope.launch {
             try {
-                // Сначала ищем локально в репозитории
-                val app = requireContext().applicationContext as egx.relab_app.RelabApplication
+                val context = context ?: return@launch
+                val app = context.applicationContext as egx.relab_app.RelabApplication
                 val repository = app.orderRepository
                 
                 var order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -109,7 +111,9 @@ class HomeFragment : Fragment() {
                 
                 if (order == null) {
                     // Если нет локально, пробуем загрузить с сервера
-                    Toast.makeText(requireContext(), "Загрузка данных заказа #$orderId...", Toast.LENGTH_SHORT).show()
+                    _binding?.let {
+                        Toast.makeText(requireContext(), "Загрузка данных заказа #$orderId...", Toast.LENGTH_SHORT).show()
+                    }
                     order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try {
                             RetrofitClient.apiService.getOrderById(orderId.toString())
@@ -119,15 +123,17 @@ class HomeFragment : Fragment() {
                     }
                 }
                 
-                if (order != null) {
+                if (order != null && isAdded) {
                     // Переходим к деталям заказа, передавая полный объект Order
                     val bundle = Bundle().apply { putParcelable("order", order) }
-                    findNavController().navigate(R.id.orderDetailFragment, bundle)
-                } else {
+                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle)
+                } else if (isAdded) {
                     Toast.makeText(requireContext(), "Заказ #$orderId не найден", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                if (isAdded) {
+                    Toast.makeText(context ?: return@launch, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -237,6 +243,7 @@ class HomeFragment : Fragment() {
     }
     
     private fun updateUserData() {
+        val binding = _binding ?: return
         val tokenManager = TokenManager(requireContext())
         
         // Показываем ФИО из TokenManager сразу, если есть, иначе username
@@ -255,6 +262,7 @@ class HomeFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val user = RetrofitClient.apiService.getCurrentUser()
+                val binding = _binding ?: return@launch
                 
                 // ВАЖНО: Обновляем TokenManager только если сервер вернул непустые значения
                 tokenManager.username = user.username
@@ -285,6 +293,7 @@ class HomeFragment : Fragment() {
     }
     
     private fun loadProfileAvatar(tokenManager: TokenManager) {
+        val binding = _binding ?: return
         val avatarUrl = tokenManager.avatarUrl
         if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
             Glide.with(this)

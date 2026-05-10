@@ -153,7 +153,13 @@ object RetrofitClient {
         val companies = tokenManager.getCompanies()
         val currentId = tokenManager.currentCompanyId
         val selectedCompany = companies.find { it.id == currentId }
-        val baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
+        var baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
+        /* 
+        // Автоматический переход на HTTPS для всех доменов, кроме локальных
+        if (baseUrl.startsWith("http://") && !baseUrl.contains("10.0.2.2") && !baseUrl.contains("localhost")) {
+            baseUrl = baseUrl.replace("http://", "https://")
+        }
+        */
         return if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
     }
 
@@ -168,6 +174,24 @@ object RetrofitClient {
             .replace("https://", "wss://")
             .replace("/api/", "")
             .removeSuffix("/")
+    }
+
+    /**
+     * Возвращает корень сервера (без /api/)
+     */
+    fun getBaseUrlRoot(): String {
+        return getBaseUrl().replace("/api/", "").removeSuffix("/")
+    }
+
+    /**
+     * Превращает относительный путь (напр. /media/...) в полный URL
+     */
+    fun ensureFullUrl(path: String?): String? {
+        if (path.isNullOrEmpty() || path == "null") return null
+        if (path.startsWith("http://") || path.startsWith("https://")) return path
+        
+        val root = getBaseUrlRoot()
+        return if (path.startsWith("/")) "$root$path" else "$root/$path"
     }
 
     private fun getRetrofit(): Retrofit {

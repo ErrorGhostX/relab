@@ -8,6 +8,7 @@ import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.databinding.ItemOrderBinding
 import egx.relab_app.models.Order
+import egx.relab_app.network.RetrofitClient
 import org.json.JSONArray
 
 
@@ -31,6 +32,7 @@ class OrderAdapter(
 
     var orders: List<Order> = emptyList()
     var isGridView: Boolean = true
+    var fallbackAvatar: String? = null // Аватар для подстраховки (например, из профиля)
 
     fun updateList(newList: List<Order>) {
         orders = newList
@@ -116,9 +118,15 @@ class OrderAdapter(
                 deviceNameText.text = order.orderName ?: order.deviceName ?: "Заказ"
             }
 
-            if (!order.createdByAvatar.isNullOrEmpty() && order.createdByAvatar != "null") {
+            // Иконка создателя
+            var avatarUrl = RetrofitClient.ensureFullUrl(order.createdByAvatar)
+            if (avatarUrl.isNullOrEmpty()) {
+                avatarUrl = RetrofitClient.ensureFullUrl(fallbackAvatar)
+            }
+            
+            if (!avatarUrl.isNullOrEmpty()) {
                 Glide.with(itemView.context)
-                    .load(order.createdByAvatar)
+                    .load(avatarUrl)
                     .placeholder(R.mipmap.ic_launcher_round)
                     .error(R.mipmap.ic_launcher_round)
                     .circleCrop()
@@ -162,19 +170,22 @@ class OrderAdapter(
                 order.isPublic && (order.assignedToUsername.isNullOrEmpty() || order.assignedToUsername == "null")
             ) View.VISIBLE else View.GONE
             
-            val firstPhotoPath = getFirstPhotoPath(order.photo)
-            if (!firstPhotoPath.isNullOrEmpty()) {
-                val imageSource = if (firstPhotoPath.startsWith("http://") || firstPhotoPath.startsWith("https://")) {
-                    firstPhotoPath
-                } else {
-                    java.io.File(firstPhotoPath)
-                }
-                
+            // Картинка заказа: Сначала проверяем legacy поле photo, затем современный список photos
+            var firstPhotoPath = getFirstPhotoPath(order.photo)
+            if (firstPhotoPath.isNullOrEmpty() && order.photos.isNotEmpty()) {
+                // Берем самую первую из списка photos (обычно это cover)
+                firstPhotoPath = order.photos.firstOrNull { !it.photoUrl.isNullOrEmpty() }?.photoUrl
+            }
+            
+            val fullPhotoUrl = RetrofitClient.ensureFullUrl(firstPhotoPath)
+            
+            if (!fullPhotoUrl.isNullOrEmpty()) {
                 Glide.with(itemView.context)
-                    .load(imageSource)
+                    .load(fullPhotoUrl)
                     .placeholder(R.drawable.ic_menu_camera)
                     .error(android.R.drawable.dark_header)
                     .fallback(R.drawable.ic_menu_camera)
+                    .centerCrop() // Добавляем обрезку для единообразия
                     .into(orderImage)
             } else {
                 orderImage.setImageResource(R.drawable.ic_menu_camera)

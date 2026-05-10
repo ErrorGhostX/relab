@@ -959,6 +959,10 @@ class SyncManager(
                 }
             }
         } catch (e: Exception) {
+            if (e is retrofit2.HttpException && e.code() == 401) {
+                Log.w(TAG, "PullConsumables: Сессия истекла (401)")
+                throw e
+            }
             Log.e(TAG, "Ошибка в pullConsumables", e)
         }
     }

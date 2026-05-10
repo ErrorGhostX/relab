@@ -10,6 +10,7 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -246,79 +247,135 @@ class ToolsFragment : Fragment() {
     private fun runSpeedTest() {
         speedTestJob?.cancel()
         binding.buttonSpeedTest.isEnabled = false
-        binding.buttonSpeedTest.text = "⏳ Тестирование..."
-        binding.progressSpeedTest.visibility = View.VISIBLE
-        binding.tvSpeedTestResult.visibility = View.VISIBLE
-        binding.tvSpeedTestResult.text = "Загрузка тестового файла..."
+        binding.buttonSpeedTest.text = "⌛ Тестирование..."
+        binding.speedTestResultCard.visibility = View.VISIBLE
+        binding.tvSpeedTestTitle.text = "ПОДГОТОВКА..."
+        binding.tvSpeedValue.text = "0.0"
+        binding.progressSpeedTest.progress = 0
 
         speedTestJob = lifecycleScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    // Скачиваем файл 10MB для теста
-                    val testUrls = listOf(
-                        "http://speedtest.tele2.net/10MB.zip",
-                        "http://proof.ovh.net/files/10Mb.dat",
-                        "https://speed.cloudflare.com/__down?bytes=10000000"
-                    )
-                    
-                    var downloadSpeed = 0.0
-                    var success = false
-                    
-                    for (testUrl in testUrls) {
-                        try {
+                // 1. Получаем внешний IP
+                val externalIp = withContext(Dispatchers.IO) {
+                    try {
+                        val url = URL("https://api.ipify.org")
+                        val conn = url.openConnection() as HttpURLConnection
+                        conn.connectTimeout = 3000
+                        conn.inputStream.bufferedReader().use { it.readText() }
+                    } catch (e: Exception) { "—" }
+                }
+                
+                if (isAdded && _binding != null) {
+                    binding.tvExternalIp.text = externalIp
+                    binding.tvNetworkProvider.text = getNetworkOperatorName()
+                    binding.tvSpeedTestTitle.text = "ЗАГРУЗКА ДАННЫХ..."
+                }
+
+                // 2. Тест скорости (Download) - Используем 100MB для более долгого и точного теста
+                val testUrls = listOf(
+                    "http://speedtest.selectel.ru/100MB",
+                    "http://speed.isply.ru/100mb.bin",
+                    "http://speedtest.mgts.ru/100MB"
+                )
+                
+                var success = false
+                var errorMsg = "Не удалось подключиться к российским серверам"
+
+                for (testUrl in testUrls) {
+                    try {
+                        withContext(Dispatchers.IO) {
                             val url = URL(testUrl)
                             val conn = url.openConnection() as HttpURLConnection
-                            conn.connectTimeout = 5000
-                            conn.readTimeout = 30000
-                            conn.requestMethod = "GET"
-
+                            conn.connectTimeout = 8000
+                            conn.readTimeout = 35000
+                            
                             val startTime = System.currentTimeMillis()
                             val inputStream = conn.inputStream
-                            val buffer = ByteArray(8192)
+                            
+                            // Пытаемся получить размер из заголовка, если нет - используем 10MB
+                            val headerLength = conn.contentLength.toLong()
+                            val contentLength = if (headerLength > 0) headerLength else 10_000_000L
+                            
+                            val buffer = ByteArray(16384)
                             var totalBytes = 0L
-
+                            var lastUpdateTime = startTime
+                            
                             while (true) {
                                 val bytesRead = inputStream.read(buffer)
                                 if (bytesRead == -1) break
                                 totalBytes += bytesRead
+                                
+                                val currentTime = System.currentTimeMillis()
+                                if (currentTime - lastUpdateTime > 200) {
+                                    val duration = (currentTime - startTime) / 1000.0
+                                    if (duration > 0) {
+                                        val currentSpeed = (totalBytes * 8.0) / (duration * 1_000_000.0)
+                                        // Ограничиваем прогресс 100%
+                                        val progress = if (contentLength > 0) ((totalBytes * 100) / contentLength).toInt().coerceIn(0, 100) else 0
+                                        
+                                        withContext(Dispatchers.Main) {
+                                            if (isAdded && _binding != null) {
+                                                binding.tvSpeedValue.text = String.format("%.1f", currentSpeed)
+                                                binding.progressSpeedTest.progress = progress
+                                            }
+                                        }
+                                    }
+                                    lastUpdateTime = currentTime
+                                }
+                                
+                                if (System.currentTimeMillis() - startTime > 40000) break
                             }
-
-                            val endTime = System.currentTimeMillis()
-                            val durationSec = (endTime - startTime) / 1000.0
+                            
+                            val finalTime = System.currentTimeMillis()
+                            val finalDuration = (finalTime - startTime) / 1000.0
+                            val finalSpeed = (totalBytes * 8.0) / (finalDuration * 1_000_000.0)
+                            
                             inputStream.close()
                             conn.disconnect()
 
-                            if (durationSec > 0 && totalBytes > 0) {
-                                downloadSpeed = (totalBytes * 8.0) / (durationSec * 1_000_000.0) // Mbps
-                                success = true
-                                break
+                            withContext(Dispatchers.Main) {
+                                if (isAdded && _binding != null) {
+                                    binding.tvSpeedValue.text = String.format("%.1f", finalSpeed)
+                                    binding.progressSpeedTest.progress = 100
+                                    binding.tvSpeedTestTitle.text = "ТЕСТ ЗАВЕРШЕН"
+                                    binding.buttonSpeedTest.isEnabled = true
+                                    binding.buttonSpeedTest.text = "Повторить тест"
+                                }
                             }
-                        } catch (e: Exception) {
-                            continue
+                            success = true
                         }
-                    }
-                    
-                    if (success) {
-                        String.format("⬇ Download: %.1f Mbps", downloadSpeed)
-                    } else {
-                        "❌ Нет подключения к тестовым серверам"
+                        if (success) break
+                    } catch (e: Exception) {
+                        Log.e("ToolsFragment", "Speed test failed for $testUrl: ${e.message}")
+                        errorMsg = "Ошибка подключения к ${URL(testUrl).host}"
+                        continue
                     }
                 }
 
-                if (isAdded && _binding != null) {
-                    binding.tvSpeedTestResult.text = result
-                    binding.progressSpeedTest.visibility = View.GONE
-                    binding.buttonSpeedTest.isEnabled = true
-                    binding.buttonSpeedTest.text = "🚀 Speed Test"
+                if (!success) {
+                    throw Exception(errorMsg)
                 }
             } catch (e: Exception) {
-                if (isAdded && _binding != null) {
-                    binding.tvSpeedTestResult.text = "❌ Ошибка: ${e.message}"
-                    binding.progressSpeedTest.visibility = View.GONE
-                    binding.buttonSpeedTest.isEnabled = true
-                    binding.buttonSpeedTest.text = "🚀 Speed Test"
+                withContext(Dispatchers.Main) {
+                    if (isAdded && _binding != null) {
+                        binding.tvSpeedTestTitle.text = "ОШИБКА ТЕСТА"
+                        binding.tvSpeedValue.text = "0.0"
+                        Toast.makeText(context, "Ошибка: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                        binding.buttonSpeedTest.isEnabled = true
+                        binding.buttonSpeedTest.text = "Попробовать снова"
+                    }
                 }
             }
+        }
+    }
+
+    private fun getNetworkOperatorName(): String {
+        return try {
+            val tm = requireContext().getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+            val name = tm.networkOperatorName
+            if (name.isNullOrBlank()) "WiFi / Ethernet" else name
+        } catch (e: Exception) {
+            "WiFi / Ethernet"
         }
     }
 

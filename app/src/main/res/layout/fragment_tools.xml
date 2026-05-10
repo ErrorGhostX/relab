@@ -30,10 +30,17 @@
                 android:scaleType="centerInside"
                 app:tint="@color/gray_900" />
 
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="16dp"
+                android:src="@drawable/tools_svgrepo_com"
+                app:tint="@color/gray_900" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="12dp"
                 android:text="Инструменты"
                 android:textColor="@color/gray_900"
                 android:textSize="24sp"
@@ -137,36 +144,142 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSpeedTest"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Speed Test"
+                    android:layout_height="56dp"
+                    android:text="Измерить скорость"
                     style="@style/Widget.MaterialComponents.Button"
                     app:backgroundTint="@color/gray_900"
                     android:textColor="@color/white"
                     app:cornerRadius="28dp"
-                    app:icon="@android:drawable/ic_menu_rotate"
+                    app:icon="@drawable/analytics_svgrepo_com"
                     app:iconGravity="textStart"
                     app:iconTint="@color/white"
-                    android:layout_marginBottom="8dp" />
-
-                <ProgressBar
-                    android:id="@+id/progressSpeedTest"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:indeterminate="true"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:id="@+id/tvSpeedTestResult"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#10B981"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
                     android:layout_marginBottom="16dp" />
+
+                <!-- Yandex-style Result Container -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/speedTestResultCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#F8FAFC"
+                    app:strokeColor="#E2E8F0"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/tvSpeedTestTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ТЕСТИРОВАНИЕ..."
+                            android:textColor="#64748B"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginBottom="12dp" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginBottom="4dp"
+                            android:gravity="bottom">
+
+                            <TextView
+                                android:id="@+id/tvSpeedValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.0"
+                                android:textColor="@color/gray_900"
+                                android:textSize="48sp"
+                                android:fontFamily="sans-serif-condensed-light"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Мбит/с"
+                                android:textColor="#94A3B8"
+                                android:textSize="14sp"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginBottom="10dp" />
+                        </LinearLayout>
+
+                        <ProgressBar
+                            android:id="@+id/progressSpeedTest"
+                            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginBottom="20dp"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/custom_progress_bar" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#E2E8F0"
+                            android:layout_marginBottom="16dp" />
+
+                        <GridLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:columnCount="2"
+                            android:alignmentMode="alignMargins">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Ваш IP"
+                                    android:textColor="#94A3B8"
+                                    android:textSize="12sp" />
+                                <TextView
+                                    android:id="@+id/tvExternalIp"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="—"
+                                    android:textColor="@color/gray_800"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:orientation="vertical"
+                                android:gravity="end">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Провайдер"
+                                    android:textColor="#94A3B8"
+                                    android:textSize="12sp" />
+                                <TextView
+                                    android:id="@+id/tvNetworkProvider"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="—"
+                                    android:textColor="@color/gray_800"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </GridLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <!-- Ping -->
                 <LinearLayout
@@ -207,7 +320,7 @@
                         app:backgroundTint="@color/gray_900"
                         android:textColor="@color/white"
                         app:cornerRadius="28dp"
-                        app:icon="@android:drawable/ic_menu_send"
+                        app:icon="@drawable/ic_send"
                         app:iconGravity="textStart"
                         app:iconTint="@color/white" />
                 </LinearLayout>

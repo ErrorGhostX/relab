@@ -3,6 +3,10 @@ package egx.relab_app
 import android.app.Application
 import egx.relab_app.database.AppDatabase
 import egx.relab_app.repository.OrderRepository
+import egx.relab_app.utils.CrashHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Application класс приложения
@@ -28,10 +32,20 @@ class RelabApplication : Application() {
     val customerDao get() = database.customerDao()
     val consumableDao get() = database.consumableDao()
     
+    // Scope для фоновых задач приложения (например, отправка отчетов)
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
     override fun onCreate() {
         super.onCreate()
+        
+        // Инициализируем перехватчик крашей
+        CrashHandler.init(this)
+        
         // Инициализируем сетевой клиент (передаем контекст для TokenManager)
         egx.relab_app.network.RetrofitClient.init(this)
+        
+        // Проверяем наличие отложенных отчетов о крашах и отправляем
+        CrashHandler.checkAndSendPendingReports(this, applicationScope)
     }
 
 }

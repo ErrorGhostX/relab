@@ -14,11 +14,11 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="Apps.Relab.app">
-        <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2026-05-09T07:30:34.295200700Z">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-10T02:17:47.580186Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=282f1e72" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=ydqkmv95eiyxwwey" />
             </handle>
           </Target>
         </DropdownSelection>

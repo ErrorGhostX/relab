@@ -35,6 +35,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import egx.relab_app.storage.TokenManager
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 class AnalyticsFragment : Fragment() {
 
@@ -136,6 +142,50 @@ class AnalyticsFragment : Fragment() {
                 e.printStackTrace()
             }
         }
+        
+        analyticsCache.getDetailedStats()?.let { jsonString ->
+            try {
+                val json = JSONObject(jsonString)
+                val response = parseDetailedStatsJson(json)
+                updateDetailedStatsUI(response)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun parseDetailedStatsJson(json: JSONObject): ApiService.DetailedStatsResponse {
+        val customersJson = json.getJSONArray("top_customers")
+        val customers = mutableListOf<ApiService.TopCustomer>()
+        for (i in 0 until customersJson.length()) {
+            val obj = customersJson.getJSONObject(i)
+            customers.add(ApiService.TopCustomer(
+                fullName = obj.optString("customer_ref__full_name"),
+                customerId = obj.optInt("customer_ref_id"),
+                orderCount = obj.optInt("order_count"),
+                revenue = obj.optDouble("revenue")
+            ))
+        }
+
+        val servicesJson = json.getJSONArray("popular_services")
+        val services = mutableListOf<ApiService.PopularService>()
+        for (i in 0 until servicesJson.length()) {
+            val obj = servicesJson.getJSONObject(i)
+            services.add(ApiService.PopularService(
+                description = obj.optString("description"),
+                count = obj.optInt("count"),
+                totalRevenue = obj.optDouble("total_revenue")
+            ))
+        }
+
+        val comparisonJson = json.getJSONObject("revenue_comparison")
+        val comparison = ApiService.RevenueComparison(
+            currentMonth = comparisonJson.optDouble("current_month"),
+            lastMonth = comparisonJson.optDouble("last_month"),
+            growthPercentage = comparisonJson.optDouble("growth_percentage")
+        )
+
+        return ApiService.DetailedStatsResponse(customers, services, comparison)
     }
     
     private fun setupChart() {
@@ -301,10 +351,176 @@ class AnalyticsFragment : Fragment() {
         pieChart.invalidate()
     }
 
+    private fun loadDetailedStats() {
+        val uid = if (isCompanyWide) null else targetUserId
+        val cw = if (isCompanyWide) true else null
+
+        RetrofitClient.apiService.getDetailedStats(uid, cw).enqueue(object : Callback<ApiService.DetailedStatsResponse> {
+            override fun onResponse(call: Call<ApiService.DetailedStatsResponse>, response: Response<ApiService.DetailedStatsResponse>) {
+                if (!isAdded || _binding == null) return
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    if (data != null) {
+                        updateDetailedStatsUI(data)
+                        if (uid == null && !isCompanyWide) {
+                            saveDetailedStatsToCache(data)
+                        }
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<ApiService.DetailedStatsResponse>, t: Throwable) {}
+        })
+    }
+
+    private fun updateDetailedStatsUI(data: ApiService.DetailedStatsResponse) {
+        // 1. Динамика выручки
+        val growth = data.revenueComparison.growthPercentage
+        val growthText = if (growth >= 0) "+${"%.1f".format(growth)}%" else "${"%.1f".format(growth)}%"
+        binding.tvRevenueGrowth.text = growthText
+        binding.tvRevenueGrowth.setTextColor(
+            if (growth >= 0) ContextCompat.getColor(requireContext(), R.color.status_completed)
+            else ContextCompat.getColor(requireContext(), R.color.status_cancelled)
+        )
+
+        // 2. Топ клиентов
+        binding.containerTopCustomers.removeAllViews()
+        if (data.topCustomers.isEmpty()) {
+            val emptyTv = TextView(requireContext()).apply {
+                text = "Нет данных"
+                setPadding(16, 16, 16, 16)
+                setTextColor(Color.GRAY)
+            }
+            binding.containerTopCustomers.addView(emptyTv)
+        } else {
+            data.topCustomers.forEach { customer ->
+                val view = createDetailedItemView(customer.fullName ?: "Без имени", formatPrice(customer.revenue), "${customer.orderCount} зак.")
+                binding.containerTopCustomers.addView(view)
+            }
+        }
+
+        // 3. Популярные услуги
+        binding.containerPopularServices.removeAllViews()
+        if (data.popularServices.isEmpty()) {
+            val emptyTv = TextView(requireContext()).apply {
+                text = "Нет данных"
+                setPadding(16, 16, 16, 16)
+                setTextColor(Color.GRAY)
+            }
+            binding.containerPopularServices.addView(emptyTv)
+        } else {
+            data.popularServices.forEach { service ->
+                val view = createDetailedItemView(service.description, "${service.count} раз", formatPrice(service.totalRevenue))
+                binding.containerPopularServices.addView(view)
+            }
+        }
+    }
+
+    private fun createDetailedItemView(title: String, mainValue: String, subValue: String): View {
+        val layout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            setPadding(16, 12, 16, 12)
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+
+        val titleTv = TextView(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            text = title
+            setTextColor(Color.BLACK)
+            textSize = 14f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+
+        val valueLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.END
+        }
+
+        val mainValTv = TextView(requireContext()).apply {
+            text = mainValue
+            setTextColor(Color.BLACK)
+            textSize = 14f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+
+        val subValTv = TextView(requireContext()).apply {
+            text = subValue
+            setTextColor(Color.GRAY)
+            textSize = 11f
+        }
+
+        valueLayout.addView(mainValTv)
+        valueLayout.addView(subValTv)
+        
+        layout.addView(titleTv)
+        layout.addView(valueLayout)
+
+        // Добавляем разделитель снизу
+        val divider = View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+            setBackgroundColor(Color.LTGRAY)
+        }
+        
+        val container = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(layout)
+            addView(divider)
+        }
+
+        return container
+    }
+
+    private fun saveDetailedStatsToCache(data: ApiService.DetailedStatsResponse) {
+        try {
+            val json = JSONObject()
+            
+            val customersArray = org.json.JSONArray()
+            data.topCustomers.forEach {
+                val obj = JSONObject()
+                obj.put("customer_ref__full_name", it.fullName)
+                obj.put("customer_ref_id", it.customerId)
+                obj.put("order_count", it.orderCount)
+                obj.put("revenue", it.revenue)
+                customersArray.put(obj)
+            }
+            json.put("top_customers", customersArray)
+
+            val servicesArray = org.json.JSONArray()
+            data.popularServices.forEach {
+                val obj = JSONObject()
+                obj.put("description", it.description)
+                obj.put("count", it.count)
+                obj.put("total_revenue", it.totalRevenue)
+                servicesArray.put(obj)
+            }
+            json.put("popular_services", servicesArray)
+
+            val comparison = JSONObject()
+            comparison.put("current_month", data.revenueComparison.currentMonth)
+            comparison.put("last_month", data.revenueComparison.lastMonth)
+            comparison.put("growth_percentage", data.revenueComparison.growthPercentage)
+            json.put("revenue_comparison", comparison)
+
+            analyticsCache.saveDetailedStats(json.toString())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun formatPrice(price: Double): String {
+        val symbols = DecimalFormatSymbols(Locale.getDefault())
+        symbols.groupingSeparator = ' '
+        val df = DecimalFormat("#,###", symbols)
+        return df.format(price) + " ₽"
+    }
+
     private fun loadAnalytics() {
         if (!isAdded) return
         
         loadChartData()
+        loadDetailedStats()
         
         val uid = if (isCompanyWide) null else targetUserId
         val cw = if (isCompanyWide) true else null

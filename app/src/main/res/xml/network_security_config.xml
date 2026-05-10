@@ -3,14 +3,17 @@
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
-            <certificates src="user" />
         </trust-anchors>
     </base-config>
 
-    <!-- Оставляем специфичные домены на всякий случай -->
+    <!-- Исключения для спидтестов и локальной отладки -->
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">selectel.ru</domain>
+        <domain includeSubdomains="true">isply.ru</domain>
+        <domain includeSubdomains="true">mgts.ru</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">baseblock.ru</domain>
+        <domain includeSubdomains="true">errorghostx.ru</domain>
     </domain-config>
 </network-security-config>

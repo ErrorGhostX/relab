@@ -41,12 +41,22 @@
                     android:scaleType="centerInside"
                     app:tint="@color/gray_900" />
 
+                <ImageView
+                    android:id="@+id/ivIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_toEndOf="@id/btnBack"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:src="?attr/actionModePasteDrawable"
+                    app:tint="@color/gray_900" />
+
                 <TextView
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@id/btnBack"
-                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/ivIcon"
+                    android:layout_marginStart="12dp"
                     android:layout_centerVertical="true"
                     android:text="Заказы"
                     android:textColor="@color/black"

@@ -32,10 +32,17 @@
                 android:scaleType="centerInside"
                 app:tint="@color/gray_900" />
 
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="16dp"
+                android:src="@drawable/ic_chat"
+                app:tint="@color/gray_900" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="12dp"
                 android:text="Чаты"
                 android:textColor="@color/black"
                 android:textSize="24sp"

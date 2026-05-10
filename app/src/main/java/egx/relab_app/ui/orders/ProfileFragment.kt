@@ -214,9 +214,10 @@ class ProfileFragment : Fragment() {
             
             // Загружаем аватар из локального хранилища
             val savedAvatarUrl = tokenManager.avatarUrl
-            if (!savedAvatarUrl.isNullOrEmpty() && savedAvatarUrl != "null") {
+            val fullAvatarUrl = RetrofitClient.ensureFullUrl(savedAvatarUrl)
+            if (!fullAvatarUrl.isNullOrEmpty()) {
                 Glide.with(this)
-                    .load(savedAvatarUrl)
+                    .load(fullAvatarUrl)
                     .placeholder(R.drawable.relab)
                     .error(R.drawable.relab)
                     .circleCrop()
@@ -254,8 +255,8 @@ class ProfileFragment : Fragment() {
             binding.tvRank.text = "Ранг: $rankDisplay"
             
             // Загружаем аватар
-            val avatarUrl = user.avatar
-            if (!avatarUrl.isNullOrEmpty() && avatarUrl != "null") {
+            val avatarUrl = RetrofitClient.ensureFullUrl(user.avatar)
+            if (!avatarUrl.isNullOrEmpty()) {
                 Glide.with(this)
                     .load(avatarUrl)
                     .placeholder(R.drawable.relab)
@@ -289,6 +290,7 @@ class ProfileFragment : Fragment() {
                     findNavController().navigate(R.id.orderDetailFragment, bundle)
                 }
                 adapter.isGridView = false
+                adapter.fallbackAvatar = user.avatar // Передаем аватар текущего пользователя для иконок создателя
                 adapter.updateList(user.recent_orders)
                 binding.rvRecentOrders.adapter = adapter
             } else {
