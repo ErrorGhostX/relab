@@ -19,8 +19,8 @@ android {
         applicationId = "egx.relab_app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "20.2.5-beta"
+        versionCode = 22
+        versionName = "22.0.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

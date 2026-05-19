@@ -54,12 +54,34 @@ class ChatListFragment : Fragment() {
         val currentUserId = RetrofitClient.tokenManager.userId ?: 0
 
         adapter = ChatRoomAdapter(currentUserId) { room ->
-            val bundle = Bundle().apply {
-                putInt("roomId", room.id)
-                putString("roomName", room.name ?: "Чат")
-                putInt("orderId", room.order ?: -1)
+            if (room.id == -1) {
+                // Это виртуальный ИИ-чат, нужно сначала создать его на сервере
+                progressBar.visibility = View.VISIBLE
+                viewModel.getOrCreateAiChat { aiRoom ->
+                    progressBar.visibility = View.GONE
+                    if (aiRoom != null) {
+                        val bundle = Bundle().apply {
+                            putInt("roomId", aiRoom.id)
+                            putString("roomName", aiRoom.name ?: "ИИ-Помощник")
+                        }
+                        findNavController().navigate(R.id.chatDetailFragment, bundle)
+                    }
+                }
+            } else {
+                var partnerId = -1
+                if (room.is_direct && room.participants_info != null) {
+                    partnerId = room.participants_info.firstOrNull { it.user_id != currentUserId }?.user_id ?: -1
+                }
+                val bundle = Bundle().apply {
+                    putInt("roomId", room.id)
+                    putString("roomName", room.name ?: "Чат")
+                    putInt("orderId", room.order ?: -1)
+                    if (partnerId > 0) {
+                        putInt("partnerId", partnerId)
+                    }
+                }
+                findNavController().navigate(R.id.chatDetailFragment, bundle)
             }
-            findNavController().navigate(R.id.chatDetailFragment, bundle)
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -110,15 +132,14 @@ class ChatListFragment : Fragment() {
         }
 
         viewModel.error.observe(viewLifecycleOwner) { err ->
-            err?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
+            err?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                // Очищаем ошибку после показа, чтобы не дублировалась при возврате на экран
+                viewModel.clearError()
+            }
         }
 
         viewModel.loadChatRooms()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Обновляем список при возвращении на экран
-        viewModel.loadChatRooms()
-    }
 }

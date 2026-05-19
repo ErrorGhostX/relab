@@ -85,6 +85,9 @@ class NotificationWebSocketService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // Инициализируем RetrofitClient, чтобы tokenManager был доступен
+        RetrofitClient.init(applicationContext)
+        
         tokenManager = TokenManager(this)
         reconnectHandler = android.os.Handler(android.os.Looper.getMainLooper())
         createNotificationChannels()

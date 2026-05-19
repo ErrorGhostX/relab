@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import egx.relab_app.R
 import egx.relab_app.network.ApiService
+import egx.relab_app.network.RetrofitClient
 
 /**
  * Адаптер для сообщений в чате.
@@ -84,13 +85,14 @@ class MessageAdapter(
                     ivAttachedImage.alpha = 0.5f
                 } else {
                     ivAttachedImage.alpha = 1.0f
+                    val fullImageUrl = RetrofitClient.ensureFullUrl(msg.image_url)
                     Glide.with(itemView.context)
-                        .load(msg.image_url)
+                        .load(fullImageUrl)
                         .into(ivAttachedImage)
                     
                     ivAttachedImage.setOnClickListener {
                         val intent = android.content.Intent(itemView.context, ImageDetailActivity::class.java)
-                        intent.putExtra("IMAGE_URL", msg.image_url)
+                        intent.putExtra("IMAGE_URL", fullImageUrl)
                         itemView.context.startActivity(intent)
                     }
                 }
@@ -174,13 +176,14 @@ class MessageAdapter(
                     ivAttachedImage.alpha = 0.5f
                 } else {
                     ivAttachedImage.alpha = 1.0f
+                    val fullImageUrl = RetrofitClient.ensureFullUrl(msg.image_url)
                     Glide.with(itemView.context)
-                        .load(msg.image_url)
+                        .load(fullImageUrl)
                         .into(ivAttachedImage)
                     
                     ivAttachedImage.setOnClickListener {
                         val intent = android.content.Intent(itemView.context, ImageDetailActivity::class.java)
-                        intent.putExtra("IMAGE_URL", msg.image_url)
+                        intent.putExtra("IMAGE_URL", fullImageUrl)
                         itemView.context.startActivity(intent)
                     }
                 }
@@ -189,7 +192,7 @@ class MessageAdapter(
                 ivAttachedImage.setOnClickListener(null)
             }
 
-            val avatarUrl = msg.sender_avatar
+            val avatarUrl = RetrofitClient.ensureFullUrl(msg.sender_avatar)
             if (!avatarUrl.isNullOrBlank() && !msg.is_from_ai) {
                 Glide.with(itemView.context)
                     .load(avatarUrl)

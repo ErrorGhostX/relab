@@ -185,7 +185,7 @@ class GeneratePDF(
         }
 
         // Номер заказа справа (чуть ниже QR)
-        val orderLabel = order.orderName ?: "Заказ #${order.id ?: "?"}"
+        val orderLabel = order.orderName ?: if (order.id != null && order.id > 0) "Заказ #${order.id}" else "Локальный заказ"
         val orderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 14f; color = COLOR_ACCENT; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -349,13 +349,17 @@ class GeneratePDF(
     }
 
     private fun drawQrCodeAt(canvas: Canvas, order: Order, x: Float, y: Float, size: Int) {
-        val qrContent = "relab://order/${order.id ?: 0}"
+        val qrContent = if (order.id != null && order.id > 0) {
+            "relab://order/${order.id}"
+        } else {
+            "relab://order/local/${order.localId ?: 0}"
+        }
         val qrBitmap = generateQrCodeBitmap(qrContent, size)
         
         if (qrBitmap != null) {
             canvas.drawBitmap(qrBitmap, x, y, null)
             // Подпись под QR
-            val idText = "ID: ${order.id ?: "?"}"
+            val idText = if (order.id != null && order.id > 0) "ID: ${order.id}" else "Локальный ID"
             val idW = paintSmall.measureText(idText)
             canvas.drawText(idText, x + (size - idW) / 2f, y + size + 10f, paintSmall)
         }

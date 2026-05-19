@@ -120,8 +120,15 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
 
         private fun getRecentLogs(): String {
             return try {
-                val process = Runtime.getRuntime().exec("logcat -d -t 500 *:I")
-                process.inputStream.bufferedReader().use { it.readText() }
+                val pid = android.os.Process.myPid()
+                // -d: дамп и выход
+                // -v time: формат со временем
+                // -t 1000: последние 1000 строк
+                // --pid: фильтр только по нашему приложению
+                val process = Runtime.getRuntime().exec("logcat -d -v threadtime -t 1000 --pid=$pid")
+                val logs = process.inputStream.bufferedReader().use { it.readText() }
+                
+                if (logs.isBlank()) "Logs are empty (check permissions or app activity)" else logs
             } catch (e: Exception) {
                 "Could not capture logs: ${e.message}"
             }

@@ -36,8 +36,8 @@ class CustomerFormFragment : Fragment() {
     private lateinit var btnDelete: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        customer = arguments?.getParcelable("customer")
+        super.onCreate(savedInstanceState)        
+        customer = androidx.core.os.BundleCompat.getParcelable(arguments ?: android.os.Bundle(), "customer", Customer::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

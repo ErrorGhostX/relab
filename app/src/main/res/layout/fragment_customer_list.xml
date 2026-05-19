@@ -48,7 +48,7 @@
                     android:layout_toEndOf="@id/btnBack"
                     android:layout_marginStart="16dp"
                     android:layout_centerVertical="true"
-                    android:src="@android:drawable/ic_menu_my_calendar"
+                    android:src="@drawable/ic_person"
                     app:tint="@color/gray_900" />
 
                 <TextView

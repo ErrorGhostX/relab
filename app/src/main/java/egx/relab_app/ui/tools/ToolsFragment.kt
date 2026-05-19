@@ -162,6 +162,7 @@ class ToolsFragment : Fragment() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun loadWifiInfo() {
         if (!isAdded || _binding == null) return
         try {
@@ -431,8 +432,7 @@ class ToolsFragment : Fragment() {
     // ========== ПУЛЬТ ==========
     
     private fun openRemoteGuideDialog() {
-        val dialog = RemoteControlGuideDialog()
-        dialog.show(parentFragmentManager, "RemoteControlGuide")
+        findNavController().navigate(egx.relab_app.R.id.remoteControlGuideFragment)
     }
     
     private fun openPlayMarket() {

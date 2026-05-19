@@ -141,15 +141,44 @@ class OrderListFragment : Fragment() {
         try {
             val uri = android.net.Uri.parse(uriString)
             if (uri.scheme == "relab" && uri.host == "order") {
-                val orderId = uri.lastPathSegment?.toIntOrNull()
-                if (orderId != null) {
-                    openOrderDetailsById(orderId)
+                val lastSegment = uri.lastPathSegment
+                if (uri.pathSegments.contains("local")) {
+                    val localId = lastSegment?.toLongOrNull()
+                    if (localId != null) {
+                        openOrderDetailsByLocalId(localId)
+                    }
+                } else {
+                    val orderId = lastSegment?.toIntOrNull()
+                    if (orderId != null) {
+                        openOrderDetailsById(orderId)
+                    }
                 }
             } else {
                 Toast.makeText(requireContext(), "Неверный формат QR-кода", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openOrderDetailsByLocalId(localId: Long) {
+        lifecycleScope.launch {
+            try {
+                val order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    repository.getOrderByLocalId(localId)
+                }
+                
+                if (order != null && isAdded) {
+                    val bundle = Bundle().apply { putParcelable("order", order) }
+                    findNavController().navigate(R.id.action_orderListFragment_to_orderDetailFragment, bundle)
+                } else if (isAdded) {
+                    Toast.makeText(requireContext(), "Локальный заказ #$localId не найден", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -205,9 +234,9 @@ class OrderListFragment : Fragment() {
     }
     
     private fun checkConnectionAndUpdateIndicator() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                if (!isAdded) return@launch
+                if (!isAdded || _binding == null) return@launch
                 val activity = activity as? egx.relab_app.MainActivity ?: return@launch
                 
                 if (tokenManager.isGuestMode) {
@@ -267,7 +296,7 @@ class OrderListFragment : Fragment() {
      * Очистить локальную базу данных
      */
     private fun clearDatabase() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 repository.clearAllData()
                 val ctx = context
@@ -326,7 +355,8 @@ class OrderListFragment : Fragment() {
     }
 
     private fun setupFilterChips() {
-        binding.statusChipGroup.setOnCheckedChangeListener { group, checkedId ->
+        binding.statusChipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            val checkedId = checkedIds.firstOrNull() ?: View.NO_ID
             selectedStatus = when (checkedId) {
                 R.id.chipNew -> "Новый"
                 R.id.chipWork -> "В процессе"
@@ -384,9 +414,22 @@ class OrderListFragment : Fragment() {
     }
     
     private fun setupSyncButton() {
-        binding.buttonSync.setOnClickListener {
-            performManualSync()
+        if (tokenManager.isGuestMode) {
+            binding.syncButtonContainer.visibility = View.VISIBLE
+            binding.buttonSync.isEnabled = false
+            binding.buttonSync.alpha = 0.5f
+            binding.syncStatusCard.visibility = View.GONE
+            binding.buttonSync.setOnClickListener {
+                Toast.makeText(requireContext(), "Недоступно в локальном режиме", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            binding.buttonSync.isEnabled = true
+            binding.buttonSync.alpha = 1.0f
+            binding.buttonSync.setOnClickListener {
+                performManualSync()
+            }
         }
+        
         binding.buttonClearDb.setOnClickListener {
             showClearDatabaseDialog()
         }
@@ -404,7 +447,7 @@ class OrderListFragment : Fragment() {
         val activity = activity as? egx.relab_app.MainActivity
         
         // Проверяем подключение перед синхронизацией
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Проверяем подключение к серверу
                 val isConnected = try {
@@ -469,7 +512,7 @@ class OrderListFragment : Fragment() {
                 }
                 
                 // Обновляем статус через 3 секунды
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     kotlinx.coroutines.delay(3000)
                     // Проверяем, что фрагмент еще прикреплен
                     if (isAdded && _binding != null) {
@@ -497,7 +540,15 @@ class OrderListFragment : Fragment() {
 
      */
     private fun updateSyncStatus() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (tokenManager.isGuestMode) {
+                if (isAdded && _binding != null) {
+                    binding.syncStatusCard.visibility = View.GONE
+                    binding.syncBadgeText.visibility = View.GONE
+                }
+                return@launch
+            }
+
             val pendingCount = repository.getPendingCount()
             
             // Проверяем, что фрагмент еще прикреплен перед обновлением UI
@@ -528,10 +579,12 @@ class OrderListFragment : Fragment() {
      */
     private fun observeOrders() {
         ordersJob?.cancel()
-        ordersJob = lifecycleScope.launch {
+        ordersJob = viewLifecycleOwner.lifecycleScope.launch {
             repository.getAllOrders().collect { orders ->
-                showOrders(filterOrdersByTab(orders))
-                updateSyncStatus()
+                if (_binding != null) {
+                    showOrders(filterOrdersByTab(orders))
+                    updateSyncStatus()
+                }
             }
         }
     }
@@ -589,10 +642,12 @@ class OrderListFragment : Fragment() {
      */
     private fun observeOrdersByStatus(status: String) {
         ordersJob?.cancel()
-        ordersJob = lifecycleScope.launch {
+        ordersJob = viewLifecycleOwner.lifecycleScope.launch {
             repository.getOrdersByStatus(status).collect { orders ->
-                showOrders(filterOrdersByTab(orders))
-                updateSyncStatus()
+                if (_binding != null) {
+                    showOrders(filterOrdersByTab(orders))
+                    updateSyncStatus()
+                }
             }
         }
     }
@@ -624,12 +679,12 @@ class OrderListFragment : Fragment() {
     
     private fun startAutoSync() {
         autoSyncJob?.cancel()
-        autoSyncJob = lifecycleScope.launch {
+        autoSyncJob = viewLifecycleOwner.lifecycleScope.launch {
             while (isActive) {
                 // Ждём заданный интервал, минимум 1 минута
                 val intervalMinutes = kotlin.math.max(1, tokenManager.syncIntervalMinutes)
                 delay(intervalMinutes.toLong() * 60 * 1000)
-                if (isAdded && tokenManager.autoSyncEnabled) {
+                if (isAdded && tokenManager.autoSyncEnabled && _binding != null) {
                     performManualSync()
                 }
             }

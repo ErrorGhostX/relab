@@ -117,10 +117,12 @@ class MainActivity : AppCompatActivity() {
             val isChatDetail = destination.id == R.id.chatDetailFragment
             val isEmployeeList = destination.id == R.id.employeeListFragment
             val isConsumableList = destination.id == R.id.consumableListFragment
+            val isQrScanner = destination.id == R.id.qrScannerFragment
+            val isRemoteGuide = destination.id == R.id.remoteControlGuideFragment
 
             if (isHome || isLogin || isOrderList || isAnalytics || isSettings || isCustomers || 
                 isProfile || isTools || isOrderForm || isOrderDetail || isCustomerDetail || 
-                isCustomerForm || isChatList || isChatDetail || isEmployeeList || isConsumableList) {
+                isCustomerForm || isChatList || isChatDetail || isEmployeeList || isConsumableList || isQrScanner || isRemoteGuide) {
                 hideToolbarAnimated(toolbar)
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             } else {
@@ -176,8 +178,9 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_logout -> {
-                    // Останавливаем фоновый сервис уведомлений WebSocket
+                    // Останавливаем фоновые сервисы и пульс
                     egx.relab_app.services.NotificationWebSocketService.stop(this)
+                    egx.relab_app.network.GlobalConnectionManager.stop()
                     tokenManager.accessToken = null
                     tokenManager.refreshToken = null
                     tokenManager.username = null
@@ -208,8 +211,22 @@ class MainActivity : AppCompatActivity() {
                         // Не блокирует отображение - пользователь уже видит локальные данные
                         loadProfileFromServer()
                         
-                        // Запускаем фоновый сервис уведомлений через WebSocket (гарантированный канал)
-                        egx.relab_app.services.NotificationWebSocketService.start(this@MainActivity)
+                        if (!tokenManager.isGuestMode) {
+                            // Запускаем фоновый сервис уведомлений через WebSocket (гарантированный канал)
+                            egx.relab_app.services.NotificationWebSocketService.start(this@MainActivity)
+                            
+                            // Глобальный пульс соединения
+                            egx.relab_app.network.GlobalConnectionManager.start(tokenManager.accessToken)
+                        }
+                        
+                        // Наблюдаем за статусом соединения
+                        egx.relab_app.network.GlobalConnectionManager.status.observe(this@MainActivity) { status ->
+                            updateConnectionIndicator(status)
+                        }
+                        
+                        if (tokenManager.isGuestMode) {
+                            updateConnectionIndicator(egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED) // It will be intercepted by the guest mode check
+                        }
                     }
                 }
         
@@ -224,8 +241,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleRemoteIntent(intent: android.content.Intent?) {
         if (intent?.getBooleanExtra("EXTRA_OPEN_REMOTE", false) == true) {
-            val dialog = egx.relab_app.ui.tools.RemoteControlGuideDialog()
-            dialog.show(supportFragmentManager, "RemoteControlGuide")
+            try {
+                androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment_content_main)
+                    .navigate(R.id.remoteControlGuideFragment)
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Failed to navigate to remote guide", e)
+            }
         }
     }
 
@@ -479,15 +500,54 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    fun updateConnectionIndicator(isConnected: Boolean) {
-        val indicator = binding.appBarMain.toolbar.findViewById<View>(R.id.connectionIndicator)
-        indicator?.background = if (isConnected) {
-            resources.getDrawable(R.drawable.connection_indicator_green, theme)
-        } else {
-            resources.getDrawable(R.drawable.connection_indicator_red, theme)
+    fun updateConnectionIndicator(status: egx.relab_app.network.GlobalConnectionManager.ConnectionStatus) {
+        if (tokenManager.isGuestMode) {
+            val color = 0xFF9E9E9E.toInt() // Серый
+            val toolbarIndicator = binding.appBarMain.toolbar.findViewById<View>(R.id.connectionIndicator)
+            toolbarIndicator?.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+
+            val headerView = binding.navView.getHeaderView(0)
+            val drawerIndicator = headerView?.findViewById<View>(R.id.viewConnectionIndicator)
+            val drawerStatusText = headerView?.findViewById<TextView>(R.id.textConnectionStatus)
+
+            drawerIndicator?.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+            drawerStatusText?.text = "Локальный"
+            return
+        }
+
+        // 1. Обновляем индикатор в тулбаре (если он там есть)
+        val toolbarIndicator = binding.appBarMain.toolbar.findViewById<View>(R.id.connectionIndicator)
+        val color = when (status) {
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTED -> 0xFF4CAF50.toInt() // Зеленый
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTING -> 0xFFFFC107.toInt() // Желтый
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED -> 0xFFF44336.toInt() // Красный
+        }
+        
+        toolbarIndicator?.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+
+        // 2. Обновляем индикатор в боковом меню (Drawer)
+        val headerView = binding.navView.getHeaderView(0)
+        val drawerIndicator = headerView?.findViewById<View>(R.id.viewConnectionIndicator)
+        val drawerStatusText = headerView?.findViewById<TextView>(R.id.textConnectionStatus)
+
+        drawerIndicator?.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+        drawerStatusText?.text = when (status) {
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTED -> "В сети"
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTING -> "Подключение..."
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED -> "Нет подключения"
         }
     }
+    
+    // Перегрузка для обратной совместимости (если где-то вызывается с boolean)
+    fun updateConnectionIndicator(isConnected: Boolean) {
+        val status = if (isConnected) 
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTED 
+        else 
+            egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED
+        updateConnectionIndicator(status)
+    }
 
+    @Suppress("DEPRECATION")
     private fun applyDisplayCutoutMode() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (tokenManager.isDisplayCutoutEnabled) {

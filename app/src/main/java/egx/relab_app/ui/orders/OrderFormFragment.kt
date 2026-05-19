@@ -316,7 +316,6 @@ class OrderFormFragment : Fragment() {
                 if (!matches.isNullOrEmpty()) {
                     val text = matches[0]
                     binding.editTextAiInput.setText(text)
-                    processTextWithAi(text)
                 }
             }
             override fun onPartialResults(partialResults: Bundle?) {}
@@ -444,7 +443,7 @@ class OrderFormFragment : Fragment() {
         // Логика "умного" парсинга через Бэкенд + LLM
         Log.d("VoiceOrder", "Recognized: $text")
         
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 binding.btnAiParse.isEnabled = false
                 binding.btnAiParse.text = "Думаю..."
@@ -533,13 +532,17 @@ class OrderFormFragment : Fragment() {
                     }
                 }
                 
-                Toast.makeText(context, "ИИ заполнил все поля и задачи", Toast.LENGTH_SHORT).show()
+                context?.let { ctx ->
+                    Toast.makeText(ctx, "ИИ заполнил все поля и задачи", Toast.LENGTH_SHORT).show()
+                }
                 
             } catch (e: Exception) {
                 Log.e("VoiceOrder", "AI Parse Error", e)
-                Toast.makeText(context, "Ошибка ИИ: ${e.message}", Toast.LENGTH_LONG).show()
+                context?.let { ctx ->
+                    Toast.makeText(ctx, "Ошибка ИИ: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             } finally {
-                if (isAdded) {
+                if (_binding != null) {
                     binding.btnAiParse.isEnabled = true
                     binding.btnAiParse.text = "Распознать ИИ"
                     binding.progressAi.visibility = View.GONE
@@ -558,7 +561,7 @@ class OrderFormFragment : Fragment() {
         binding.editTextDescription.setText(text)
 
         if (customerName != null) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val foundCustomers = withContext(Dispatchers.IO) {
                     requireContext().app.customerDao.searchCustomersSync("%$customerName%")
                 }
@@ -767,7 +770,7 @@ class OrderFormFragment : Fragment() {
             )
 
             // Сохраняем в локальную БД и сервер
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val created = withContext(Dispatchers.IO) {
                         val request = ApiService.CreateCustomerRequest(
@@ -944,7 +947,7 @@ class OrderFormFragment : Fragment() {
     private fun loadOrderLocalId() {
         if (!isEditMode) return
         
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val order = args.order ?: return@launch
                 // Сначала пытаемся найти по serverId
@@ -967,7 +970,7 @@ class OrderFormFragment : Fragment() {
     
     private fun loadOrdersForAutocomplete() {
         // ВАЖНО: Загружаем заказы из локальной БД, а не с сервера
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Загружаем из локальной БД
                 repository.getAllOrders().collect { orders ->
@@ -1025,8 +1028,9 @@ class OrderFormFragment : Fragment() {
         autoCompleteTextView: AutoCompleteTextView,
         suggestions: List<String>
     ) {
+        val ctx = context ?: return
         val adapter = ArrayAdapter(
-            requireContext(),
+            ctx,
             R.layout.item_spinner_black,
             suggestions
         )
@@ -1119,7 +1123,7 @@ class OrderFormFragment : Fragment() {
             selectCustomer(o.customerDetail)
         } else if (o.customerRef != null) {
             // Загружаем клиента по ID
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val customer = RetrofitClient.apiService.getCustomer(o.customerRef)
                     selectCustomer(customer)
@@ -1220,7 +1224,7 @@ class OrderFormFragment : Fragment() {
         val filledOrder = if (isEditMode) buildUpdatedOrder() else buildNewOrder()
 
         // Сохраняем СРАЗУ в локальную БД (приоритет на локальность)
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 if (isEditMode) {
                     // ========== РЕЖИМ РЕДАКТИРОВАНИЯ ==========

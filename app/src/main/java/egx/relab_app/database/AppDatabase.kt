@@ -42,7 +42,7 @@ import egx.relab_app.database.entity.SyncStatus
         ConsumableEntity::class,
         OrderConsumableEntity::class
     ],
-    version = 13,  // v13: Добавлены поля исполнителя и создателя в ServiceEntity
+    version = 15,  // v15: Добавлен onlineStatus в EmployeeEntity
     exportSchema = false  // Можно установить true для экспорта схемы в файл
 )
 @TypeConverters(Converters::class)

@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,6 +20,8 @@ import com.google.android.material.textfield.TextInputEditText
 import egx.relab_app.R
 import egx.relab_app.network.ApiService
 import egx.relab_app.ui.messaging.MessagingViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Список сотрудников — по аналогии с CustomerListFragment.
@@ -34,6 +37,8 @@ class EmployeeListFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tokenManager: egx.relab_app.storage.TokenManager
     private lateinit var fabAddEmployee: com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    private var refreshJob: kotlinx.coroutines.Job? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_employee_list, container, false)
@@ -50,6 +55,11 @@ class EmployeeListFragment : Fragment() {
         emptyView = view.findViewById(R.id.emptyView)
         progressBar = view.findViewById(R.id.progressBar)
         fabAddEmployee = view.findViewById(R.id.fabAddEmployee)
+        swipeRefresh = view.findViewById(R.id.swipeRefreshEmployees)
+
+        swipeRefresh.setOnRefreshListener {
+            viewModel.loadEmployees()
+        }
 
         // Проверка прав на добавление сотрудника (Администратор или Руководитель)
         val rank = tokenManager.rank?.lowercase()?.trim()
@@ -90,6 +100,7 @@ class EmployeeListFragment : Fragment() {
                         val bundle = Bundle().apply {
                             putInt("roomId", room.id)
                             putString("roomName", employee.full_name ?: employee.username)
+                            putInt("partnerId", employeeId)
                         }
                         findNavController().navigate(R.id.chatDetailFragment, bundle)
                     } else {
@@ -125,21 +136,49 @@ class EmployeeListFragment : Fragment() {
                 val username = it.username?.lowercase() ?: ""
                 !username.contains("admin") && !username.contains("ai")
             }
+            
+            // Обновляем счетчик онлайн
+            val onlineCount = filteredList.count { it.is_online == true }
+            view.findViewById<TextView>(R.id.tvOnlineCount)?.text = "$onlineCount в сети"
+            
             adapter.submitList(filteredList)
             emptyView.visibility = if (filteredList.isEmpty()) View.VISIBLE else View.GONE
             recyclerView.visibility = if (filteredList.isEmpty()) View.GONE else View.VISIBLE
         }
 
         viewModel.isLoading.observe(viewLifecycleOwner) { loading ->
-            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            if (!loading) swipeRefresh.isRefreshing = false
+            progressBar.visibility = if (loading && !swipeRefresh.isRefreshing) View.VISIBLE else View.GONE
         }
 
         viewModel.error.observe(viewLifecycleOwner) { err ->
             err?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
         }
 
-        // Загружаем
+        val app = requireContext().applicationContext as egx.relab_app.RelabApplication
+        val repo = app.employeeRepository
+        viewModel.initRepository(repo)
         viewModel.loadEmployees()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        startPeriodicRefresh()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        refreshJob?.cancel()
+    }
+
+    private fun startPeriodicRefresh() {
+        refreshJob?.cancel()
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
+            while (true) {
+                delay(30000) // 30 секунд
+                viewModel.loadEmployees()
+            }
+        }
     }
 
     private fun showCreateEmployeeDialog() {

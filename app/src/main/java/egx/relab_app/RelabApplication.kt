@@ -7,6 +7,9 @@ import egx.relab_app.utils.CrashHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 
 /**
  * Application класс приложения
@@ -31,6 +34,10 @@ class RelabApplication : Application() {
     
     val customerDao get() = database.customerDao()
     val consumableDao get() = database.consumableDao()
+    val employeeDao get() = database.employeeDao()
+
+    val employeeRepository: egx.relab_app.repository.EmployeeRepository
+        get() = egx.relab_app.repository.EmployeeRepository(employeeDao)
     
     // Scope для фоновых задач приложения (например, отправка отчетов)
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -46,6 +53,26 @@ class RelabApplication : Application() {
         
         // Проверяем наличие отложенных отчетов о крашах и отправляем
         CrashHandler.checkAndSendPendingReports(this, applicationScope)
+        
+        // Отслеживаем глобальное состояние приложения (свернуто/развернуто)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    // Приложение развернуто (foreground) -> подключаем основной пульс
+                    val token = egx.relab_app.network.RetrofitClient.tokenManager.accessToken
+                    if (!token.isNullOrBlank()) {
+                        egx.relab_app.network.GlobalConnectionManager.start(token)
+                    }
+                }
+
+                override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+                    // Приложение свернуто (background) -> отключаем основной пульс
+                    // Фоновая служба (NotificationWebSocketService) останется работать
+                    // и будет поддерживать "желтый" статус
+                    egx.relab_app.network.GlobalConnectionManager.stop()
+                }
+            }
+        )
     }
 
 }

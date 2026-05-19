@@ -30,7 +30,7 @@ class CustomerDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        customer = arguments?.getParcelable("customer") ?: return
+        customer = androidx.core.os.BundleCompat.getParcelable(arguments ?: android.os.Bundle(), "customer", Customer::class.java) ?: return
 
         val tvFullName = view.findViewById<TextView>(R.id.tvFullName)
         val tvPhone = view.findViewById<TextView>(R.id.tvPhone)

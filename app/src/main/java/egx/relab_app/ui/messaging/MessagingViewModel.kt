@@ -54,6 +54,7 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
      * Загрузить список чатов текущего пользователя
      */
     fun loadChatRooms() {
+        _error.value = null // Очищаем старые ошибки
         viewModelScope.launch {
             _isLoadingRooms.value = true
             try {
@@ -63,7 +64,7 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
                 Log.d(TAG, "Loaded ${rooms.size} chat rooms")
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading chat rooms", e)
-                _error.value = "Ошибка: ${e.localizedMessage}"
+                _error.value = "Ошибка загрузки чатов"
             } finally {
                 _isLoadingRooms.value = false
             }
@@ -83,7 +84,7 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
                 onResult(room)
             } catch (e: Exception) {
                 Log.e(TAG, "Error creating direct chat", e)
-                _error.value = "Ошибка: ${e.localizedMessage}"
+                _error.value = "Не удалось создать чат"
                 onResult(null)
             }
         }
@@ -102,7 +103,24 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
                 onResult(room)
             } catch (e: Exception) {
                 Log.e(TAG, "Error creating order chat", e)
-                _error.value = "Ошибка: ${e.localizedMessage}"
+                _error.value = "Не удалось создать чат заказа"
+                onResult(null)
+            }
+        }
+    }
+
+    /**
+     * Создать или найти чат с ИИ
+     */
+    fun getOrCreateAiChat(onResult: (ApiService.ChatRoom?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val room = RetrofitClient.apiService.getOrCreateAiChat()
+                Log.d(TAG, "AI chat room: ${room.id}")
+                onResult(room)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating AI chat", e)
+                _error.value = "Не удалось подключиться к ИИ"
                 onResult(null)
             }
         }
@@ -120,6 +138,10 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
+    
+    fun clearError() {
+        _error.value = null
+    }
 
     // Текущее ИИ-сообщение (стриминг)
     private val _aiStreamingText = MutableLiveData<String?>()
@@ -133,11 +155,22 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
 
     private var chatWebSocket: ChatWebSocket? = null
     private var currentRoomId: Int = -1
+    private var isUserInRoom: Boolean = false
 
     /**
      * Загрузить историю сообщений (REST) и подключиться к WebSocket
      */
     fun openChat(roomId: Int) {
+        _error.value = null // Очищаем старые ошибки
+        isUserInRoom = true
+        // Если мы уже подключены к этой комнате (например, вернулись из фона), 
+        // просто обновляем историю, не разрывая WebSocket
+        if (currentRoomId == roomId && _isConnected.value == true) {
+            Log.d(TAG, "Already connected to room $roomId, just refreshing history")
+            loadMessages(roomId)
+            return
+        }
+
         currentRoomId = roomId
 
         // 1. Загрузить историю через REST
@@ -190,8 +223,14 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
      * Подключиться к WebSocket
      */
     private fun connectWebSocket(roomId: Int) {
-        // Отключаем предыдущий, если есть
-        chatWebSocket?.disconnect()
+        // Отключаем предыдущий только если это ДРУГАЯ комната или мы не стримим
+        if (chatWebSocket != null && (currentRoomId != roomId || _isAiStreaming.value != true)) {
+            Log.d(TAG, "Disconnecting old WebSocket before new connection")
+            chatWebSocket?.disconnect()
+        } else if (chatWebSocket != null && _isConnected.value == true) {
+            Log.d(TAG, "WebSocket already active for room $roomId")
+            return
+        }
 
         val ws = ChatWebSocket(RetrofitClient.tokenManager)
         chatWebSocket = ws
@@ -206,16 +245,19 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
                         sender = message.optInt("sender"),
                         sender_username = message.optString("sender_username"),
                         sender_full_name = message.optString("sender_full_name"),
-                        sender_avatar = message.optString("sender_avatar", null),
+                        sender_avatar = message.optString("sender_avatar").takeIf { it.isNotEmpty() && it != "null" },
                         text = message.optString("text"),
                         image = null,
-                        image_url = null,
+                        image_url = message.optString("image_url").takeIf { it.isNotEmpty() && it != "null" },
                         is_from_ai = message.optBoolean("is_from_ai", false),
                         created_at = message.optString("created_at")
                     )
                     val current = _messages.value ?: mutableListOf()
-                    // Проверяем дубликат
+                    // Проверяем дубликат по серверному ID
                     if (current.none { it.id == msg.id }) {
+                        // Удаляем temp-сообщения (отрицательные ID) от этого отправителя,
+                        // т.к. это то самое сообщение, которое мы отправили через REST
+                        current.removeAll { it.id < 0 && it.sender == msg.sender }
                         current.add(msg)
                         current.sortBy { it.id }
                         _messages.value = current
@@ -258,6 +300,11 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
             override fun onAiDone(msgId: Int, fullText: String) {
                 mainHandler.post {
                     _isAiStreaming.value = false
+                    // Если пользователь уже вышел из комнаты, отключаемся ПОСЛЕ завершения ИИ
+                    if (!isUserInRoom) {
+                        Log.d(TAG, "AI finished and user is away, auto-disconnecting")
+                        disconnectNow()
+                    }
                     val current = _messages.value ?: mutableListOf()
                     val index = current.indexOfFirst { it.id == msgId }
                     if (index != -1) {
@@ -331,11 +378,20 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
                     
                     // Заменяем временное сообщение реальным
                     val current = _messages.value ?: mutableListOf()
-                    val index = current.indexOfFirst { it.id == tempId }
-                    if (index != -1) {
-                        current[index] = msg
-                        _messages.value = current
+                    
+                    // Проверяем: WebSocket мог уже доставить это сообщение
+                    val alreadyFromWs = current.any { it.id == msg.id }
+                    
+                    // Удаляем temp-сообщение в любом случае
+                    current.removeAll { it.id == tempId }
+                    
+                    if (!alreadyFromWs) {
+                        // WebSocket ещё не доставил — добавляем из REST-ответа
+                        current.add(msg)
+                        current.sortBy { it.id }
                     }
+                    
+                    _messages.value = current
                 } catch (e: Exception) {
                     Log.e(TAG, "Error sending image", e)
                     _error.value = "Ошибка при отправке фото: ${e.localizedMessage}"
@@ -378,10 +434,24 @@ class MessagingViewModel(application: Application) : AndroidViewModel(applicatio
      * Закрыть чат и отключить WebSocket
      */
     fun closeChat() {
+        isUserInRoom = false
+        // Если ИИ сейчас пишет ответ, мы НЕ разрываем соединение,
+        // чтобы он мог дописать сообщение в фоне и сохранить его в БД.
+        if (_isAiStreaming.value == true) {
+            Log.d(TAG, "AI is streaming, keeping WebSocket alive in background")
+            return
+        }
+
+        disconnectNow()
+    }
+
+    /**
+     * Немедленное отключение WebSocket
+     */
+    private fun disconnectNow() {
         chatWebSocket?.disconnect()
         chatWebSocket = null
         _isConnected.value = false
-        _messages.value = mutableListOf()
         _aiStreamingText.value = null
         _isAiStreaming.value = false
         currentRoomId = -1

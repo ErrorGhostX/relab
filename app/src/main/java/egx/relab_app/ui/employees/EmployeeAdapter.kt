@@ -41,10 +41,34 @@ class EmployeeAdapter(
         private val tvSpecialization: TextView = itemView.findViewById(R.id.tvEmployeeSpecialization)
         private val btnMessage: View = itemView.findViewById(R.id.btnEmployeeMessage)
         private val btnEdit: View = itemView.findViewById(R.id.btnEmployeeEdit)
+        private val viewOnline: View = itemView.findViewById(R.id.viewOnlineStatus)
+        private val tvStatusText: TextView = itemView.findViewById(R.id.tvEmployeeStatusText)
 
         fun bind(employee: UserResponse) {
             tvName.text = employee.full_name ?: employee.username ?: "—"
             tvRank.text = employee.rank_display ?: employee.rank ?: "Сотрудник"
+            
+            // Статус онлайн (3 состояния)
+            val onlineStatus = employee.online_status ?: if (employee.is_online == true) "online" else "offline"
+            when (onlineStatus) {
+                "online" -> {
+                    viewOnline.visibility = View.VISIBLE
+                    viewOnline.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
+                    tvStatusText.text = "В сети"
+                    tvStatusText.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                }
+                "background" -> {
+                    viewOnline.visibility = View.VISIBLE
+                    viewOnline.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFC107"))
+                    tvStatusText.text = "В фоне"
+                    tvStatusText.setTextColor(android.graphics.Color.parseColor("#FFC107"))
+                }
+                else -> {
+                    viewOnline.visibility = View.GONE
+                    tvStatusText.text = "Не в сети"
+                    tvStatusText.setTextColor(android.graphics.Color.parseColor("#94A3B8"))
+                }
+            }
             
             val spec = employee.specialization
             if (!spec.isNullOrBlank()) {

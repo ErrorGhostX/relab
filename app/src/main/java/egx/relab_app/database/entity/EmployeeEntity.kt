@@ -22,7 +22,10 @@ data class EmployeeEntity(
     val rankDisplay: String? = null,
     val specialization: String? = null,
     val completedOrdersCount: Int? = null,
-    val totalRevenue: Double? = null
+    val totalRevenue: Double? = null,
+    val isOnline: Boolean? = null,
+    val onlineStatus: String? = null,
+    val lastSeen: String? = null
 ) {
     /**
      * Конвертация Entity в модель UserResponse для использования в UI/Repository
@@ -42,6 +45,9 @@ data class EmployeeEntity(
             specialization = specialization,
             completed_orders_count = completedOrdersCount,
             total_revenue = totalRevenue,
+            is_online = isOnline,
+            online_status = onlineStatus,
+            last_seen = lastSeen,
             recent_orders = null // Локально не кэшируем последние заказы каждого сотрудника для общего списка
         )
     }
@@ -64,7 +70,10 @@ data class EmployeeEntity(
                 rankDisplay = user.rank_display,
                 specialization = user.specialization,
                 completedOrdersCount = user.completed_orders_count,
-                totalRevenue = user.total_revenue
+                totalRevenue = user.total_revenue,
+                isOnline = user.is_online,
+                onlineStatus = user.online_status,
+                lastSeen = user.last_seen
             )
         }
     }

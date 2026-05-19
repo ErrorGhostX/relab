@@ -370,6 +370,13 @@ class OrderRepository(
         // Вставляем в локальную БД
         val localId = orderDao.insertOrder(entity)
         
+        // В локальном режиме, если пользователь не указал имя заказа, 
+        // назначаем ему имя с локальным ID, чтобы избежать дубликатов "первого попавшегося заказа"
+        if (entity.orderName.isNullOrBlank()) {
+            val updatedEntity = entity.copy(localId = localId, orderName = "Локальный заказ #$localId")
+            orderDao.updateOrder(updatedEntity)
+        }
+        
         // ВАЖНО: Сохраняем услуги заказа, если они есть
         if (order.services.isNotEmpty()) {
             val serviceEntities = order.services.map { service ->

@@ -110,9 +110,11 @@ class ProfileFragment : Fragment() {
         if (hasChanges) {
             binding.buttonSaveProfile.isEnabled = true
             binding.buttonSaveProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
+            binding.buttonSaveProfile.alpha = 1.0f
         } else {
             binding.buttonSaveProfile.isEnabled = false
             binding.buttonSaveProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#BDBDBD"))
+            binding.buttonSaveProfile.alpha = 0.5f
         }
     }
     
@@ -244,9 +246,18 @@ class ProfileFragment : Fragment() {
             binding.editTextPhone.setText(user.phone ?: "")
             
             if (!isReadOnly) {
-                initialFullName = user.full_name ?: ""
-                initialPhone = user.phone ?: ""
-                isAvatarChanged = false
+                // Если пользователь еще не начал менять данные, обновляем "начальные" значения
+                // Если уже начал - не перезаписываем их, чтобы кнопка Сохранить не погасла
+                val currentFullName = binding.editTextFullName.text.toString().trim()
+                val currentPhone = binding.editTextPhone.text.toString().trim()
+                
+                if (currentFullName == initialFullName || initialFullName.isEmpty()) {
+                    initialFullName = user.full_name ?: ""
+                }
+                if (currentPhone == initialPhone || initialPhone.isEmpty()) {
+                    initialPhone = user.phone ?: ""
+                }
+                
                 checkChanges()
             }
             

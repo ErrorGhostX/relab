@@ -134,7 +134,6 @@ object RetrofitClient {
         }
     }
 
-
     private fun getClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
@@ -150,17 +149,27 @@ object RetrofitClient {
      * Вычисляет текущий BaseURL (используется и в getRetrofit, и в Authenticator)
      */
     fun getBaseUrl(): String {
+        // Защита от преждевременного обращения из сервисов
+        if (!::tokenManager.isInitialized) {
+            android.util.Log.e("RetrofitClient", "tokenManager is NOT initialized! Using default URL.")
+            return DEFAULT_BASE_URL
+        }
         val companies = tokenManager.getCompanies()
         val currentId = tokenManager.currentCompanyId
         val selectedCompany = companies.find { it.id == currentId }
+        
         var baseUrl = selectedCompany?.baseUrl ?: tokenManager.serverUrl ?: DEFAULT_BASE_URL
-        /* 
-        // Автоматический переход на HTTPS для всех доменов, кроме локальных
-        if (baseUrl.startsWith("http://") && !baseUrl.contains("10.0.2.2") && !baseUrl.contains("localhost")) {
-            baseUrl = baseUrl.replace("http://", "https://")
+        
+        if (!baseUrl.endsWith("/")) baseUrl = "$baseUrl/"
+        
+        // Автоматически добавляем /api/, если его нет в пути (но не в домене)
+        // Проверяем наличие /api/ в URL, исключая протокол
+        val pathPart = baseUrl.substringAfter("://")
+        if (!pathPart.contains("/api/")) {
+            baseUrl = "${baseUrl.removeSuffix("/")}/api/"
         }
-        */
-        return if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        
+        return baseUrl
     }
 
     /**
@@ -168,12 +177,9 @@ object RetrofitClient {
      * Преобразует http://.../api/ в ws://.../
      */
     fun getWsBaseUrl(): String {
-        val baseUrl = getBaseUrl()
-        return baseUrl
+        return getBaseUrlRoot()
             .replace("http://", "ws://")
             .replace("https://", "wss://")
-            .replace("/api/", "")
-            .removeSuffix("/")
     }
 
     /**

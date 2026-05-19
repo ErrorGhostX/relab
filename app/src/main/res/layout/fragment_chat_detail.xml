@@ -32,27 +32,41 @@
                 android:scaleType="centerInside"
                 app:tint="@color/gray_900" />
 
+            <FrameLayout
+                android:id="@+id/flAvatarContainer"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:visibility="gone">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivChatAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person"
+                    app:shapeAppearanceOverlay="@style/CircleImage" />
+
+                <View
+                    android:id="@+id/viewOnlineStatus"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/circle_badge_green" />
+            </FrameLayout>
+
             <TextView
                 android:id="@+id/tvChatTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="12dp"
                 android:textColor="@color/black"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:ellipsize="end"
                 android:maxLines="1"
                 tools:text="Чат" />
-
-            <TextView
-                android:id="@+id/tvConnectionStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:layout_marginEnd="8dp"
-                tools:text="● В сети"
-                tools:textColor="#4CAF50" />
 
             <ImageButton
                 android:id="@+id/btnOpenOrder"
@@ -78,6 +92,36 @@
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
         app:layout_constraintBottom_toTopOf="@+id/inputContainer" />
 
+    <FrameLayout
+        android:id="@+id/attachmentPreviewContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/inputContainer"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/ivAttachmentPreview"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/rounded_bg_8dp"
+            android:clipToOutline="true" />
+
+        <ImageButton
+            android:id="@+id/btnRemoveAttachment"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/circle_badge_red"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="@color/white"
+            android:padding="4dp"
+            android:scaleType="fitCenter" />
+    </FrameLayout>
+    
     <LinearLayout
         android:id="@+id/inputContainer"
         android:layout_width="match_parent"
@@ -108,7 +152,7 @@
             android:layout_marginEnd="4dp"
             android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/relab"
+            android:src="@drawable/ic_smart_toy"
             android:contentDescription="Запрос к ИИ"
             android:scaleType="fitCenter" />
 

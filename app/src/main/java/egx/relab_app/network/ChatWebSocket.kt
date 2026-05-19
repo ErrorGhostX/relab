@@ -67,7 +67,7 @@ class ChatWebSocket(private val tokenManager: TokenManager) {
         val wsBase = RetrofitClient.getWsBaseUrl()
         val wsUrl = "${wsBase}/ws/chat/${roomId}/?token=${token}"
 
-        Log.d(TAG, "Connecting to: $wsUrl")
+        Log.d(TAG, "Attempting connection to Room $roomId at URL: $wsUrl")
 
         val request = Request.Builder()
             .url(wsUrl)

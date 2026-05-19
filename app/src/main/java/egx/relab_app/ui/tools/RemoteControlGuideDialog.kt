@@ -7,10 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import egx.relab_app.databinding.RemoteControlGuideBinding
 
-class RemoteControlGuideDialog : DialogFragment() {
+class RemoteControlGuideFragment : Fragment() {
 
     private var _binding: RemoteControlGuideBinding? = null
     private val binding get() = _binding!!
@@ -34,11 +35,6 @@ class RemoteControlGuideDialog : DialogFragment() {
         "input" to "Кнопка Input (Вход)"
     )
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setStyle(STYLE_NORMAL, android.R.style.Theme_Material_Light_Dialog_MinWidth)
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -47,17 +43,13 @@ class RemoteControlGuideDialog : DialogFragment() {
         _binding = RemoteControlGuideBinding.inflate(inflater, container, false)
         return binding.root
     }
-    
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        binding.btnTopBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
         
         setupButtons()
         updateSequenceDisplay()

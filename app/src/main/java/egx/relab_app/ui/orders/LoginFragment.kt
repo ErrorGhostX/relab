@@ -14,6 +14,8 @@ import egx.relab_app.databinding.FragmentLoginBinding
 import egx.relab_app.models.UserResponse
 import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
+import egx.relab_app.network.GlobalConnectionManager
+import egx.relab_app.network.GlobalConnectionManager.ConnectionStatus
 import kotlinx.coroutines.launch
 class LoginFragment : Fragment() {
 
@@ -32,6 +34,7 @@ class LoginFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupCompanyPicker()
+        setupConnectionObserver()
 
         binding.btnSettings.setOnClickListener {
             showAddCompanyDialog()
@@ -70,8 +73,11 @@ class LoginFragment : Fragment() {
             return
         }
 
-        val displayNames = companies.map { it.nickname ?: it.name }
-        val adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, displayNames)
+        val displayNames = companies.map { 
+            val name = it.nickname ?: it.name
+            "$name (${it.baseUrl})"
+        }
+        val adapter = android.widget.ArrayAdapter(requireContext(), egx.relab_app.R.layout.item_spinner_black, displayNames)
         binding.spinnerCompany.setAdapter(adapter)
 
         // Восстанавливаем последнюю выбранную
@@ -88,10 +94,38 @@ class LoginFragment : Fragment() {
         binding.spinnerCompany.setOnItemClickListener { _, _, position, _ ->
             val company = companies[position]
             tokenManager.currentCompanyId = company.id
+            tokenManager.serverUrl = company.baseUrl 
             RetrofitClient.recreateRetrofit()
             tokenManager.isGuestMode = false
             egx.relab_app.database.AppDatabase.destroyInstance()
+            
+            // Сразу пробуем проверить связь с новым бэкендом
+            egx.relab_app.network.GlobalConnectionManager.start(tokenManager.accessToken ?: "")
+            
             android.util.Log.d("LoginFragment", "Selected company: ${company.name} at ${company.baseUrl}")
+        }
+    }
+
+    private fun setupConnectionObserver() {
+        GlobalConnectionManager.status.observe(viewLifecycleOwner) { status ->
+            val color = when (status) {
+                GlobalConnectionManager.ConnectionStatus.CONNECTED -> android.graphics.Color.parseColor("#4CAF50")
+                GlobalConnectionManager.ConnectionStatus.CONNECTING -> android.graphics.Color.parseColor("#FFC107")
+                GlobalConnectionManager.ConnectionStatus.DISCONNECTED -> android.graphics.Color.parseColor("#F44336")
+            }
+            val text = when (status) {
+                GlobalConnectionManager.ConnectionStatus.CONNECTED -> "Бэк в сети"
+                GlobalConnectionManager.ConnectionStatus.CONNECTING -> "Подключение..."
+                GlobalConnectionManager.ConnectionStatus.DISCONNECTED -> "Бэк не в сети"
+            }
+            
+            binding.viewConnectionIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+            binding.textConnectionStatus.text = text
+        }
+        
+        // Начальный запуск, если есть адрес
+        if (!RetrofitClient.tokenManager.serverUrl.isNullOrBlank()) {
+            egx.relab_app.network.GlobalConnectionManager.start(RetrofitClient.tokenManager.accessToken ?: "")
         }
     }
 
@@ -144,6 +178,7 @@ class LoginFragment : Fragment() {
                     
                     RetrofitClient.tokenManager.addCompany(newConfig)
                     RetrofitClient.tokenManager.currentCompanyId = newConfig.id
+                    RetrofitClient.tokenManager.serverUrl = finalUrl // Синхронизируем
                     RetrofitClient.tokenManager.isGuestMode = false
                     RetrofitClient.recreateRetrofit()
                     
@@ -172,6 +207,10 @@ class LoginFragment : Fragment() {
         tokenManager.fullName = "Локальный гость"
         
         egx.relab_app.database.AppDatabase.destroyInstance()
+        egx.relab_app.network.GlobalConnectionManager.stop()
+        
+        // Принудительно обновляем индикатор в MainActivity
+        (activity as? egx.relab_app.MainActivity)?.updateConnectionIndicator(egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED)
         
         Toast.makeText(requireContext(), "Вход в гостевой режим", Toast.LENGTH_SHORT).show()
         
@@ -223,6 +262,9 @@ class LoginFragment : Fragment() {
                 } catch (e: Exception) {
                     android.util.Log.w("FCM", "Firebase не инициализирован")
                 }
+
+                // Запускаем пульс сразу после логина
+                egx.relab_app.network.GlobalConnectionManager.start(resp.access)
 
                 findNavController().navigate(
                     R.id.nav_home,

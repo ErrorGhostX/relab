@@ -193,7 +193,10 @@ class SettingsFragment : Fragment() {
             binding.spinnerCompanySettings.setText("Нет компаний")
             return
         }
-        val displayNames = companies.map { it.nickname ?: it.name }
+        val displayNames = companies.map { 
+            val name = it.nickname ?: it.name
+            "$name (${it.baseUrl})"
+        }
         val adapter = ArrayAdapter(requireContext(), R.layout.item_spinner_black, displayNames)
         binding.spinnerCompanySettings.setAdapter(adapter)
 
@@ -210,6 +213,10 @@ class SettingsFragment : Fragment() {
             RetrofitClient.tokenManager.currentCompanyId = company.id
             RetrofitClient.recreateRetrofit()
             egx.relab_app.database.AppDatabase.destroyInstance()
+            
+            // Перезапускаем пульс для новой компании
+            egx.relab_app.network.GlobalConnectionManager.start(RetrofitClient.tokenManager.accessToken)
+            
             Toast.makeText(requireContext(), "Компания: ${company.nickname ?: company.name}", Toast.LENGTH_SHORT).show()
         }
     }
@@ -236,7 +243,7 @@ class SettingsFragment : Fragment() {
             progressBar.visibility = View.VISIBLE
             btnAdd.isEnabled = false
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     // Создаем временный клиент для проверки нового адреса
                     val tempRetrofit = retrofit2.Retrofit.Builder()
@@ -262,6 +269,10 @@ class SettingsFragment : Fragment() {
                     RetrofitClient.tokenManager.currentCompanyId = newConfig.id
                     RetrofitClient.tokenManager.isGuestMode = false
                     RetrofitClient.recreateRetrofit()
+                    
+                    // Перезапускаем пульс для новой компании
+                    egx.relab_app.network.GlobalConnectionManager.start(RetrofitClient.tokenManager.accessToken)
+                    
                     refreshCompanyPicker()
                     dialog.dismiss()
                     Toast.makeText(requireContext(), "Компания '${info.name}' добавлена", Toast.LENGTH_SHORT).show()
@@ -333,17 +344,17 @@ class SettingsFragment : Fragment() {
 
     private fun testConnection() {
         if (!isAdded) return
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Пытаемся получить профиль пользователя как проверку связи
                 val user = RetrofitClient.apiService.getCurrentUser()
-                if (isAdded) {
+                if (isAdded && _binding != null) {
                     Toast.makeText(context, "✅ Связь с сервером установлена!\nВы вошли как: ${user.username}", Toast.LENGTH_LONG).show()
                     // Если связь есть, обновляем и статус ИИ
                     checkAiStatus()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
+                if (isAdded && _binding != null) {
                     android.util.Log.e("Settings", "Connection test failed", e)
                     Toast.makeText(context, "❌ Ошибка подключения: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                 }
@@ -411,20 +422,24 @@ class SettingsFragment : Fragment() {
             .setPositiveButton("Отправить") { _, _ ->
                 val message = editText.text.toString().trim()
                 if (message.isNotEmpty()) {
-                    val app = requireContext().applicationContext as RelabApplication
+                    val ctx = context ?: return@setPositiveButton
+                    val app = ctx.applicationContext as RelabApplication
                     CrashHandler.sendFeedback(
-                        requireContext(),
+                        ctx,
                         message,
                         app.applicationScope
                     ) { success ->
+                        val currentContext = context ?: return@sendFeedback
                         if (success) {
-                            Toast.makeText(requireContext(), "Отчет отправлен. Спасибо!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(currentContext, "Отчет отправлен. Спасибо!", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(requireContext(), "Ошибка отправки отчета", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(currentContext, "Ошибка отправки отчета", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
-                    Toast.makeText(requireContext(), "Пожалуйста, введите описание", Toast.LENGTH_SHORT).show()
+                    context?.let { ctx ->
+                        Toast.makeText(ctx, "Пожалуйста, введите описание", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .setNegativeButton("Отмена", null)

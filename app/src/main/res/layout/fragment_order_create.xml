@@ -675,7 +675,7 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:layout_marginEnd="8dp"
-                        android:src="@android:drawable/ic_popup_disk_full"
+                        android:src="@drawable/devices"
                         app:tint="@color/text_premium_secondary" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -935,7 +935,7 @@
                     app:strokeColor="@color/gray_300"
                     android:textColor="@color/text_premium_primary"
                     android:textAllCaps="false"
-                    app:icon="@drawable/ic_assignment"
+                    app:icon="@drawable/date"
                     app:iconTint="@color/text_premium_secondary"
                     app:iconGravity="textStart"
                     app:iconPadding="12dp"
@@ -986,7 +986,7 @@
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusBottomEnd="16dp"
                     app:boxStrokeColor="@color/gray_300"
-                    app:startIconDrawable="@android:drawable/ic_menu_mapmode"
+                    app:startIconDrawable="@drawable/point_on_map"
                     app:startIconTint="@color/text_premium_secondary"
                     android:layout_marginBottom="16dp">
 
@@ -1031,7 +1031,7 @@
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusBottomEnd="16dp"
                     app:boxStrokeColor="@color/gray_300"
-                    app:startIconDrawable="@drawable/ic_assignment"
+                    app:startIconDrawable="@drawable/check_correct_svgrepo_com"
                     app:startIconTint="@color/text_premium_secondary"
                     android:layout_marginBottom="16dp">
 

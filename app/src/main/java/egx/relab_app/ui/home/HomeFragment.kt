@@ -80,15 +80,64 @@ class HomeFragment : Fragment() {
         }
         // Загружаем список чатов, чтобы получить актуальные бейджи
         messagingViewModel.loadChatRooms()
+
+        // Настраиваем индикатор соединения
+        setupConnectionIndicator()
+    }
+
+    private fun setupConnectionIndicator() {
+        val tokenManager = egx.relab_app.storage.TokenManager(requireContext())
+        
+        egx.relab_app.network.GlobalConnectionManager.status.observe(viewLifecycleOwner) { status ->
+            _binding?.let { b ->
+                if (tokenManager.isGuestMode) {
+                    b.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#9E9E9E")) // Серый
+                    b.tvConnectionLabel.text = "Локально"
+                    return@observe
+                }
+
+                when (status) {
+                    egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTED -> {
+                        b.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
+                        b.tvConnectionLabel.text = "Бэк в сети"
+                    }
+                    egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.CONNECTING -> {
+                        b.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFC107"))
+                        b.tvConnectionLabel.text = "Подключение..."
+                    }
+                    egx.relab_app.network.GlobalConnectionManager.ConnectionStatus.DISCONNECTED -> {
+                        b.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336"))
+                        b.tvConnectionLabel.text = "Оффлайн"
+                    }
+                    else -> {}
+                }
+            }
+        }
+        
+        // Сразу устанавливаем статус для гостевого режима, так как observe может не сработать если статус не изменился
+        if (tokenManager.isGuestMode) {
+            _binding?.let { b ->
+                b.viewConnectionStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#9E9E9E")) // Серый
+                b.tvConnectionLabel.text = "Локально"
+            }
+        }
     }
 
     private fun handleDeepLink(uriString: String) {
         try {
             val uri = android.net.Uri.parse(uriString)
             if (uri.scheme == "relab" && uri.host == "order") {
-                val orderId = uri.lastPathSegment?.toIntOrNull()
-                if (orderId != null) {
-                    openOrderDetailsById(orderId)
+                val lastSegment = uri.lastPathSegment
+                if (uri.pathSegments.contains("local")) {
+                    val localId = lastSegment?.toLongOrNull()
+                    if (localId != null) {
+                        openOrderDetailsByLocalId(localId)
+                    }
+                } else {
+                    val orderId = lastSegment?.toIntOrNull()
+                    if (orderId != null) {
+                        openOrderDetailsById(orderId)
+                    }
                 }
             } else {
                 Toast.makeText(requireContext(), "Неверный формат QR-кода", Toast.LENGTH_SHORT).show()
@@ -138,8 +187,30 @@ class HomeFragment : Fragment() {
         }
     }
 
-
-
+    private fun openOrderDetailsByLocalId(localId: Long) {
+        lifecycleScope.launch {
+            try {
+                val context = context ?: return@launch
+                val app = context.applicationContext as egx.relab_app.RelabApplication
+                val repository = app.orderRepository
+                
+                val order = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    repository.getOrderByLocalId(localId)
+                }
+                
+                if (order != null && isAdded) {
+                    val bundle = Bundle().apply { putParcelable("order", order) }
+                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle)
+                } else if (isAdded) {
+                    Toast.makeText(requireContext(), "Заказ локально не найден", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(context ?: return@launch, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
     
     override fun onResume() {
         super.onResume()
@@ -179,12 +250,8 @@ class HomeFragment : Fragment() {
         }
 
         binding.cardScanQr.setOnClickListener {
-            if (isGuest) {
-                Toast.makeText(requireContext(), "Необходимо войти в аккаунт", Toast.LENGTH_SHORT).show()
-            } else {
-                // Запускаем настоящий сканер через камеру
-                findNavController().navigate(R.id.qrScannerFragment)
-            }
+            // Запускаем настоящий сканер через камеру
+            findNavController().navigate(R.id.qrScannerFragment)
         }
 
         binding.cardWarehouse.setOnClickListener {
@@ -218,16 +285,14 @@ class HomeFragment : Fragment() {
             }
 
             binding.cardAssistant.setOnClickListener {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val aiRoom = RetrofitClient.apiService.getOrCreateAiChat()
+                val messagingViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[egx.relab_app.ui.messaging.MessagingViewModel::class.java]
+                messagingViewModel.getOrCreateAiChat { aiRoom ->
+                    if (aiRoom != null && isAdded) {
                         val bundle = Bundle().apply {
                             putInt("roomId", aiRoom.id)
                             putString("roomName", aiRoom.name ?: "ИИ-Помощник")
                         }
                         findNavController().navigate(R.id.chatDetailFragment, bundle)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Ошибка открытия чата с ИИ: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

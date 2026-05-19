@@ -144,6 +144,12 @@
         android:label="Инструменты"
         tools:layout="@layout/fragment_tools" />
 
+    <fragment
+        android:id="@+id/remoteControlGuideFragment"
+        android:name="egx.relab_app.ui.tools.RemoteControlGuideFragment"
+        android:label="Пульт"
+        tools:layout="@layout/remote_control_guide" />
+
 
 
     <fragment

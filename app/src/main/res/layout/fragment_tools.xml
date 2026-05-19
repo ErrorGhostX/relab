@@ -356,6 +356,70 @@
         </com.google.android.material.card.MaterialCardView>
 
 
+        <!-- Пульт -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeColor="#EEF2F6"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Интерактивный пульт"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Создайте пошаговую инструкцию для управления ТВ и отправьте её клиенту."
+                    android:textColor="#64748B"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonOpenRemoteGuide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Виртуальный пульт"
+                    style="@style/Widget.MaterialComponents.Button"
+                    app:backgroundTint="@color/gray_900"
+                    android:textColor="@color/white"
+                    app:cornerRadius="28dp"
+                    app:icon="@drawable/remote_controller"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/white"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonDownloadRemoteApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Скачать в Play Market"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="#E2E8F0"
+                    android:textColor="@color/teal_700"
+                    app:cornerRadius="28dp"
+                    app:icon="@android:drawable/stat_sys_download"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/teal_700" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
         <!-- ADB инструменты -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -456,70 +520,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Пульт -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white"
-            app:strokeColor="#EEF2F6"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Интерактивный пульт"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Создайте пошаговую инструкцию для управления ТВ и отправьте её клиенту."
-                    android:textColor="#64748B"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_marginBottom="16dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonOpenRemoteGuide"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Виртуальный пульт"
-                    style="@style/Widget.MaterialComponents.Button"
-                    app:backgroundTint="@color/teal_700"
-                    android:textColor="@color/white"
-                    app:cornerRadius="28dp"
-                    app:icon="@android:drawable/ic_media_play"
-                    app:iconGravity="textStart"
-                    app:iconTint="@color/white"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonDownloadRemoteApp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Скачать в Play Market"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="#E2E8F0"
-                    android:textColor="@color/teal_700"
-                    app:cornerRadius="28dp"
-                    app:icon="@android:drawable/stat_sys_download"
-                    app:iconGravity="textStart"
-                    app:iconTint="@color/teal_700" />
-                
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <!-- Драйверы -->
         <com.google.android.material.card.MaterialCardView

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import egx.relab_app.models.UserResponse
 import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
+import egx.relab_app.repository.EmployeeRepository
 import kotlinx.coroutines.launch
 
 /**
@@ -38,24 +39,38 @@ class EmployeeViewModel : ViewModel() {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
+    // Репозиторий (устанавливается через initRepository)
+    private var repository: EmployeeRepository? = null
+
     // Поиск/фильтрация
     private var allEmployees: List<UserResponse> = emptyList()
 
     /**
-     * Загрузить список всех сотрудников
+     * Инициализация репозитория и подписка на данные
+     */
+    fun initRepository(repo: EmployeeRepository) {
+        this.repository = repo
+        viewModelScope.launch {
+            repo.getAllEmployees().collect {
+                _employees.value = it
+                allEmployees = it
+            }
+        }
+    }
+
+    /**
+     * Загрузить список всех сотрудников (Синхронизация)
      */
     fun loadEmployees() {
+        val repo = repository ?: return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                val result = RetrofitClient.apiService.getEmployees()
-                allEmployees = result
-                _employees.value = result
-                Log.d(TAG, "Loaded ${result.size} employees")
+                repo.syncEmployees()
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading employees", e)
-                _error.value = "Ошибка загрузки: ${e.localizedMessage}"
+                Log.e(TAG, "Error syncing employees", e)
+                _error.value = "Ошибка синхронизации: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -94,7 +109,7 @@ class EmployeeViewModel : ViewModel() {
             try {
                 RetrofitClient.apiService.registerEmployee(request)
                 Log.d(TAG, "Successfully created employee: ${request.username}")
-                loadEmployees() // Перезагружаем список
+                loadEmployees() // Теперь работает без параметров
                 onSuccess()
             } catch (e: Exception) {
                 Log.e(TAG, "Error creating employee", e)
@@ -115,7 +130,7 @@ class EmployeeViewModel : ViewModel() {
             try {
                 RetrofitClient.apiService.updateEmployee(employeeId, request)
                 Log.d(TAG, "Successfully updated employee: $employeeId")
-                loadEmployees() // Перезагружаем список
+                loadEmployees() // Теперь работает без параметров
                 onSuccess()
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating employee", e)

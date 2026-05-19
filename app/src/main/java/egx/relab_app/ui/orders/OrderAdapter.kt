@@ -161,8 +161,9 @@ class OrderAdapter(
             // Sync Pending Badge
             val syncPendingBadge: View? = itemView.findViewById(R.id.syncPendingBadge)
             if (syncPendingBadge != null) {
-                val isPending = order.syncStatus == egx.relab_app.database.entity.SyncStatus.PENDING || 
-                               order.syncStatus == egx.relab_app.database.entity.SyncStatus.ERROR
+                val isGuest = egx.relab_app.storage.TokenManager(itemView.context).isGuestMode
+                val isPending = !isGuest && (order.syncStatus == egx.relab_app.database.entity.SyncStatus.PENDING || 
+                               order.syncStatus == egx.relab_app.database.entity.SyncStatus.ERROR)
                 syncPendingBadge.visibility = if (isPending) View.VISIBLE else View.GONE
             }
             

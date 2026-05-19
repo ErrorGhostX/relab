@@ -93,7 +93,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/gray_300"
-                    app:startIconDrawable="@drawable/googleg_standard_color_18"
+                    app:startIconDrawable="@drawable/company"
                     app:startIconTint="@color/gray_600">
 
                     <AutoCompleteTextView

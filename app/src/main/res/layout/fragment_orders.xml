@@ -64,35 +64,31 @@
                     android:textStyle="bold"
                     android:letterSpacing="-0.02" />
 
-                <com.google.android.material.button.MaterialButton
+                <ImageButton
                     android:id="@+id/buttonScanQr"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_toStartOf="@id/buttonClearDb"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="4dp"
-                    android:padding="0dp"
-                    app:icon="@drawable/qr_code_scanner_svgrepo_com"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconTint="@color/gray_900"
-                    app:rippleColor="#20000000" />
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/circle_back_button"
+                    android:src="@drawable/qr_reader"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    app:tint="@color/gray_900" />
 
-                <com.google.android.material.button.MaterialButton
+                <ImageButton
                     android:id="@+id/buttonClearDb"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_toStartOf="@id/syncButtonContainer"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="4dp"
-                    android:padding="0dp"
-                    app:icon="@drawable/trash_can_svgrepo_com"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconTint="@color/gray_900"
-                    app:rippleColor="#20000000" />
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/circle_back_button"
+                    android:src="@drawable/trash_can_svgrepo_com"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    app:tint="@color/gray_900" />
 
                 <FrameLayout
                     android:id="@+id/syncButtonContainer"
@@ -101,17 +97,15 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true">
 
-                    <com.google.android.material.button.MaterialButton
+                    <ImageButton
                         android:id="@+id/buttonSync"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:padding="0dp"
-                        app:icon="@android:drawable/stat_notify_sync"
-                        app:iconGravity="textStart"
-                        app:iconPadding="0dp"
-                        app:iconTint="@color/gray_900"
-                        app:rippleColor="#20000000" />
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/circle_back_button"
+                        android:src="@android:drawable/stat_notify_sync"
+                        android:padding="8dp"
+                        android:scaleType="centerInside"
+                        app:tint="@color/gray_900" />
 
                     <TextView
                         android:id="@+id/syncBadgeText"

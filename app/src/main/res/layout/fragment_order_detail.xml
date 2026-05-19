@@ -405,7 +405,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     app:fabSize="mini"
-                                    android:src="@android:drawable/ic_menu_add"
+                                    android:src="@drawable/cube"
                                     app:backgroundTint="#F1F5F9"
                                     app:tint="@color/gray_900"
                                     app:elevation="2dp"/>
@@ -584,7 +584,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_send"
+                                android:src="@drawable/ic_chat"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/messenger" style="@style/DetailTextStyleBlack" android:text="Мессенджер: -" />
@@ -632,7 +632,7 @@
                             <ImageView
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
-                                android:src="@drawable/ic_smart_toy"
+                                android:src="@drawable/devices"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="8dp" />
                             <TextView
@@ -653,7 +653,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_agenda"
+                                android:src="@drawable/ic_view_list"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/deviceType" style="@style/DetailTextStyleBlack" android:text="Тип: -" />
@@ -668,7 +668,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@drawable/pencil_file_svgrepo_com"
+                                android:src="@drawable/googleg_disabled_color_18"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/manufacturer" style="@style/DetailTextStyleBlack" android:text="Бренд: -" />
@@ -697,7 +697,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_preferences"
+                                android:src="@drawable/gear_settings_svgrepo_com"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/kit" style="@style/DetailTextStyleBlack" android:text="Комплект: -" />
@@ -731,7 +731,7 @@
                             <ImageView
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
-                                android:src="@drawable/pencil_file_svgrepo_com"
+                                android:src="@drawable/ic_assignment"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="8dp" />
                             <TextView
@@ -752,10 +752,10 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@drawable/pencil_file_svgrepo_com"
+                                android:src="@drawable/checkbox_list_detail_line"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
-                            <TextView android:id="@+id/description" style="@style/DetailTextStyleBlack" android:text="Неисправность: -" android:textSize="15sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/description" style="@style/DetailTextStyleBlack" android:text="Описание: -" android:textSize="15sp" android:textStyle="bold"/>
                         </LinearLayout>
 
                         <LinearLayout
@@ -767,7 +767,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_today"
+                                android:src="@drawable/date"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/date" style="@style/DetailTextStyleBlack" android:text="Дата: -" />
@@ -782,7 +782,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_recent_history"
+                                android:src="@drawable/ic_view_list"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/executionType" style="@style/DetailTextStyleBlack" android:text="Тип: -" />
@@ -797,7 +797,7 @@
                             <ImageView
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
-                                android:src="@android:drawable/ic_menu_mapmode"
+                                android:src="@drawable/point_on_map"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="10dp" />
                             <TextView android:id="@+id/address" style="@style/DetailTextStyleBlack" android:text="Адрес: -" />
@@ -883,7 +883,7 @@
                             <ImageView
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_add"
+                                android:src="@drawable/cube"
                                 app:tint="@color/text_premium_secondary"
                                 android:layout_marginEnd="8dp" />
                             <TextView

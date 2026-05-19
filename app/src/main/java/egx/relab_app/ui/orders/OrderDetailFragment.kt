@@ -572,23 +572,7 @@ class OrderDetailFragment : Fragment() {
             val isServiceCreator = svc.createdByUsername == currentUsername || svc.createdByUsername == null // null fallback for old services
             val canDeleteThisService = canManageOrder || isServiceCreator
             
-            val deleteBtn = row.findViewById<ImageButton>(R.id.btnDeleteService)
-            deleteBtn.visibility = if (canDeleteThisService) View.VISIBLE else View.GONE
 
-            deleteBtn.setOnClickListener {
-                if (!canDeleteThisService) {
-                    showToast("Ошиба прав. Вы можете удалять только свои услуги")
-                    return@setOnClickListener
-                }
-                deleteServiceByDescription(
-                    orderId = order.id,
-                    serviceId = svc.id ?: 0,
-                    description = svc.description,
-                    price = svc.price,
-                    serviceIndex = index
-                )
-            }
-            
             // Чекбокс статуса
             val cbStatus = row.findViewById<CheckBox>(R.id.cbServiceStatus)
             cbStatus.isChecked = svc.serviceStatus == "done"
@@ -676,17 +660,21 @@ class OrderDetailFragment : Fragment() {
             
             // Кнопка удаления услуги
             val btnDelete = row.findViewById<ImageButton>(R.id.btnDeleteService)
-            // Только создатель услуги или создатель заказа или админ
-            val canDelete = canManageOrder || svc.createdByUsername == currentUsername
+            btnDelete.visibility = if (canDeleteThisService) View.VISIBLE else View.GONE
             
-            btnDelete.visibility = if (canDelete) View.VISIBLE else View.GONE
-            if (canDelete) {
+            if (canDeleteThisService) {
                 btnDelete.setOnClickListener {
                     MaterialAlertDialogBuilder(requireContext())
                         .setTitle("Удалить услугу")
                         .setMessage("Вы уверены, что хотите удалить услугу \"${svc.description}\"?")
                         .setPositiveButton("Удалить") { _, _ ->
-                            deleteService(order.id!!, svc.id ?: 0)
+                            deleteServiceByDescription(
+                                orderId = order.id,
+                                serviceId = svc.id ?: 0,
+                                description = svc.description,
+                                price = svc.price,
+                                serviceIndex = index
+                            )
                         }
                         .setNegativeButton("Отмена", null)
                         .show()
