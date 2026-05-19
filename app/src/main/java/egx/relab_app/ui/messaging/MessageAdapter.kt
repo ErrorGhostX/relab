@@ -13,6 +13,8 @@ import egx.relab_app.R
 import egx.relab_app.network.ApiService
 import egx.relab_app.network.RetrofitClient
 
+import io.noties.markwon.Markwon
+
 /**
  * Адаптер для сообщений в чате.
  * Два типа ViewHolder: отправленные (справа) и полученные (слева).
@@ -21,6 +23,19 @@ class MessageAdapter(
     private val currentUserId: Int,
     private val onInviteAction: ((Int) -> Unit)? = null
 ) : ListAdapter<ApiService.RoomMessage, RecyclerView.ViewHolder>(MessageDiffCallback()) {
+
+    private var markwon: Markwon? = null
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (markwon == null) {
+            markwon = Markwon.create(recyclerView.context)
+        }
+    }
+
+    private fun setMarkdownText(tv: TextView, text: String) {
+        markwon?.setMarkdown(tv, text) ?: run { tv.text = text }
+    }
 
     companion object {
         private const val TYPE_SENT = 0
@@ -67,12 +82,12 @@ class MessageAdapter(
                 if (parts.size >= 3) {
                     val orderName = parts.getOrNull(2) ?: "заказ"
                     val type = if (text.startsWith("[INVITE_ASSIGN:")) "Приглашение исполнителем" else "Приглашение участником"
-                    tvText.text = "$type отправлено: $orderName"
+                    setMarkdownText(tvText, "$type отправлено: $orderName")
                 } else {
-                    tvText.text = text
+                    setMarkdownText(tvText, text)
                 }
             } else {
-                tvText.text = text
+                setMarkdownText(tvText, text)
             }
 
             tvText.visibility = if (!msg.text.isNullOrBlank()) View.VISIBLE else View.GONE
@@ -132,12 +147,12 @@ class MessageAdapter(
                     val orderName = parts[2]
                     
                     if (isAssignInvite) {
-                        tvText.text = "Вас пригласили стать ИСПОЛНИТЕЛЕМ заказа: $orderName"
+                        setMarkdownText(tvText, "Вас пригласили стать ИСПОЛНИТЕЛЕМ заказа: $orderName")
                         if (btnAccept is android.widget.Button) {
                             btnAccept.text = "Стать исполнителем"
                         }
                     } else {
-                        tvText.text = "Вы приглашены как участник в заказ: $orderName"
+                        setMarkdownText(tvText, "Вы приглашены как участник в заказ: $orderName")
                         if (btnAccept is android.widget.Button) {
                             btnAccept.text = "Присоединиться"
                         }
@@ -148,10 +163,10 @@ class MessageAdapter(
                         inviteOrderId = orderId
                     }
                 } else {
-                    tvText.text = text
+                    setMarkdownText(tvText, text)
                 }
             } else {
-                tvText.text = text
+                setMarkdownText(tvText, text)
             }
 
             btnAccept?.visibility = if (isInvite) View.VISIBLE else View.GONE
