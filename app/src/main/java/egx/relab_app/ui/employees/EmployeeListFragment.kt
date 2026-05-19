@@ -131,10 +131,10 @@ class EmployeeListFragment : Fragment() {
 
         // Наблюдаем за данными (сотрудники)
         viewModel.employees.observe(viewLifecycleOwner) { list ->
-            // Скрываем технических пользователей (admin, ai-assistant)
+            // Скрываем технических пользователей (ai-assistant)
             val filteredList = list.filter { 
                 val username = it.username?.lowercase() ?: ""
-                !username.contains("admin") && !username.contains("ai")
+                !username.contains("ai")
             }
             
             // Обновляем счетчик онлайн
