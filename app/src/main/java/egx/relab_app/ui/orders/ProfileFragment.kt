@@ -579,6 +579,10 @@ class ProfileFragment : Fragment() {
     }
 
     private fun logout() {
+        // Останавливаем фоновые WebSocket-сервисы перед очисткой токенов
+        egx.relab_app.services.NotificationWebSocketService.stop(requireContext())
+        egx.relab_app.network.GlobalConnectionManager.stop()
+
         tokenManager.accessToken = null
         tokenManager.refreshToken = null
         tokenManager.username = null
