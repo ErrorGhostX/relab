@@ -148,6 +148,7 @@
         android:clipToPadding="false"
         android:paddingTop="8dp"
         android:paddingBottom="100dp"
+        android:layoutAnimation="@anim/layout_fall_in"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/item_customer" />

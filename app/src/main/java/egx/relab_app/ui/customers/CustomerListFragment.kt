@@ -54,17 +54,16 @@ class CustomerListFragment : Fragment() {
         chipGroupFilter = view.findViewById(R.id.chipGroupFilter)
         chipAll = view.findViewById(R.id.chipAll)
         chipMy = view.findViewById(R.id.chipMy)
-
         adapter = CustomerAdapter { customer ->
             val bundle = Bundle().apply { putParcelable("customer", customer) }
-            findNavController().navigate(R.id.customerDetailFragment, bundle)
+            findNavController().navigate(R.id.customerDetailFragment, bundle, egx.relab_app.utils.NavAnimations.slideNavOptions())
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
         view.findViewById<View>(R.id.fabAddCustomer).setOnClickListener {
-            findNavController().navigate(R.id.action_customerListFragment_to_customerFormFragment)
+            findNavController().navigate(R.id.action_customerListFragment_to_customerFormFragment, null, egx.relab_app.utils.NavAnimations.formNavOptions())
         }
 
         view.findViewById<View>(R.id.btnBack).setOnClickListener {

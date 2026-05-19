@@ -432,7 +432,7 @@ class ToolsFragment : Fragment() {
     // ========== ПУЛЬТ ==========
     
     private fun openRemoteGuideDialog() {
-        findNavController().navigate(egx.relab_app.R.id.remoteControlGuideFragment)
+        findNavController().navigate(egx.relab_app.R.id.remoteControlGuideFragment, null, egx.relab_app.utils.NavAnimations.slideNavOptions())
     }
     
     private fun openPlayMarket() {

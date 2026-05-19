@@ -122,6 +122,7 @@
             android:clipToPadding="false"
             android:paddingTop="8dp"
             android:paddingBottom="88dp"
+            android:layoutAnimation="@anim/layout_fall_in"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/item_employee" />
 

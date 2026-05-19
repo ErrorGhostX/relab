@@ -62,10 +62,9 @@ class CustomerDetailFragment : Fragment() {
         } else {
             cardBlacklistWarning.visibility = View.GONE
         }
-
         view.findViewById<View>(R.id.fabEditCustomer).setOnClickListener {
             val bundle = Bundle().apply { putParcelable("customer", customer) }
-            findNavController().navigate(R.id.action_customerDetailFragment_to_customerFormFragment, bundle)
+            findNavController().navigate(R.id.action_customerDetailFragment_to_customerFormFragment, bundle, egx.relab_app.utils.NavAnimations.formNavOptions())
         }
 
         setupOrdersList(view)
@@ -80,7 +79,7 @@ class CustomerDetailFragment : Fragment() {
             try {
                 // Если мы можем, переходим. Иначе просто тост
                 val bundle = Bundle().apply { putParcelable("order", order) }
-                findNavController().navigate(R.id.orderDetailFragment, bundle)
+                findNavController().navigate(R.id.orderDetailFragment, bundle, egx.relab_app.utils.NavAnimations.slideNavOptions())
             } catch (e: Exception) {
                 android.widget.Toast.makeText(requireContext(), "Заказ: ${order.orderName}", android.widget.Toast.LENGTH_SHORT).show()
             }

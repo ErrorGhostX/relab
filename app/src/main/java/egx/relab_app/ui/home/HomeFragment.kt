@@ -175,7 +175,7 @@ class HomeFragment : Fragment() {
                 if (order != null && isAdded) {
                     // Переходим к деталям заказа, передавая полный объект Order
                     val bundle = Bundle().apply { putParcelable("order", order) }
-                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle)
+                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle, egx.relab_app.utils.NavAnimations.slideNavOptions())
                 } else if (isAdded) {
                     Toast.makeText(requireContext(), "Заказ #$orderId не найден", Toast.LENGTH_SHORT).show()
                 }
@@ -200,7 +200,7 @@ class HomeFragment : Fragment() {
                 
                 if (order != null && isAdded) {
                     val bundle = Bundle().apply { putParcelable("order", order) }
-                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle)
+                    findNavController().navigate(egx.relab_app.R.id.orderDetailFragment, bundle, egx.relab_app.utils.NavAnimations.slideNavOptions())
                 } else if (isAdded) {
                     Toast.makeText(requireContext(), "Заказ локально не найден", Toast.LENGTH_SHORT).show()
                 }
@@ -238,20 +238,20 @@ class HomeFragment : Fragment() {
         }
         
         binding.cardCustomers.setOnClickListener {
-            findNavController().navigate(R.id.nav_customers)
+            findNavController().navigate(R.id.nav_customers, null, egx.relab_app.utils.NavAnimations.slideNavOptions())
         }
         
         binding.cardSettings.setOnClickListener {
-            findNavController().navigate(R.id.settingsFragment)
+            findNavController().navigate(R.id.settingsFragment, null, egx.relab_app.utils.NavAnimations.slideNavOptions())
         }
         
         binding.cardTools.setOnClickListener {
-            findNavController().navigate(R.id.toolsFragment)
+            findNavController().navigate(R.id.toolsFragment, null, egx.relab_app.utils.NavAnimations.slideNavOptions())
         }
 
         binding.cardScanQr.setOnClickListener {
             // Запускаем настоящий сканер через камеру
-            findNavController().navigate(R.id.qrScannerFragment)
+            findNavController().navigate(R.id.qrScannerFragment, null, egx.relab_app.utils.NavAnimations.scaleNavOptions())
         }
 
         binding.cardWarehouse.setOnClickListener {
@@ -292,7 +292,7 @@ class HomeFragment : Fragment() {
                             putInt("roomId", aiRoom.id)
                             putString("roomName", aiRoom.name ?: "ИИ-Помощник")
                         }
-                        findNavController().navigate(R.id.chatDetailFragment, bundle)
+                        findNavController().navigate(R.id.chatDetailFragment, bundle, egx.relab_app.utils.NavAnimations.slideNavOptions())
                     }
                 }
             }

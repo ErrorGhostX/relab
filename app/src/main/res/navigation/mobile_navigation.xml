@@ -5,41 +5,80 @@
     android:id="@+id/mobile_navigation"
     app:startDestination="@+id/nav_home">
 
+    <!-- ==================== ГЛАВНЫЙ ЭКРАН ==================== -->
     <fragment
         android:id="@+id/nav_home"
         android:name="egx.relab_app.ui.home.HomeFragment"
         android:label=""
         tools:layout="@layout/fragment_home" >
+
+        <!-- Из главного экрана — slide-in с масштабированием (fade_scale) -->
         <action
             android:id="@+id/action_homeFragment_to_orderListFragment"
-            app:destination="@id/orderListFragment" />
+            app:destination="@id/orderListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_homeFragment_to_analyticsFragment"
-            app:destination="@id/analyticsFragment" />
+            app:destination="@id/analyticsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_homeFragment_to_profileFragment"
-            app:destination="@id/profileFragment" />
+            app:destination="@id/profileFragment"
+            app:enterAnim="@anim/fade_scale_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/fade_scale_out" />
         <action
             android:id="@+id/action_homeFragment_to_settingsFragment"
-            app:destination="@id/settingsFragment" />
+            app:destination="@id/settingsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_nav_home_to_toolsFragment"
-            app:destination="@id/toolsFragment" />
+            app:destination="@id/toolsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_nav_home_to_nav_customers"
-            app:destination="@id/nav_customers" />
+            app:destination="@id/nav_customers"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_nav_home_to_employeeListFragment"
-            app:destination="@id/employeeListFragment" />
+            app:destination="@id/employeeListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_nav_home_to_chatListFragment"
-            app:destination="@id/chatListFragment" />
+            app:destination="@id/chatListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_nav_home_to_consumableListFragment"
-            app:destination="@id/consumableListFragment" />
-
+            app:destination="@id/consumableListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
+    <!-- ==================== ПРОФИЛЬ ==================== -->
     <fragment
         android:id="@+id/profileFragment"
         android:name="egx.relab_app.ui.orders.ProfileFragment"
@@ -51,32 +90,41 @@
             android:defaultValue="-1" />
     </fragment>
 
+    <!-- ==================== ЗАКАЗЫ ==================== -->
     <fragment
         android:id="@+id/orderListFragment"
         android:name="egx.relab_app.ui.orders.OrderListFragment"
         android:label="Заказы"
         tools:layout="@layout/fragment_orders">
 
-
-
+        <!-- Создание заказа — slide up (как модальное окно) -->
         <action
             android:id="@+id/action_orderListFragment_to_orderFormFragment"
-            app:destination="@id/orderFormFragment" />
+            app:destination="@id/orderFormFragment"
+            app:enterAnim="@anim/slide_up_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_down_out" />
 
         <action
             android:id="@+id/action_orderListFragment_to_qrScannerFragment"
-            app:destination="@id/qrScannerFragment" />
+            app:destination="@id/qrScannerFragment"
+            app:enterAnim="@anim/fade_scale_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/fade_scale_out" />
 
-
-
+        <!-- Детали заказа — slide in (углубление) -->
         <action
             android:id="@+id/action_orderListFragment_to_orderDetailFragment"
             app:destination="@id/orderDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
-
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
-    
+
+    <!-- ==================== КЛИЕНТЫ ==================== -->
     <fragment
         android:id="@+id/nav_customers"
         android:name="egx.relab_app.ui.customers.CustomerListFragment"
@@ -85,13 +133,19 @@
         <action
             android:id="@+id/action_customerListFragment_to_customerDetailFragment"
             app:destination="@id/customerDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_customerListFragment_to_customerFormFragment"
-            app:destination="@id/customerFormFragment" />
+            app:destination="@id/customerFormFragment"
+            app:enterAnim="@anim/slide_up_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_down_out" />
     </fragment>
-        
+
     <fragment
         android:id="@+id/customerDetailFragment"
         android:name="egx.relab_app.ui.customers.CustomerDetailFragment"
@@ -102,7 +156,11 @@
             app:argType="egx.relab_app.models.Customer" />
         <action
             android:id="@+id/action_customerDetailFragment_to_customerFormFragment"
-            app:destination="@id/customerFormFragment" />
+            app:destination="@id/customerFormFragment"
+            app:enterAnim="@anim/slide_up_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_down_out" />
     </fragment>
 
     <fragment
@@ -117,6 +175,7 @@
             android:defaultValue="@null" />
     </fragment>
 
+    <!-- ==================== АНАЛИТИКА ==================== -->
     <fragment
         android:id="@+id/analyticsFragment"
         android:name="egx.relab_app.ui.orders.AnalyticsFragment"
@@ -132,12 +191,14 @@
             android:defaultValue='""' />
     </fragment>
 
+    <!-- ==================== НАСТРОЙКИ ==================== -->
     <fragment
         android:id="@+id/settingsFragment"
         android:name="egx.relab_app.ui.settings.SettingsFragment"
         android:label="Настройки"
         tools:layout="@layout/fragment_settings" />
 
+    <!-- ==================== ИНСТРУМЕНТЫ ==================== -->
     <fragment
         android:id="@+id/toolsFragment"
         android:name="egx.relab_app.ui.tools.ToolsFragment"
@@ -150,14 +211,12 @@
         android:label="Пульт"
         tools:layout="@layout/remote_control_guide" />
 
-
-
+    <!-- ==================== ФОРМА / ДЕТАЛИ ЗАКАЗА ==================== -->
     <fragment
         android:id="@+id/orderFormFragment"
         android:name="egx.relab_app.ui.orders.OrderFormFragment"
         android:label="Форма заказа"
         tools:layout="@layout/fragment_order_create">
-
         <argument
             android:name="order"
             app:argType="egx.relab_app.models.Order"
@@ -170,36 +229,41 @@
         android:name="egx.relab_app.ui.orders.OrderDetailFragment"
         android:label="Детали заказа"
         tools:layout="@layout/fragment_order_detail">
-
         <argument
             android:name="order"
             app:argType="egx.relab_app.models.Order" />
+        <!-- Редактирование — slide up (форма) -->
         <action
             android:id="@+id/action_orderDetailFragment_to_orderFormFragment"
             app:destination="@id/orderFormFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/slide_up_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_down_out" />
+        <!-- Чат заказа — slide in (углубление) -->
         <action
             android:id="@+id/action_orderDetailFragment_to_chatDetailFragment"
             app:destination="@id/chatDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
+    <!-- ==================== ЛОГИН ==================== -->
     <fragment
         android:id="@+id/loginFragment"
         android:name="egx.relab_app.ui.orders.LoginFragment"
         android:label="Login"
         tools:layout="@layout/fragment_login">
-
         <action
             android:id="@+id/action_loginFragment_to_orderListFragment"
-            app:destination="@id/nav_home" />
+            app:destination="@id/nav_home"
+            app:enterAnim="@anim/fade_scale_in"
+            app:exitAnim="@anim/fade_scale_out" />
     </fragment>
 
-
-
-
+    <!-- ==================== СОТРУДНИКИ ==================== -->
     <fragment
         android:id="@+id/employeeListFragment"
         android:name="egx.relab_app.ui.employees.EmployeeListFragment"
@@ -208,11 +272,13 @@
         <action
             android:id="@+id/action_employeeListFragment_to_profileFragment"
             app:destination="@id/profileFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/fade_scale_in"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/fade_scale_out" />
     </fragment>
 
-
+    <!-- ==================== ЧАТЫ ==================== -->
     <fragment
         android:id="@+id/chatListFragment"
         android:name="egx.relab_app.ui.messaging.ChatListFragment"
@@ -221,8 +287,10 @@
         <action
             android:id="@+id/action_chatListFragment_to_chatDetailFragment"
             app:destination="@id/chatDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -245,16 +313,20 @@
         <action
             android:id="@+id/action_chatDetailFragment_to_orderDetailFragment"
             app:destination="@id/orderDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
+    <!-- ==================== СКЛАД ==================== -->
     <fragment
         android:id="@+id/consumableListFragment"
         android:name="egx.relab_app.ui.orders.ConsumableListFragment"
         android:label="Склад"
         tools:layout="@layout/fragment_consumable_list" />
 
+    <!-- ==================== QR СКАНЕР ==================== -->
     <fragment
         android:id="@+id/qrScannerFragment"
         android:name="egx.relab_app.ui.orders.QrScannerFragment"
@@ -262,4 +334,3 @@
         tools:layout="@layout/fragment_qr_scanner" />
 
 </navigation>
-

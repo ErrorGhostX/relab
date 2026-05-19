@@ -146,34 +146,43 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         navView.setNavigationItemSelectedListener { menuItem ->
+            // Анимации по умолчанию для навигации из бокового меню
+            val navOptions = androidx.navigation.navOptions {
+                anim {
+                    enter = R.anim.slide_in_right
+                    exit = R.anim.slide_out_left
+                    popEnter = R.anim.slide_in_left
+                    popExit = R.anim.slide_out_right
+                }
+            }
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    navController.navigate(R.id.nav_home)
+                    navController.navigate(R.id.nav_home, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_orders -> {
-                    navController.navigate(R.id.orderListFragment)
+                    navController.navigate(R.id.orderListFragment, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_analytics -> {
-                    navController.navigate(R.id.analyticsFragment)
+                    navController.navigate(R.id.analyticsFragment, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_profile -> {
-                    navController.navigate(R.id.profileFragment)
+                    navController.navigate(R.id.profileFragment, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_settings -> {
-                    navController.navigate(R.id.settingsFragment)
+                    navController.navigate(R.id.settingsFragment, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_tools -> {
-                    navController.navigate(R.id.toolsFragment)
+                    navController.navigate(R.id.toolsFragment, null, navOptions)
                     drawerLayout.closeDrawers()
                     true
                 }

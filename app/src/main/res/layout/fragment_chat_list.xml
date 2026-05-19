@@ -63,6 +63,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingBottom="88dp"
+            android:layoutAnimation="@anim/layout_fall_in"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/item_chat_room" />
 
