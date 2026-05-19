@@ -157,6 +157,31 @@ class SettingsFragment : Fragment() {
     private fun setupCompanySettings() {
         refreshCompanyPicker()
 
+        // Настройка кнопки админ-панели
+        if (tokenManager.rank == "admin") {
+            binding.btnAdminPanel.visibility = android.view.View.VISIBLE
+            binding.btnAdminPanel.setOnClickListener {
+                val companies = RetrofitClient.tokenManager.getCompanies()
+                val currentId = RetrofitClient.tokenManager.currentCompanyId
+                val selectedCompany = companies.find { it.id == currentId }
+                val baseServerUrl = selectedCompany?.baseUrl ?: RetrofitClient.tokenManager.serverUrl ?: ""
+                
+                val uri = android.net.Uri.parse(baseServerUrl)
+                val cleanUrl = "${uri.scheme}://${uri.authority}"
+                val token = RetrofitClient.tokenManager.accessToken ?: ""
+                if (cleanUrl.isNotEmpty() && cleanUrl != "null://null" && token.isNotEmpty()) {
+                    val url = "$cleanUrl/api/auth/admin-login/?token=$token"
+                    val intent = android.content.Intent(requireContext(), AdminWebViewActivity::class.java)
+                    intent.putExtra("EXTRA_URL", url)
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(requireContext(), "Отсутствует подключение или токен", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            binding.btnAdminPanel.visibility = android.view.View.GONE
+        }
+
         binding.btnAddCompanySettings.setOnClickListener {
             showAddCompanyDialog()
         }

@@ -87,5 +87,10 @@
             android:name=".ui.messaging.ImageDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.Relab" />
+
+        <activity
+            android:name=".ui.settings.AdminWebViewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Relab.NoActionBar" />
     </application>
 </manifest>
