@@ -14,9 +14,7 @@ import egx.relab_app.storage.TokenManager
 import androidx.navigation.fragment.findNavController
 import java.io.File
 import android.widget.ArrayAdapter
-import android.widget.AdapterView
 import android.content.Context
-import android.graphics.Color
 import androidx.lifecycle.lifecycleScope
 import egx.relab_app.network.RetrofitClient
 import kotlinx.coroutines.launch
