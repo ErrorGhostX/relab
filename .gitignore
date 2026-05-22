@@ -39,3 +39,10 @@ local.properties
 
 # Django migrations (опциональные конфликтные)
 # /backend_relab_app/orders/migrations/
+
+# Архивы и бэкапы
+*.rar
+*.zip
+*.tar.gz
+*.rar.part
+
