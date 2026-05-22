@@ -1,0 +1,282 @@
+/* Relab Custom Django Admin Theme - Modern Minimalist */
+
+:root {
+    /* Base Colors - Black and White */
+    --primary: #000000;
+    --secondary: #1a1a1a;
+    --accent: #333333;
+    
+    /* Foreground/Text */
+    --primary-fg: #ffffff;
+    --body-fg: #111111;
+    --body-quiet-color: #666666;
+    --body-loud-color: #000000;
+    
+    /* Backgrounds */
+    --body-bg: #f4f6f8;
+    --content-bg: #ffffff;
+    
+    /* Header */
+    --header-color: #ffffff;
+    --header-branding-color: #ffffff;
+    --header-bg: #000000;
+    --header-link-color: #cccccc;
+    
+    /* Breadcrumbs */
+    --breadcrumbs-fg: #ffffff;
+    --breadcrumbs-link-fg: #dddddd;
+    --breadcrumbs-bg: #1a1a1a;
+    
+    /* Links */
+    --link-fg: #000000;
+    --link-hover-color: #555555;
+    --link-selected-fg: #ffffff;
+    
+    /* Buttons */
+    --button-fg: #ffffff;
+    --button-bg: #000000;
+    --button-hover-bg: #333333;
+    --default-button-bg: #000000;
+    --default-button-hover-bg: #333333;
+    
+    /* Rows and Selection */
+    --selected-bg: #e9ecef;
+    --selected-row: #f8f9fa;
+    --row-stripe: #fcfcfc;
+    
+    /* Borders */
+    --border-color: #e0e0e0;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --body-fg: #eeeeee;
+        --body-bg: #121212;
+        --content-bg: #1e1e1e;
+        --body-quiet-color: #aaaaaa;
+        --body-loud-color: #ffffff;
+        
+        --link-fg: #ffffff;
+        --link-hover-color: #cccccc;
+        
+        --selected-bg: #333333;
+        --selected-row: #2a2a2a;
+        --row-stripe: #222222;
+        
+        --border-color: #333333;
+    }
+}
+
+/* -------------------------------------
+   Modern Structural Enhancements
+------------------------------------- */
+
+body {
+    background-color: var(--body-bg);
+    color: var(--body-fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Header & Toolbar tweaks */
+#header {
+    background-color: var(--header-bg);
+    color: var(--header-color);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+#branding h1 {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+    margin: 0;
+    padding: 0;
+}
+
+#branding a {
+    display: flex;
+    align-items: center;
+}
+
+.admin-logo {
+    height: 28px;
+    margin-right: 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Breadcrumbs modern look */
+div.breadcrumbs {
+    background-color: var(--breadcrumbs-bg);
+    color: var(--breadcrumbs-fg);
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);
+}
+
+/* Content Container Styling */
+#content {
+    background-color: transparent;
+    padding: 20px;
+}
+
+/* Cards / Modules */
+.module {
+    background: var(--content-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.module h2, .module caption {
+    background: var(--primary);
+    color: var(--primary-fg);
+    padding: 12px 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+    border-bottom: none;
+}
+
+/* Table Rows Fixes (Zebra striping and text colors) */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+tr.row1 {
+    background-color: var(--content-bg);
+    color: var(--body-fg);
+}
+
+tr.row2 {
+    background-color: var(--row-stripe);
+    color: var(--body-fg);
+}
+
+/* Explicitly fix anchor text colors inside tables */
+tr.row1 a, tr.row2 a {
+    color: var(--link-fg);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+tr.row1 a:hover, tr.row2 a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+tbody tr:hover {
+    background-color: var(--selected-bg) !important;
+}
+
+td, th {
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 16px;
+}
+
+/* Form controls */
+input[type=text], input[type=password], input[type=email], input[type=url], input[type=number], textarea, select {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    background-color: var(--content-bg);
+    color: var(--body-fg);
+    transition: all 0.2s ease;
+}
+
+input[type=text]:focus, input[type=password]:focus, textarea:focus, select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+/* Button styles - smooth modern feel */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background-color: var(--button-bg);
+    color: var(--button-fg);
+    border-radius: 8px;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover, a.button:hover {
+    background-color: var(--button-hover-bg);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+    background-color: var(--primary);
+}
+
+/* Sidebar Styling */
+#nav-sidebar {
+    background-color: var(--content-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 15px;
+}
+
+#nav-sidebar .module caption {
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+#nav-sidebar table td {
+    border-bottom: none;
+    padding: 4px 0;
+}
+
+#nav-sidebar a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--body-fg);
+    transition: background-color 0.2s ease;
+}
+
+#nav-sidebar a:hover {
+    background-color: var(--selected-bg);
+}
+
+#nav-sidebar .current-model {
+    background-color: var(--primary);
+    border-radius: 6px;
+}
+
+#nav-sidebar .current-model a {
+    color: var(--primary-fg);
+    font-weight: bold;
+}
+
+#nav-sidebar .current-model a:hover {
+    background-color: transparent;
+}
+
+/* Hide toolbar on mobile (mostly for WebView in Android app) */
+@media (max-width: 768px) {
+    #header {
+        display: none !important;
+    }
+    
+    div.breadcrumbs {
+        display: none !important;
+    }
+}

@@ -124,9 +124,71 @@ def get_company_info(request):
     Название и описание берутся из settings.py (COMPANY_NAME, COMPANY_DESCRIPTION).
     """
     from django.conf import settings
+    from .models import CompanySettings
+    
+    comp_settings = CompanySettings.get_settings()
+    
+    if comp_settings:
+        name = comp_settings.name
+        description = comp_settings.description
+        logo_url = None
+        if comp_settings.logo:
+            logo_url = request.build_absolute_uri(comp_settings.logo.url)
+    else:
+        name = getattr(settings, 'COMPANY_NAME', 'Relab Server')
+        description = getattr(settings, 'COMPANY_DESCRIPTION', 'Локальная CRM система Relab')
+        logo_url = None
+
     data = {
-        "name": getattr(settings, 'COMPANY_NAME', 'Relab Server'),
-        "logo_url": None,
-        "description": getattr(settings, 'COMPANY_DESCRIPTION', 'Локальная CRM система Relab'),
+        "name": name,
+        "logo_url": logo_url,
+        "description": description,
     }
     return Response(data)
+@api_view(['GET'])
+@permission_classes([])
+def admin_autologin(request):
+    """
+    GET /api/auth/admin-login/?token=...
+    Авторизует администратора в сессию Django (для WebView) по JWT токену
+    """
+    token = request.GET.get('token')
+    if not token:
+        return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken
+        from django.contrib.auth import login
+        from django.http import HttpResponseRedirect
+        
+        validated_token = AccessToken(token)
+        user_id = validated_token['user_id']
+        user = User.objects.get(id=user_id)
+        
+        # Проверяем права администратора
+        is_admin = user.is_staff or user.is_superuser
+        if not is_admin and hasattr(user, 'profile'):
+            is_admin = (user.profile.rank == 'admin')
+            if is_admin:
+                # В целях безопасности выдаем полный статус персонала и суперпользователя, иначе Django Admin не впустит пользователя
+                user.is_staff = True
+                user.is_superuser = True
+                user.save(update_fields=['is_staff', 'is_superuser'])
+            
+        if is_admin:
+            # Устанавливаем backend явно, чтобы login сработал
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+            
+            response = HttpResponseRedirect('/admin/')
+            # Принудительно ставим светлую тему для Django Admin
+            response.set_cookie('theme', 'light', max_age=31536000, path='/')
+            return response
+        else:
+            return Response({"error": "Unauthorized. Admin rights required."}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Admin autologin failed: {e}")
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+

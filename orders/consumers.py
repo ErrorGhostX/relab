@@ -48,26 +48,30 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         query_string = self.scope.get('query_string', b'').decode()
         token = self._parse_token(query_string)
 
-        if not token:
-            logger.warning(f"WS connect rejected: no token for room {self.room_id}")
+        if token:
+            self.user = await self._authenticate(token)
+        
+        # Если это пульс (room_id=0), разрешаем подключение без токена
+        if not self.user and self.room_id != '0':
+            logger.warning(f"WS connect rejected: no valid token for room {self.room_id}")
             await self.close(code=4001)
             return
 
-        self.user = await self._authenticate(token)
-        if not self.user:
-            logger.warning(f"WS connect rejected: invalid token for room {self.room_id}")
-            await self.close(code=4001)
-            return
-
-        # 2. Проверяем, что пользователь — участник комнаты
-        is_participant = await self._is_participant(self.user, self.room_id)
-        if not is_participant:
-            logger.warning(
-                f"WS connect rejected: user {self.user.username} "
-                f"not a participant of room {self.room_id}"
-            )
-            await self.close(code=4003)
-            return
+        # 2. Проверяем, что пользователь — участник комнаты (пропускаем для пульса room_id=0)
+        if self.room_id != '0':
+            is_participant = await self._is_participant(self.user, self.room_id)
+            if not is_participant:
+                logger.warning(
+                    f"WS connect rejected: user {self.user.username} "
+                    f"not a participant of room {self.room_id}"
+                )
+                await self.close(code=4003)
+                return
+        else:
+            if self.user:
+                logger.info(f"Pulse connection for user {self.user.username}")
+            else:
+                logger.info(f"Anonymous pulse connection for room {self.room_id}")
 
         # 3. Подключаемся к группе комнаты
         await self.channel_layer.group_add(
@@ -75,12 +79,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
-        logger.info(f"WS connected: {self.user.username} → room {self.room_id}")
+        if self.user:
+            # Только пульс-соединение (room 0) управляет онлайн-статусом
+            if self.room_id == '0':
+                await self._set_online_status('online')
+            logger.info(f"WS connected: {self.user.username} → room {self.room_id}")
+        else:
+            logger.info(f"WS connected anonymously → room {self.room_id}")
 
     async def disconnect(self, close_code):
-        # Отменяем все фоновые задачи ИИ при отключении
-        for task in self.ai_tasks:
-            task.cancel()
+        # ВАЖНО: Мы НЕ отменяем (cancel) задачи ИИ при отключении,
+        # чтобы сервер мог дописать ответ и сохранить его в БД,
+        # даже если пользователь временно вышел из чата.
         self.ai_tasks.clear()
 
         if hasattr(self, 'room_group_name'):
@@ -88,10 +98,21 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 self.room_group_name,
                 self.channel_name
             )
-        logger.info(f"WS disconnected: room {self.room_id}, code={close_code}")
+        
+        if self.user:
+            # Только пульс-соединение (room 0) сбрасывает онлайн-статус
+            if self.room_id == '0':
+                await self._set_online_status('offline')
+            logger.info(f"WS disconnected: user {self.user.username} from room {self.room_id}, code={close_code}")
+        else:
+            logger.info(f"WS disconnected anonymously from room {self.room_id}, code={close_code}")
 
     async def receive_json(self, content, **kwargs):
         """Обработка входящих JSON-сообщений от клиента"""
+        if not self.user:
+             await self.send_json({'type': 'error', 'message': 'Анонимным пользователям запрещена отправка сообщений'})
+             return
+
         msg_type = content.get('type', '')
         # Прямой вывод в консоль для 100% гарантии видимости
         print(f"\n[WS RECEIVED] {msg_type}: {content}\n")
@@ -222,18 +243,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             ai_msg = await self._create_ai_message(self.room_id)
             ai_msg_id = ai_msg['id']
             
-            # СРАЗУ отправляем "Думаю..."
-            print(f"[AI DEBUG] 5. Sending 'Thinking...' token to msg_id={ai_msg_id}")
-            try:
-                await self.send_json({
-                    'type': 'ai_token',
-                    'text': 'Думаю...',
-                    'msg_id': ai_msg_id,
-                    'clear_first': True
-                })
-            except Exception:
-                pass  # Клиент мог отключиться
-            
             # 3. Стримим ответ ИИ
             print(f"[AI DEBUG] 6. Starting stream from provider: {provider}")
             full_response = ""
@@ -358,6 +367,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     def _is_participant(self, user, room_id):
         """Проверить, является ли пользователь участником комнаты"""
         from .models import ChatParticipant
+        if not user: return False
         return ChatParticipant.objects.filter(
             room_id=room_id,
             user=user
@@ -431,18 +441,52 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         from .models import RoomMessage
         RoomMessage.objects.filter(id=msg_id).update(text=full_text)
 
+    @database_sync_to_async
+    def _set_online_status(self, status):
+        """Установить статус пользователя: online / background / offline"""
+        if not self.user:
+            return
+        from .models import UserProfile
+        from django.utils import timezone
+        
+        try:
+            profile = UserProfile.objects.get(user=self.user)
+            profile.online_status = status
+            if status == 'offline':
+                profile.last_seen = timezone.now()
+            profile.save(update_fields=['online_status', 'last_seen'])
+        except Exception as e:
+            logger.error(f"Error setting online status: {e}")
+
     async def _stream_ai_response(self, user_text, provider, room_id, images=None):
         """
         Async generator: стримит токены от ИИ-провайдера.
         Поддерживает Vision (картинки).
         """
-        print(f"[AI STREAM] >>> ENTRY: provider={provider}, has_images={bool(images)}")
         # Получаем контекст заказа из комнаты
         order_context = await self._get_order_context(room_id)
+
+        # Определяем URL и модель из админки
+        from .models import AiSettings
+        ai_settings = await database_sync_to_async(AiSettings.get_settings)(provider)
         
+        if not ai_settings:
+            yield f"[Ошибка: Настройки для {provider} не найдены в админке]"
+            return
+
+        model_name = ai_settings.model_name
+        base_url = ai_settings.api_url
+        company_url = ai_settings.company_url
+
         messages = []
         # Системный промпт
-        system_content = "Ты — помощник мастера по ремонту электроники в Relab. Отвечай кратко."
+        company_name_part = f" в {company_url}" if company_url else " в Relab"
+        system_content = (
+            f"Ты — профессиональный, вежливый и стрессоустойчивый помощник мастера по ремонту электроники{company_name_part}. "
+            "Отвечай кратко, по делу и конструктивно. "
+            "ВАЖНОЕ ПРАВИЛО: Если пользователь пишет нецензурные слова, оскорбления, бред или бессмысленный текст, "
+            "не груби в ответ, сохраняй спокойствие, вежливо игнорируй провокации и возвращай беседу к профессиональной теме ремонта и диагностики."
+        )
         if order_context:
             system_content += f"\nКонтекст заказа:\n{order_context}"
         
@@ -459,40 +503,58 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         
         messages.append({"role": "user", "content": user_content})
 
-        # Определяем URL
-        if provider == 'lmstudio':
-            api_url = "http://localhost:1234/v1/chat/completions"
-        else:
-            api_url = "http://localhost:11434/v1/chat/completions"
+        # API URL
+        headers = {}
+        if ai_settings and ai_settings.api_key:
+            headers['Authorization'] = f"Bearer {ai_settings.api_key}"
 
-        payload = {
-            "model": "qwen3-vl:8b" if provider == 'ollama' else "local-model",
-            "messages": messages,
-            "stream": True,
-        }
+        if provider == 'lmstudio':
+            api_url = f"{base_url}/v1/chat/completions"
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.7,
+                "stream": True
+            }
+        else:
+            api_url = f"{base_url}/api/chat"
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "stream": True
+            }
 
         try:
-            print(f"[AI API] 7. Connecting to {api_url} with aiohttp...")
-            timeout = aiohttp.ClientTimeout(total=120)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(api_url, json=payload) as response:
-                    print(f"[AI API] 8. Status: {response.status}")
-                    if response.status != 200:
-                        err = await response.text()
-                        print(f"[AI API] 9. Error: {err}")
-                        yield f"[Ошибка ИИ: {response.status}]"
+            import httpx
+            async with httpx.AsyncClient() as client:
+                async with client.stream("POST", api_url, json=payload, headers=headers, timeout=60.0) as response:
+                    print(f"[AI API] 8. Status: {response.status_code}")
+                    if response.status_code != 200:
+                        err = await response.aread()
+                        print(f"[AI API] 9. Error: {err.decode('utf-8')}")
+                        yield f"[Ошибка ИИ: {response.status_code}]"
                         return
 
-                    async for line in response.content:
-                        line_str = line.decode('utf-8').strip()
-                        if not line_str or not line_str.startswith('data: '): continue
-                        data = line_str[6:]
-                        if data == '[DONE]': break
-                        try:
-                            chunk = json.loads(data)
-                            content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                            if content: yield content
-                        except: continue
+                    async for line in response.aiter_lines():
+                        if not line: continue
+                        
+                        if provider == 'lmstudio':
+                            if not line.startswith('data: '): continue
+                            data_str = line[6:].strip()
+                            if data_str == '[DONE]': break
+                            try:
+                                chunk = json.loads(data_str)
+                                content = chunk.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                                if content: yield content
+                            except: continue
+                        else:
+                            # Ollama /api/chat
+                            try:
+                                chunk = json.loads(line)
+                                content = chunk.get('message', {}).get('content', '')
+                                if content: yield content
+                                if chunk.get('done'): break
+                            except: continue
         except Exception as e:
             print(f"[AI API] 12. ERROR: {str(e)}")
             yield f"[Ошибка связи: {str(e)}]"

@@ -281,9 +281,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     rank_display = serializers.CharField(source='get_rank_display', read_only=True)
+    is_online = serializers.BooleanField(read_only=True)
     class Meta:
         model = UserProfile
-        fields = ('full_name', 'avatar', 'phone', 'rank', 'rank_display', 'specialization')
+        fields = ('full_name', 'avatar', 'phone', 'rank', 'rank_display', 'specialization', 'online_status', 'is_online', 'last_seen')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -294,10 +295,13 @@ class UserSerializer(serializers.ModelSerializer):
     rank = serializers.SerializerMethodField()
     rank_display = serializers.SerializerMethodField()
     specialization = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
+    online_status = serializers.SerializerMethodField()
+    last_seen = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'phone', 'rank', 'rank_display', 'specialization', 'profile')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'avatar', 'phone', 'rank', 'rank_display', 'specialization', 'is_online', 'online_status', 'last_seen', 'profile')
     
     def _get_profile(self, obj):
         """Получить профиль один раз (использует select_related если доступен)"""
@@ -334,6 +338,18 @@ class UserSerializer(serializers.ModelSerializer):
     def get_specialization(self, obj):
         profile = self._get_profile(obj)
         return profile.specialization if profile else None
+
+    def get_is_online(self, obj):
+        profile = self._get_profile(obj)
+        return profile.is_online if profile else False
+
+    def get_online_status(self, obj):
+        profile = self._get_profile(obj)
+        return profile.online_status if profile else 'offline'
+
+    def get_last_seen(self, obj):
+        profile = self._get_profile(obj)
+        return profile.last_seen if profile else None
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -488,6 +504,9 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
     rank = serializers.SerializerMethodField()
     rank_display = serializers.SerializerMethodField()
     specialization = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
+    online_status = serializers.SerializerMethodField()
+    last_seen = serializers.SerializerMethodField()
     completed_orders = serializers.SerializerMethodField()
     stats = serializers.SerializerMethodField()
 
@@ -496,6 +515,7 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'full_name', 'avatar', 'phone',
             'rank', 'rank_display', 'specialization',
+            'is_online', 'online_status', 'last_seen',
             'completed_orders', 'stats'
         ]
 
@@ -533,6 +553,18 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
     def get_specialization(self, obj):
         profile = self._get_profile(obj)
         return profile.specialization if profile else None
+
+    def get_is_online(self, obj):
+        profile = self._get_profile(obj)
+        return profile.is_online if profile else False
+
+    def get_online_status(self, obj):
+        profile = self._get_profile(obj)
+        return profile.online_status if profile else 'offline'
+
+    def get_last_seen(self, obj):
+        profile = self._get_profile(obj)
+        return profile.last_seen if profile else None
 
     def get_completed_orders(self, obj):
         """Последние 20 заказов, где сотрудник был создателем или исполнителем"""

@@ -6,11 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="ba666190-7da8-48fe-a60a-2c20b4321626" name="Changes" comment="Alpha v.1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend_relab_app/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend_relab_app/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/analytics_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/analytics_views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/orders/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,6 +23,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="UML Sequence" />
       </list>
     </option>
   </component>
@@ -57,6 +57,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;DefaultPlantUmlFileTemplate&quot;: &quot;UML Sequence&quot;,
     &quot;Django Server.backend_relab_app.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
@@ -64,13 +65,13 @@
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;backendDjango&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;A:/DEV/Lioket/Relab/RelabApp/backend_relab_app&quot;,
+    &quot;last_opened_file_path&quot;: &quot;A:/DEV/Lioket/Relab/RelabApp/backend_relab_app/uml&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;configurable.group.appearance&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -100,7 +101,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="launchJavascriptDebuger" value="false" />
-      <option name="port" value="8000" />
+      <option name="port" value="4000" />
       <option name="host" value="0.0.0.0" />
       <option name="additionalOptions" value="" />
       <option name="browserUrl" value="" />
@@ -187,7 +188,13 @@
       <workItem from="1778198013028" duration="4755000" />
       <workItem from="1778242668248" duration="208000" />
       <workItem from="1778259272507" duration="3943000" />
-      <workItem from="1778286599184" duration="9796000" />
+      <workItem from="1778286599184" duration="10991000" />
+      <workItem from="1778434703476" duration="6895000" />
+      <workItem from="1778451972833" duration="9088000" />
+      <workItem from="1778465676899" duration="4294000" />
+      <workItem from="1778471863193" duration="6472000" />
+      <workItem from="1779138876417" duration="4109000" />
+      <workItem from="1779160744806" duration="2773000" />
     </task>
     <task id="LOCAL-00001" summary="Beta v0.1">
       <option name="closed" value="true" />

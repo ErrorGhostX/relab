@@ -15,6 +15,19 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Загрузка переменных окружения из локального файла .env (если он существует)
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    with open(env_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, val = line.split('=', 1)
+                # Удаляем возможные кавычки из значений
+                val = val.strip().strip("'").strip('"')
+                os.environ[key.strip()] = val
+
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -121,16 +134,92 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'relab',   # Название базы данных в MySQL
-        'USER': 'root', # Логин MySQL
-        'PASSWORD': '30-30-30',       # Пароль MySQL
-        'HOST': 'localhost',        # Если база на этом же компе
-        'PORT': '3306',             # Порт MySQL
+DB_ENGINE = os.getenv('DB_ENGINE', 'mysql').lower()
+IS_RECOVERY_MODE = False
+
+if DB_ENGINE == 'sqlite':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    import socket
+    db_host = os.getenv('DB_HOST', 'localhost')
+    db_port = int(os.getenv('DB_PORT', '3306'))
+    db_name = os.getenv('DB_NAME', 'relab')
+    db_user = os.getenv('DB_USER', 'root')
+    db_password = os.getenv('DB_PASSWORD', '30-30-30')
+
+    mysql_available = False
+    
+    # 1. Быстрая TCP проверка доступности сокета MySQL (таймаут 1.5 сек)
+    try:
+        s = socket.create_connection((db_host, db_port), timeout=1.5)
+        s.close()
+        
+        # 2. Проверка аутентификации через MySQLdb (mysqlclient) или pymysql
+        db_connector = None
+        try:
+            import MySQLdb
+            db_connector = MySQLdb
+        except ImportError:
+            try:
+                import pymysql
+                db_connector = pymysql
+            except ImportError:
+                pass
+        
+        if db_connector is not None:
+            try:
+                # В обеих библиотеках поддерживаются универсальные параметры: user, passwd, db
+                conn = db_connector.connect(
+                    host=db_host,
+                    port=db_port,
+                    user=db_user,
+                    passwd=db_password,
+                    db=db_name,
+                    connect_timeout=1
+                )
+                conn.close()
+                mysql_available = True
+            except Exception as auth_err:
+                print(f"[MySQL Auth Error] Authentication failed for {db_user}@{db_host}:{db_port}: {auth_err}")
+        else:
+            # Если ни одного коннектора для проверки нет, но сокет открыт - разрешаем
+            mysql_available = True
+    except Exception as conn_err:
+        print(f"[MySQL Connection Error] Host {db_host}:{db_port} is unreachable")
+
+
+    if mysql_available:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_password,
+                'HOST': db_host,
+                'PORT': str(db_port),
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                }
+            }
+        }
+    else:
+        print("\n!!! [RECOVERY] STARTING IN SQLITE RECOVERY MODE !!!\n")
+        IS_RECOVERY_MODE = True
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+
+
+
 
 
 
@@ -156,7 +245,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'UTC'
 
@@ -169,6 +258,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

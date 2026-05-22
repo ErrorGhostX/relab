@@ -1,0 +1,80 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "Customers" as customers {
+  * id : integer <<PK>>
+  --
+  full_name : varchar
+  phone : varchar
+  email : varchar
+  messenger : varchar
+  is_blacklisted : boolean
+}
+
+entity "Orders" as orders {
+  * id : integer <<PK>>
+  --
+  customer_ref_id : integer <<FK>>
+  order_name : varchar
+  device_name : varchar
+  status : varchar
+  order_type : varchar
+  execution_type : varchar
+  created_at : datetime
+}
+
+entity "Services" as services {
+  * id : integer <<PK>>
+  --
+  order_id : integer <<FK>>
+  description : varchar
+  price : decimal
+  complexity_points : integer
+  service_status : varchar
+}
+
+entity "Consumables" as consumables {
+  * id : integer <<PK>>
+  --
+  name : varchar
+  sku : varchar
+  quantity : integer
+  price : decimal
+}
+
+entity "OrderConsumables" as order_consumables {
+  * id : integer <<PK>>
+  --
+  order_id : integer <<FK>>
+  consumable_id : integer <<FK>>
+  quantity : integer
+  price_at_time : decimal
+}
+
+entity "OrderPhotos" as photos {
+  * id : integer <<PK>>
+  --
+  order_id : integer <<FK>>
+  photo : image
+  created_at : datetime
+}
+
+entity "RoomLocalSyncFields" as sync_fields {
+  * localId : long <<PK>>
+  --
+  serverId : integer
+  syncStatus : enum
+  lastModified : long
+  lastSynced : long
+  isDeleted : boolean
+}
+
+customers ||--o{ orders
+orders ||--o{ services
+orders ||--o{ photos
+orders ||--o{ order_consumables
+consumables ||--o{ order_consumables
+orders ||..|| sync_fields : mobile cache
+@enduml
+

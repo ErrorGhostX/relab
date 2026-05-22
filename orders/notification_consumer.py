@@ -56,6 +56,10 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
+        
+        # Устанавливаем статус "В фоне" (желтый), если пользователь не "online"
+        await self._update_online_status('background', only_if_offline=True)
+        
         logger.info(f"Notification WS connected: {self.user.username} (user_id={self.user.id})")
 
     async def disconnect(self, close_code):
@@ -64,7 +68,12 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 self.notification_group,
                 self.channel_name
             )
-        username = self.user.username if self.user else "unknown"
+            
+        if getattr(self, 'user', None):
+            # Сбрасываем статус в offline, только если он был background
+            await self._update_online_status('offline', only_if_background=True)
+            
+        username = getattr(self.user, 'username', 'unknown') if getattr(self, 'user', None) else "unknown"
         logger.info(f"Notification WS disconnected: {username}, code={close_code}")
 
     async def receive_json(self, content, **kwargs):
@@ -73,6 +82,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
         if msg_type == 'ping':
             await self.send_json({'type': 'pong'})
+            # Подтверждаем фоновый статус (на случай если пульс отключился и сбросил в offline)
+            await self._update_online_status('background', only_if_offline=True)
 
     # =============================================
     # Обработчик группового сообщения
@@ -119,3 +130,26 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         except Exception as e:
             logger.warning(f"Notification WS JWT auth failed: {e}")
             return None
+
+    @database_sync_to_async
+    def _update_online_status(self, new_status, only_if_offline=False, only_if_background=False):
+        """Обновление статуса в БД с проверками."""
+        try:
+            from orders.models import UserProfile
+            from django.utils import timezone
+            
+            profile = UserProfile.objects.get(user=self.user)
+            
+            if only_if_offline and profile.online_status != 'offline':
+                return
+                
+            if only_if_background and profile.online_status != 'background':
+                return
+                
+            profile.online_status = new_status
+            if new_status == 'online' or new_status == 'background':
+                profile.last_seen = timezone.now()
+                
+            profile.save(update_fields=['online_status', 'last_seen'])
+        except Exception as e:
+            logger.error(f"Error updating background status for {self.user.id}: {e}")

@@ -2,7 +2,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from orders.profile_views import get_current_user, update_user_profile, upload_avatar, get_user_by_id, get_company_info
+from orders.profile_views import get_current_user, update_user_profile, upload_avatar, get_user_by_id, get_company_info, admin_autologin
+
+admin.site.site_header = "Управление Relab"
+admin.site.site_title = "Админ-панель Relab"
+admin.site.index_title = "Панель управления"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -12,10 +16,14 @@ urlpatterns = [
     path('api/auth/users/me/', get_current_user, name='user-me'),  # GET и PATCH/PUT
     path('api/auth/users/me/update/', update_user_profile, name='user-update'),  # Альтернативный эндпоинт для PATCH/PUT
     path('api/auth/users/me/avatar/', upload_avatar, name='user-avatar'),
+    path('api/auth/admin-login/', admin_autologin, name='admin-autologin'),
     path('api/auth/users/<int:pk>/', get_user_by_id, name='user-detail'),
     path('api/auth/', include('djoser.urls')),  # регистрация, профиль, сброс пароля
     path('api/auth/', include('djoser.urls.jwt')),  # получение и обновление JWT-токенов
 ]
 
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()

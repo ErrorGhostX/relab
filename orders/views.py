@@ -1,7 +1,8 @@
 import os
 import json
 import base64
-import requests
+import httpx
+import asyncio
 from io import BytesIO
 from collections import defaultdict
 from datetime import datetime, timedelta, time
@@ -10,6 +11,7 @@ from django.contrib.auth.models import User
 from django.db.models import Sum, Max, Q, Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from asgiref.sync import async_to_sync, sync_to_async
 from django.utils import timezone
 from django.utils.timezone import now, make_aware
 
@@ -46,23 +48,36 @@ class AIViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def status(self, request):
+        return async_to_sync(self._status)(request)
+
+    async def _status(self, request):
         provider = request.query_params.get('provider', 'ollama')
         
-        if provider == 'lmstudio':
-            url = "http://localhost:1234/v1/models"
-        else:
-            url = "http://localhost:11434/api/tags"
+        # Получаем настройки из БД
+        ai_settings = await sync_to_async(models.AiSettings.get_settings)(provider)
+        if not ai_settings:
+            return Response({'status': 'offline', 'message': f'Настройки для {provider} не найдены в админке'}, status=status.HTTP_200_OK)
+
+        url = f"{ai_settings.api_url}/api/tags" if provider == 'ollama' else f"{ai_settings.api_url}/v1/models"
 
         try:
-            resp = requests.get(url, timeout=3)
-            if resp.status_code == 200:
-                return Response({'status': 'online', 'provider': provider})
-            return Response({'status': 'error', 'message': f'Server returned {resp.status_code}'})
+            async with httpx.AsyncClient() as client:
+                headers = {}
+                if ai_settings.api_key:
+                    headers['Authorization'] = f"Bearer {ai_settings.api_key}"
+                
+                resp = await client.get(url, timeout=5.0, headers=headers)
+                if resp.status_code == 200:
+                    return Response({'status': 'online', 'provider': provider})
+                return Response({'status': 'error', 'message': f'Server returned {resp.status_code}'})
         except Exception as e:
             return Response({'status': 'offline', 'message': str(e)}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def parse_text(self, request):
+        return async_to_sync(self._parse_text)(request)
+
+    async def _parse_text(self, request):
         raw_text = request.data.get('text', '')
         provider = request.data.get('provider', 'ollama') # 'ollama' or 'lmstudio'
         
@@ -70,41 +85,51 @@ class AIViewSet(viewsets.ViewSet):
             return Response({"error": "Текст не передан"}, status=status.HTTP_400_BAD_REQUEST)
 
         system_prompt = (
-            "Ты — профессиональный ассистент сервисного центра. Твоя задача — извлечь данные из заявки и вернуть СТРОГИЙ JSON. "
-            "Ключи: "
+            "Ты — профессиональный, вежливый и стрессоустойчивый ассистент сервисного центра по ремонту техники. "
+            "Твоя задача — извлечь данные из текста заявки и вернуть СТРОГИЙ JSON. "
+            "ВАЖНОЕ ПРАВИЛО: Если во входном тексте содержится нецензурная лексика, оскорбления, бред или бессмысленный набор букв, "
+            "ты НЕ должен отвечать руганью или ломать JSON. В этом случае спокойно отфильтруй мат, извлеки конструктивную часть (если она есть), "
+            "либо заполни 'summary_description' как 'Заявка содержит некорректную лексику / неясное описание', а остальные поля оставь пустыми или дефолтными. "
+            "Ключи JSON: "
             "'order_name' (краткое название заказа, например 'Ремонт iPhone 13' или 'Чистка ноутбука'), "
             "'customer_name' (ФИО), 'phone' (номер), 'device_type' (тип устройства), 'manufacturer' (бренд), 'model' (модель), "
             "'kit' (подробная комплектация: зарядка, кабель и т.д.), 'order_type' (тип: 'repair' или 'diagnosis'), "
-            "'summary_description' (суть проблемы, кратко), "
+            "'summary_description' (суть проблемы, кратко и вежливо), "
             "'suggested_services' (список услуг). "
-            "ВАЖНО: 'suggested_services' должен быть списком объектов: [{\"description\": \"название\", \"price\": 1000}]. "
+            "ВАЖНО: 'suggested_services' должен быть списком объектов: [{\"description\": \"название\", \"price\": 1000, \"complexity_points\": 5}]. "
+            "complexity_points — это целое число от 1 до 10, оценивающее сложность работы (1 — простая, 10 — очень сложная). "
             "Если цена за услугу указана в тексте, обязательно извлеки её как число. Если нет — ставь 0."
         )
 
         try:
+            ai_settings = await sync_to_async(models.AiSettings.get_settings)(provider)
+            if not ai_settings:
+                return Response({"error": f"Настройки для {provider} не найдены в админке"}, status=status.HTTP_400_BAD_REQUEST)
+
+            model_name = ai_settings.model_name
+            base_url = ai_settings.api_url
+
             if provider == 'ollama':
                 try:
-                    model_name = "qwen3-vl:8b" 
-                    # Переходим на /api/chat, он стабильнее для современных моделей
-                    messages = [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": raw_text}
-                    ]
+                    headers = {}
+                    if ai_settings.api_key:
+                        headers['Authorization'] = f"Bearer {ai_settings.api_key}"
                     
-                    response = requests.post(
-                        "http://localhost:11434/api/chat",
-                        json={
-                            "model": model_name,
-                            "messages": messages,
-                            "stream": False,
-                            "format": "json",
-                            "options": {
-                                "temperature": 0.1,
-                                "num_predict": 2048
-                            }
-                        },
-                        timeout=180
-                    )
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            f"{base_url}/api/chat",
+                            json={
+                                "model": model_name,
+                                "messages": [
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": raw_text}
+                                ],
+                                "stream": False,
+                                "format": "json"
+                            },
+                            headers=headers,
+                            timeout=60.0
+                        )
                     if response.status_code == 200:
                         # В /api/chat ответ лежит в message.content
                         raw_ai_response = response.json().get('message', {}).get('content', '')
@@ -127,6 +152,8 @@ class AIViewSet(viewsets.ViewSet):
                                     if isinstance(s, str):
                                         fixed_services.append({"description": s, "price": 0, "complexity_points": 1})
                                     elif isinstance(s, dict):
+                                        if 'complexity_points' not in s:
+                                            s['complexity_points'] = 1
                                         fixed_services.append(s)
                                 parsed_data['suggested_services'] = fixed_services
                                 
@@ -138,25 +165,30 @@ class AIViewSet(viewsets.ViewSet):
                             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     else:
                         return Response({"error": f"Ollama error: {response.status_code}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                except requests.exceptions.RequestException as e:
+                except (httpx.RequestError, httpx.HTTPStatusError) as e:
                     return Response({"error": f"Ollama offline: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
             elif provider == 'lmstudio':
                 try:
-                    # LM Studio (OpenAI Compatible)
-                    response = requests.post(
-                        "http://localhost:1234/v1/chat/completions",
-                        json={
-                            "messages": [
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": raw_text}
-                            ],
-                            "temperature": 0.1,
-                            "max_tokens": 2048,
-                            "response_format": {"type": "json_object"}
-                        },
-                        timeout=180
-                    )
+                    headers = {}
+                    if ai_settings.api_key:
+                        headers['Authorization'] = f"Bearer {ai_settings.api_key}"
+                    
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            f"{base_url}/v1/chat/completions",
+                            json={
+                                "model": model_name,
+                                "messages": [
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": raw_text}
+                                ],
+                                "temperature": 0.1,
+                                "stream": False
+                            },
+                            headers=headers,
+                            timeout=60.0
+                        )
                     if response.status_code == 200:
                         content = response.json()['choices'][0]['message']['content']
                         if not content:
@@ -177,6 +209,8 @@ class AIViewSet(viewsets.ViewSet):
                                     if isinstance(s, str):
                                         fixed_services.append({"description": s, "price": 0, "complexity_points": 1})
                                     elif isinstance(s, dict):
+                                        if 'complexity_points' not in s:
+                                            s['complexity_points'] = 1
                                         fixed_services.append(s)
                                 parsed_data['suggested_services'] = fixed_services
                                 
@@ -188,7 +222,7 @@ class AIViewSet(viewsets.ViewSet):
                             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     else:
                         return Response({"error": f"LM Studio error: {response.status_code}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                except requests.exceptions.RequestException as e:
+                except (httpx.RequestError, httpx.HTTPStatusError) as e:
                     return Response({"error": f"LM Studio offline: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             return Response({"error": f"Неизвестный провайдер: {provider}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -198,6 +232,9 @@ class AIViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def chat(self, request):
+        return async_to_sync(self._chat)(request)
+
+    async def _chat(self, request):
         """
         POST /api/ai/chat/
         { "message": "Привет", "provider": "ollama", "order_id": 123 }
@@ -211,10 +248,12 @@ class AIViewSet(viewsets.ViewSet):
 
         order = None
         if order_id:
-            order = Order.objects.filter(pk=order_id).first()
+            order = await Order.objects.filter(pk=order_id).afirst()
 
         # 1. Сохраняем сообщение пользователя
-        chat_msg = models.ChatMessage.objects.create(
+        # Нам нужно сохранить сообщение в БД (синхронная операция в асинхронном контексте)
+        from asgiref.sync import sync_to_async
+        chat_msg = await sync_to_async(models.ChatMessage.objects.create)(
             user=request.user, 
             message=user_message, 
             is_ai=False, 
@@ -239,7 +278,12 @@ class AIViewSet(viewsets.ViewSet):
         history = history_query.order_by('-created_at')[:15]
         history = reversed(history)
         
-        system_prompt = "Ты эксперт-помощник в CRM Relab. Отвечай кратко. Твоя задача — помогать мастерам по ремонту."
+        system_prompt = (
+            "Ты — профессиональный, вежливый эксперт-помощник сервисного центра в CRM Relab. Отвечай кратко, чётко и по делу. "
+            "Твоя задача — помогать мастерам по ремонту техники. "
+            "ПРАВИЛА ПОВЕДЕНИЯ: Если пользователь использует нецензурную брань, проявляет агрессию или пишет бессмысленный текст, "
+            "сохраняй спокойствие, не груби в ответ, вежливо игнорируй провокации и возвращай разговор к профессиональной теме ремонта и диагностики."
+        )
         if order:
             system_prompt += f" Сейчас ты помогаешь с заказом #{order.id} '{order.order_name}' ({order.device_name})."
             
@@ -262,14 +306,13 @@ class AIViewSet(viewsets.ViewSet):
 
         from django.http import StreamingHttpResponse
         
-        def stream_response():
+        async def async_stream_response():
             ai_full_text = ""
             
-            print(f"[AI CHAT] Starting stream for user {request.user.username}, provider: {provider}")
-            print(f"[AI CHAT] Context messages: {len(messages)}")
+            print(f"[AI CHAT] Starting async stream for user {request.user.username}, provider: {provider}")
             
-            # 1. Создаем пустое сообщение в БД для имитации состояния "Думаю..." у других пользователей
-            ai_db_message = models.ChatMessage.objects.create(
+            # 1. Создаем пустое сообщение в БД
+            ai_db_message = await sync_to_async(models.ChatMessage.objects.create)(
                 user=request.user, 
                 message="", 
                 is_ai=True, 
@@ -277,65 +320,72 @@ class AIViewSet(viewsets.ViewSet):
             )
             
             try:
-                if provider == 'ollama':
-                    response = requests.post(
-                        "http://localhost:11434/api/chat",
-                        json={
-                            "model": "qwen3-vl:8b",
-                            "messages": messages,
-                            "stream": True,
-                            "options": {
+                ai_settings = await sync_to_async(models.AiSettings.get_settings)(provider)
+                if not ai_settings:
+                    yield f"data: {json.dumps({'error': f'Настройки для {provider} не найдены в админке'})}\n\n"
+                    return
+
+                model_name = ai_settings.model_name
+                base_url = ai_settings.api_url
+                headers = {}
+                if ai_settings.api_key:
+                    headers['Authorization'] = f"Bearer {ai_settings.api_key}"
+
+                async with httpx.AsyncClient() as client:
+                    if provider == 'ollama':
+                        async with client.stream(
+                            "POST",
+                            f"{base_url}/api/chat",
+                            json={
+                                "model": model_name,
+                                "messages": messages,
+                                "stream": True
+                            },
+                            headers=headers,
+                            timeout=60.0
+                        ) as response:
+                            async for line in response.aiter_lines():
+                                if line:
+                                    chunk = json.loads(line)
+                                    token = chunk.get('message', {}).get('content', '')
+                                    ai_full_text += token
+                                    yield f"data: {json.dumps({'text': token})}\n\n"
+                                    if chunk.get('done'):
+                                        break
+
+                    elif provider == 'lmstudio':
+                        async with client.stream(
+                            "POST",
+                            f"{base_url}/v1/chat/completions",
+                            json={
+                                "model": model_name,
+                                "messages": messages,
                                 "temperature": 0.7,
-                                "num_predict": 2048
-                            }
-                        },
-                        stream=True,
-                        timeout=180
-                    )
-                    for line in response.iter_lines():
-                        if line:
-                            chunk = json.loads(line.decode('utf-8'))
-                            token = chunk.get('message', {}).get('content', '')
-                            ai_full_text += token
-                            # Формат SSE
-                            yield f"data: {json.dumps({'text': token})}\n\n"
-                            if chunk.get('done'):
-                                print(f"[AI CHAT] Stream finished. Length: {len(ai_full_text)}")
-                                break
+                                "stream": True
+                            },
+                            headers=headers,
+                            timeout=60.0
+                        ) as response:
+                            async for line in response.aiter_lines():
+                                if line:
+                                    if line.startswith('data: ') and line != 'data: [DONE]':
+                                        chunk = json.loads(line[6:])
+                                        token = chunk['choices'][0].get('delta', {}).get('content', '')
+                                        ai_full_text += token
+                                        yield f"data: {json.dumps({'text': token})}\n\n"
 
-                elif provider == 'lmstudio':
-                    response = requests.post(
-                        "http://localhost:1234/v1/chat/completions",
-                        json={
-                            "messages": messages,
-                            "temperature": 0.7,
-                            "max_tokens": 2048,
-                            "stream": True
-                        },
-                        stream=True,
-                        timeout=180
-                    )
-                    for line in response.iter_lines():
-                        if line:
-                            line_str = line.decode('utf-8')
-                            if line_str.startswith('data: ') and line_str != 'data: [DONE]':
-                                chunk = json.loads(line_str[6:])
-                                token = chunk['choices'][0].get('delta', {}).get('content', '')
-                                ai_full_text += token
-                                yield f"data: {json.dumps({'text': token})}\n\n"
-
-                # После завершения стрима обновляем сообщение в БД полным текстом
+                # После завершения стрима обновляем сообщение в БД
                 if ai_full_text:
                     ai_db_message.message = ai_full_text
-                    ai_db_message.save()
+                    await sync_to_async(ai_db_message.save)()
                     yield f"data: {json.dumps({'done': True, 'id': ai_db_message.id})}\n\n"
                     
             except Exception as e:
-                print(f"[AI CHAT] Error: {str(e)}")
+                print(f"[AI CHAT] Async Error: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
         
         response = StreamingHttpResponse(
-            stream_response(),
+            async_stream_response(),
             content_type='text/event-stream'
         )
         response['Cache-Control'] = 'no-cache'
@@ -367,18 +417,29 @@ class AIViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def ai_status(self, request):
+        return async_to_sync(self._ai_status)(request)
+
+    async def _ai_status(self, request):
         """Проверка статуса серверов ИИ"""
-        providers = {
-            "ollama": "http://localhost:11434/api/tags",
-            "lmstudio": "http://localhost:1234/v1/models"
-        }
+        ollama_settings = await sync_to_async(models.AiSettings.get_settings)('ollama')
+        lmstudio_settings = await sync_to_async(models.AiSettings.get_settings)('lmstudio')
+        
+        providers = {}
+        if ollama_settings:
+            providers["ollama"] = f"{ollama_settings.api_url}/api/tags"
+        if lmstudio_settings:
+            providers["lmstudio"] = f"{lmstudio_settings.api_url}/v1/models"
+        
+        if not providers:
+             return Response({"ollama": "offline (no settings)", "lmstudio": "offline (no settings)"})
         results = {}
-        for name, url in providers.items():
-            try:
-                resp = requests.get(url, timeout=2)
-                results[name] = "online" if resp.status_code == 200 else "offline"
-            except:
-                results[name] = "offline"
+        async with httpx.AsyncClient() as client:
+            for name, url in providers.items():
+                try:
+                    resp = await client.get(url, timeout=2)
+                    results[name] = "online" if resp.status_code == 200 else "offline"
+                except:
+                    results[name] = "offline"
         return Response(results)
 
 

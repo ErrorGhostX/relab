@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     Order, Service, UserProfile, OrderCollaborator, Customer,
-    ChatRoom, ChatParticipant, RoomMessage, BugReport
+    ChatRoom, ChatParticipant, RoomMessage, BugReport, AiSettings,
+    DatabaseConfiguration
 )
 
 class ServiceInline(admin.TabularInline):
@@ -81,3 +82,65 @@ class BugReportAdmin(admin.ModelAdmin):
     message_short.short_description = 'Сообщение'
 
 admin.site.register(BugReport, BugReportAdmin)
+
+@admin.register(AiSettings)
+class AiSettingsAdmin(admin.ModelAdmin):
+    list_display = ('provider', 'model_name', 'api_url', 'company_url', 'is_active')
+    list_filter = ('provider', 'is_active')
+    search_fields = ('model_name', 'api_url')
+
+from .models import CompanySettings
+@admin.register(CompanySettings)
+class CompanySettingsAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+
+
+@admin.register(DatabaseConfiguration)
+class DatabaseConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('engine', 'name', 'user', 'host', 'port')
+    
+    def has_add_permission(self, request):
+        # Только 1 объект настроек разрешен. Защищаем от падения, если миграции СУБД еще не применились.
+        try:
+            return DatabaseConfiguration.objects.count() == 0
+        except Exception:
+            return True
+
+    def has_delete_permission(self, request, obj=None):
+        # Нельзя удалять конфигурацию СУБД
+        return False
+
+    def get_changeform_initial_data(self, request):
+        import os
+        return {
+            'engine': os.getenv('DB_ENGINE', 'mysql'),
+            'name': os.getenv('DB_NAME', 'relab'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', '30-30-30'),
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': os.getenv('DB_PORT', '3306'),
+        }
+
+    def changelist_view(self, request, extra_context=None):
+        from django.conf import settings
+        from django.contrib import messages
+        from django.utils.html import format_html
+
+        if getattr(settings, 'IS_RECOVERY_MODE', False):
+            msg = format_html(
+                "🚨 <span style='font-weight: bold; font-size: 1.1em; color: #d90429;'>АВАРИЙНЫЙ РЕЖИМ (RECOVERY MODE)!</span> "
+                "Не удалось подключиться к базе данных MySQL с указанными в `.env` реквизитами. "
+                "Сервер временно переключен на аварийную SQLite базу данных. "
+                "Для настройки подключения к MySQL нажмите на конфигурацию ниже (или добавьте новую), укажите верные данные и нажмите <b>Сохранить</b>. "
+                "Временный суперпользователь для этого аварийного сеанса: логин <code>admin</code>, пароль <code>admin</code>."
+            )
+            # Очищаем старые сообщения
+            storage = messages.get_messages(request)
+            storage.used = True
+            messages.error(request, msg)
+        return super().changelist_view(request, extra_context=extra_context)
+
+
+
+
+

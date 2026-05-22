@@ -1,0 +1,28 @@
+# Секреты и файлы конфигурации
+.env
+firebase-credentials.json
+
+# Локальная база данных SQLite
+db.sqlite3
+
+# Виртуальные окружения Python
+.venv/
+venv/
+ENV/
+env/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Загружаемые медиафайлы (фотографии заказов/аватаров)
+media/
+/media/
+/static/
+
+# Архивы и резервные копии
+*.rar
+*.zip
+*.tar.gz

@@ -99,6 +99,50 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         ).update(last_read_at=timezone.now())
 
         serializer = RoomMessageSerializer(message, context={'request': request})
+
+        # Отправляем WebSocket-уведомление всем участникам комнаты
+        # (чтобы картинки, отправленные через REST, мгновенно появлялись у всех)
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                sender_name = request.user.username
+                sender_avatar = None
+                if hasattr(request.user, 'profile'):
+                    sender_name = request.user.profile.full_name or request.user.username
+                    if request.user.profile.avatar:
+                        sender_avatar = request.build_absolute_uri(request.user.profile.avatar.url)
+
+                image_url = None
+                if message.image:
+                    image_url = request.build_absolute_uri(message.image.url)
+
+                ws_message = {
+                    'id': message.id,
+                    'room': room.id,
+                    'sender': request.user.id,
+                    'sender_username': request.user.username,
+                    'sender_full_name': sender_name,
+                    'sender_avatar': sender_avatar,
+                    'text': text,
+                    'image_url': image_url,
+                    'is_from_ai': False,
+                    'created_at': message.created_at.isoformat(),
+                }
+
+                async_to_sync(channel_layer.group_send)(
+                    f'chat_{room.id}',
+                    {
+                        'type': 'chat_message',
+                        'message': ws_message,
+                    }
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to send WS notification for image message: {e}")
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])

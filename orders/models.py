@@ -391,6 +391,23 @@ class UserProfile(models.Model):
         verbose_name='Специализация',
         help_text='Например: Мастер по видеокартам, Приёмщик заказов'
     )
+    ONLINE_STATUS_CHOICES = (
+        ('online', 'В сети'),
+        ('background', 'В фоне'),
+        ('offline', 'Не в сети'),
+    )
+    online_status = models.CharField(
+        max_length=12,
+        choices=ONLINE_STATUS_CHOICES,
+        default='offline',
+        verbose_name='Статус онлайн'
+    )
+    last_seen = models.DateTimeField(null=True, blank=True, verbose_name='Последний раз был в сети')
+
+    @property
+    def is_online(self):
+        """Обратная совместимость: True если статус online или background"""
+        return self.online_status in ('online', 'background')
     
     def __str__(self):
         spec = f" [{self.specialization}]" if self.specialization else ""
@@ -401,15 +418,37 @@ class UserProfile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     """Автоматически создавать профиль при создании пользователя"""
     if created:
-        UserProfile.objects.create(user=instance)
+        rank = 'admin' if (instance.is_staff or instance.is_superuser) else 'employee'
+        UserProfile.objects.create(user=instance, rank=rank)
 
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     """Сохранять профиль при сохранении пользователя"""
     if hasattr(instance, 'profile'):
-        instance.profile.save()
+        profile = instance.profile
+        if (instance.is_staff or instance.is_superuser) and profile.rank != 'admin':
+            profile.rank = 'admin'
+            profile.save(update_fields=['rank'])
+        else:
+            profile.save()
 
+
+@receiver(post_save, sender=UserProfile)
+def sync_user_staff_status(sender, instance, **kwargs):
+    """
+    Автоматическая синхронизация: 
+    Если профиль получает ранг 'admin', пользователю выдается is_staff = True и is_superuser = True.
+    Если ранг снимается, привилегии забираются. Это нужно для доступа в админку Django.
+    """
+    if not instance.user:
+        return
+        
+    should_be_admin = (instance.rank == 'admin')
+    if instance.user.is_staff != should_be_admin or instance.user.is_superuser != should_be_admin:
+        instance.user.is_staff = should_be_admin
+        instance.user.is_superuser = should_be_admin
+        instance.user.save(update_fields=['is_staff', 'is_superuser'])
 
 class ChatMessage(models.Model):
     """
@@ -589,3 +628,148 @@ class BugReport(models.Model):
     def __str__(self):
         user_str = self.user.username if self.user else "Аноним"
         return f"{self.get_type_display()} от {user_str} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
+
+
+class AiSettings(models.Model):
+    """
+    Настройки ИИ-провайдеров (Ollama, LM Studio).
+    Позволяет менять модель и адрес сервера через админку.
+    """
+    PROVIDER_CHOICES = (
+        ('ollama', 'Ollama'),
+        ('lmstudio', 'LM Studio'),
+    )
+    
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, verbose_name='Провайдер')
+    model_name = models.CharField(max_length=255, verbose_name='Название модели')
+    api_url = models.CharField(max_length=255, verbose_name='URL сервера ИИ (Ollama/LM Studio)', help_text="Например: http://localhost:11434")
+    api_key = models.CharField(max_length=255, blank=True, default='', verbose_name='API Ключ (если требуется)')
+    company_url = models.CharField(max_length=255, blank=True, default='', verbose_name='URL сервера / сайта компании', help_text="Для контекста ИИ")
+    is_active = models.BooleanField(default=True, verbose_name='Активен')
+    
+    class Meta:
+        verbose_name = 'Настройка ИИ'
+        verbose_name_plural = 'Настройки ИИ'
+
+    def __str__(self):
+        status = "Активен" if self.is_active else "Неактивен"
+        return f"{self.get_provider_display()}: {self.model_name} ({status})"
+
+    @classmethod
+    def get_settings(cls, provider):
+        """Получить активные настройки для провайдера или значения по умолчанию"""
+        try:
+            settings = cls.objects.filter(provider=provider, is_active=True).first()
+            if not settings:
+                if provider == 'ollama':
+                    settings, _ = cls.objects.get_or_create(
+                        provider='ollama',
+                        defaults={
+                            'model_name': 'llama3:8b',
+                            'api_url': 'http://localhost:11434',
+                            'company_url': 'http://localhost:8000',
+                            'is_active': True,
+                        }
+                    )
+                elif provider == 'lmstudio':
+                    settings, _ = cls.objects.get_or_create(
+                        provider='lmstudio',
+                        defaults={
+                            'model_name': 'qwen2.5-7b-instruct',
+                            'api_url': 'http://localhost:1234/v1',
+                            'company_url': 'http://localhost:8000',
+                            'is_active': True,
+                        }
+                    )
+            return settings
+        except Exception:
+            return None
+
+
+class CompanySettings(models.Model):
+    """
+    Настройки компании (название, описание, логотип).
+    Используется паттерн Singleton (одна активная запись).
+    """
+    name = models.CharField(max_length=255, default='Relab Service', verbose_name='Название компании')
+    description = models.TextField(blank=True, default='Локальная CRM система Relab', verbose_name='Описание компании')
+    logo = models.ImageField(upload_to='company/', null=True, blank=True, verbose_name='Логотип компании')
+    
+    class Meta:
+        verbose_name = 'Настройки компании'
+        verbose_name_plural = 'Настройки компании'
+
+    def __str__(self):
+        return f"Настройки: {self.name}"
+
+    @classmethod
+    def get_settings(cls):
+        try:
+            settings = cls.objects.first()
+            if not settings:
+                settings = cls.objects.create(
+                    name='Relab Service',
+                    description='Локальная CRM система Relab'
+                )
+            return settings
+        except Exception:
+            return None
+
+
+class DatabaseConfiguration(models.Model):
+    """
+    Настройки подключения к базе данных (MySQL / SQLite).
+    Сохраняются в БД и синхронизируются с локальным файлом .env.
+    """
+    DB_CHOICES = [
+        ('mysql', 'MySQL'),
+        ('sqlite', 'SQLite'),
+    ]
+    engine = models.CharField(max_length=10, choices=DB_CHOICES, default='mysql', verbose_name='СУБД')
+    name = models.CharField(max_length=255, default='relab', verbose_name='Имя базы данных')
+    user = models.CharField(max_length=255, default='root', verbose_name='Пользователь')
+    password = models.CharField(max_length=255, default='30-30-30', verbose_name='Пароль', blank=True)
+    host = models.CharField(max_length=255, default='localhost', verbose_name='Хост / IP')
+    port = models.CharField(max_length=10, default='3306', verbose_name='Порт')
+
+    class Meta:
+        verbose_name = 'Настройка базы данных'
+        verbose_name_plural = 'Настройки базы данных'
+
+    def __str__(self):
+        return f"Конфигурация БД ({self.engine.upper()}): {self.user}@{self.host}:{self.port}/{self.name}"
+
+    def save(self, *args, **kwargs):
+        # Сохраняем в текущую активную БД
+        super().save(*args, **kwargs)
+        
+        # Синхронизируем с .env
+        from django.conf import settings
+        env_path = settings.BASE_DIR / '.env'
+        
+        lines = [
+            "# Данный файл сгенерирован автоматически через Django Admin панели управления.",
+            "# Любые ручные изменения будут перезаписаны при сохранении настроек в админке.",
+            "",
+            f"DB_ENGINE={self.engine}",
+            f"DB_NAME={self.name}",
+            f"DB_USER={self.user}",
+            f"DB_PASSWORD={self.password}",
+            f"DB_HOST={self.host}",
+            f"DB_PORT={self.port}",
+        ]
+        
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines) + '\n')
+
+        # Форсируем автоперезапуск сервера (Touch-reload)
+        # Меняем время изменения settings.py, чтобы авторелоадер (Django runserver / Gunicorn / uWSGI) мгновенно перезапустил процесс
+        import os
+        settings_py = settings.BASE_DIR / 'backend_relab_app' / 'settings.py'
+        if settings_py.exists():
+            try:
+                os.utime(settings_py, None)
+            except Exception:
+                pass
+
+
